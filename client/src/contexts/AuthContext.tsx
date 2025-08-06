@@ -40,19 +40,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Create or update user document in Firestore with proper error handling
+  // Create or update user document in Firestore
   const createUserDocument = async (firebaseUser: FirebaseUser, additionalData?: any) => {
-    // Basic validation
     if (!firebaseUser?.uid) return null;
 
     try {
-      // Check if user is properly authenticated with a valid token
-      const token = await firebaseUser.getIdToken(false);
-      if (!token || token.length < 10) return null;
-
-      // Additional check - ensure token is not expired
-      const tokenResult = await firebaseUser.getIdTokenResult();
-      if (!tokenResult?.token) return null;
+      // Get valid authentication token
+      const token = await firebaseUser.getIdToken(true); // Force refresh
+      if (!token) return null;
 
       const userRef = doc(db, 'usuarios', firebaseUser.uid);
       const userSnap = await getDoc(userRef);
@@ -70,13 +65,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
           updatedAt: new Date(),
         };
 
+        console.log('Salvando usuário no Firestore:', userData);
         await setDoc(userRef, userData);
+        console.log('Usuário salvo com sucesso no Firestore');
         return userData as User;
       } else {
+        console.log('Usuário já existe no Firestore:', userSnap.data());
         return userSnap.data() as User;
       }
     } catch (error: any) {
-      // Completely suppress all Firestore errors to prevent console spam
+      console.error('Erro ao salvar usuário no Firestore:', error);
       return null;
     }
   };
@@ -89,9 +87,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Wait for auth token
       await result.user.getIdToken();
       
+      console.log('Tentando fazer login e salvar/buscar usuário no Firestore...');
       const userDoc = await createUserDocument(result.user);
       if (userDoc) {
         setCurrentUser(userDoc);
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Dados carregados do Firestore.",
+        });
       } else {
         // Fallback user data
         const fallbackUser: User = {
@@ -101,12 +104,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
           provider: 'email',
         };
         setCurrentUser(fallbackUser);
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Usando dados locais (Firestore não disponível).",
+        });
       }
-      
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo de volta ao DorLog.",
-      });
     } catch (error: any) {
       console.error('Login error:', error);
       let errorMessage = "Erro no login. Tente novamente.";
@@ -141,9 +143,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Wait for auth token
       await result.user.getIdToken();
 
+      console.log('Tentando criar usuário no Firestore...');
       const userDoc = await createUserDocument(result.user, { name });
       if (userDoc) {
         setCurrentUser(userDoc);
+        toast({
+          title: "Conta criada com sucesso!",
+          description: "Usuário salvo no Firestore.",
+        });
       } else {
         // Fallback user data
         const fallbackUser: User = {
@@ -153,12 +160,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
           provider: 'email',
         };
         setCurrentUser(fallbackUser);
+        toast({
+          title: "Conta criada com sucesso!",
+          description: "Usando dados locais (Firestore não disponível).",
+        });
       }
-      
-      toast({
-        title: "Conta criada com sucesso!",
-        description: "Bem-vindo ao DorLog.",
-      });
     } catch (error: any) {
       console.error('Register error:', error);
       let errorMessage = "Erro ao criar conta. Tente novamente.";
@@ -191,9 +197,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Small delay to ensure Firebase Auth is fully initialized
       await new Promise(resolve => setTimeout(resolve, 500));
       
+      console.log('Tentando fazer login com Google e salvar no Firestore...');
       const userDoc = await createUserDocument(result.user);
       if (userDoc) {
         setCurrentUser(userDoc);
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Dados carregados do Firestore.",
+        });
       } else {
         // Fallback user data
         const fallbackUser: User = {
@@ -203,6 +214,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           provider: 'google',
         };
         setCurrentUser(fallbackUser);
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Usando dados locais (Firestore não disponível).",
+        });
       }
       
       toast({
@@ -339,25 +354,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setCurrentUser(fallbackUser);
         setLoading(false);
 
-        // Try to enhance with Firestore data in background only if Firebase keys are configured
-        if (import.meta.env.VITE_FIREBASE_API_KEY && import.meta.env.VITE_FIREBASE_PROJECT_ID) {
-          setTimeout(async () => {
-            try {
-              // Wait longer for proper auth initialization
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              
-              const token = await firebaseUser.getIdToken(true);
-              if (token && token.length > 10) {
-                const userDoc = await createUserDocument(firebaseUser);
-                if (userDoc) {
-                  setCurrentUser(userDoc);
-                }
-              }
-            } catch (error) {
-              // Completely suppress errors
+        // Try to enhance with Firestore data in background
+        setTimeout(async () => {
+          try {
+            console.log('Tentando carregar dados do usuário do Firestore...');
+            const userDoc = await createUserDocument(firebaseUser);
+            if (userDoc) {
+              console.log('Dados do usuário carregados do Firestore');
+              setCurrentUser(userDoc);
+            } else {
+              console.log('Usando dados de fallback - Firestore não disponível');
             }
-          }, 1000);
-        }
+          } catch (error) {
+            console.log('Erro ao carregar do Firestore, usando dados de fallback');
+          }
+        }, 1000);
       } else {
         setCurrentUser(null);
         setLoading(false);
