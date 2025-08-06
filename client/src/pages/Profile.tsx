@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Profile() {
-  const { currentUser, updateUserProfile, updateUserPassword } = useAuth();
+  const { currentUser, updateUserProfile, updateUserPassword, testFirestoreConnection } = useAuth();
   const { toast } = useToast();
   
   const [profileForm, setProfileForm] = useState({
@@ -24,6 +24,7 @@ export default function Profile() {
 
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isTestingFirestore, setIsTestingFirestore] = useState(false);
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +105,28 @@ export default function Profile() {
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleFirestoreTest = async () => {
+    setIsTestingFirestore(true);
+    try {
+      const result = await testFirestoreConnection();
+      toast({
+        title: result ? "Firestore Funcional" : "Firestore Indisponível",
+        description: result 
+          ? "Conexão com Firestore bem-sucedida! A coleção 'usuarios' pode ser criada."
+          : "Não foi possível conectar ao Firestore. Verifique as configurações do Firebase.",
+        variant: result ? "default" : "destructive",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro no teste",
+        description: "Falha ao testar conexão com Firestore.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestingFirestore(false);
+    }
   };
 
   return (
@@ -220,6 +243,26 @@ export default function Profile() {
                 {isUpdatingPassword ? 'Alterando...' : 'Alterar Senha'}
               </Button>
             </form>
+          </div>
+
+          <Separator />
+
+          {/* Firestore Diagnostics */}
+          <div>
+            <h4 className="font-medium text-foreground mb-4">Diagnóstico do Sistema</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              Teste a conectividade com o Firestore para verificar se a coleção 'usuarios' pode ser criada.
+            </p>
+            
+            <Button
+              onClick={handleFirestoreTest}
+              disabled={isTestingFirestore}
+              variant="outline"
+              className="w-full rounded-xl font-medium transition-colors"
+              data-testid="button-test-firestore"
+            >
+              {isTestingFirestore ? 'Testando conexão...' : 'Testar Firestore'}
+            </Button>
           </div>
         </CardContent>
       </Card>

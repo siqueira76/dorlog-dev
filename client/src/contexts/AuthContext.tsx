@@ -11,7 +11,7 @@ import {
   EmailAuthProvider,
   User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
 import { User } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +26,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUserProfile: (name: string) => Promise<void>;
   updateUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  testFirestoreConnection: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -42,14 +43,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Create or update user document in Firestore with controlled error handling
   const createUserDocument = async (firebaseUser: FirebaseUser, additionalData?: any, requireSave: boolean = false) => {
-    if (!firebaseUser?.uid) return null;
+    if (!firebaseUser?.uid) {
+      console.log('❌ createUserDocument: firebaseUser.uid não encontrado');
+      return null;
+    }
 
-    // Skip Firestore operations if config is incomplete to prevent errors
-    const hasValidConfig = import.meta.env.VITE_FIREBASE_PROJECT_ID && 
-                          import.meta.env.VITE_FIREBASE_API_KEY &&
-                          import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'demo-project';
+    // Check Firebase configuration
+    const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+    const hasValidConfig = projectId && apiKey && projectId !== 'demo-project';
+    
+    console.log('🔧 Configuração Firebase:', {
+      projectId: projectId ? '✓ Configurado' : '❌ Ausente',
+      apiKey: apiKey ? '✓ Configurado' : '❌ Ausente',
+      hasValidConfig
+    });
     
     if (!hasValidConfig) {
+      console.log('❌ Configuração Firebase incompleta - pulando Firestore');
       if (requireSave) {
         throw new Error('Configuração do Firebase incompleta');
       }
@@ -57,14 +68,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
-      // Wait for proper authentication
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
+      console.log('🔑 Obtendo token de autenticação...');
       const token = await firebaseUser.getIdToken(true);
-      if (!token) return null;
+      if (!token) {
+        console.log('❌ Token de autenticação não obtido');
+        return null;
+      }
+      console.log('✅ Token obtido com sucesso');
 
+      console.log('📁 Tentando acessar coleção "usuarios"...');
       const userRef = doc(db, 'usuarios', firebaseUser.uid);
       const userSnap = await getDoc(userRef);
+      console.log('📊 Resultado da consulta:', userSnap.exists() ? 'Documento existe' : 'Documento não existe');
 
       if (!userSnap.exists()) {
         const { displayName, email } = firebaseUser;
@@ -79,28 +94,85 @@ export function AuthProvider({ children }: AuthProviderProps) {
           updatedAt: new Date(),
         };
 
+        console.log('💾 Criando novo documento no Firestore:', {
+          uid: firebaseUser.uid,
+          email: userData.email,
+          name: userData.name,
+          provider: userData.provider
+        });
+
         await setDoc(userRef, userData);
+        console.log('✅ Documento criado, verificando...');
         
         // Verify creation
         const verifySnap = await getDoc(userRef);
         if (verifySnap.exists()) {
+          console.log('✅ Usuário salvo e verificado no Firestore!');
           return userData as User;
         } else {
+          console.log('❌ Verificação falhou - documento não foi criado');
           if (requireSave) throw new Error('Falha ao verificar usuário salvo');
           return null;
         }
       } else {
+        console.log('✅ Usuário existente encontrado no Firestore');
         return userSnap.data() as User;
       }
     } catch (error: any) {
-      // Only log errors when explicitly required to save
+      console.error('❌ Erro ao interagir com Firestore:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      
       if (requireSave) {
-        console.error('Erro crítico ao salvar no Firestore:', error);
         throw new Error(`Falha crítica no Firestore: ${error.message}`);
       }
       
-      // Silent failure for background operations
       return null;
+    }
+  };
+
+  // Test Firestore connection directly
+  const testFirestoreConnection = async (): Promise<boolean> => {
+    try {
+      console.log('🧪 Testando conexão direta com Firestore...');
+      
+      const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+      const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+      
+      if (!projectId || !apiKey || projectId === 'demo-project') {
+        console.log('❌ Configuração Firebase inválida para teste');
+        return false;
+      }
+      
+      // Test with a simple document creation
+      const testRef = doc(db, 'test', 'connection');
+      const testData = {
+        timestamp: new Date(),
+        test: true
+      };
+      
+      await setDoc(testRef, testData);
+      console.log('✅ Documento de teste criado');
+      
+      // Verify it was created
+      const testSnap = await getDoc(testRef);
+      if (testSnap.exists()) {
+        console.log('✅ Verificação bem-sucedida - Firestore funcional');
+        
+        // Clean up test document
+        await deleteDoc(testRef);
+        console.log('🗑️ Documento de teste removido');
+        
+        return true;
+      } else {
+        console.log('❌ Verificação falhou');
+        return false;
+      }
+    } catch (error: any) {
+      console.error('❌ Erro no teste de conexão Firestore:', error);
+      return false;
     }
   };
 
@@ -172,9 +244,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         displayName: name,
       });
 
-      console.log('🔄 Tentando salvar usuário no Firestore...');
-      // Try to save in Firestore but don't require it for registration success
-      const userDoc = await createUserDocument(result.user, { name }, false);
+      console.log('🔄 Iniciando processo de registro no Firestore...');
+      // For new registrations, try harder to save in Firestore
+      const userDoc = await createUserDocument(result.user, { name }, true);
       
       if (userDoc) {
         setCurrentUser(userDoc);
@@ -427,6 +499,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     updateUserProfile,
     updateUserPassword,
+    testFirestoreConnection,
   };
 
   return (
