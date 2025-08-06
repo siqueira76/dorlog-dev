@@ -24,10 +24,30 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.password) {
+    if (!formData.email.trim()) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha e-mail e senha.",
+        title: "E-mail obrigatório",
+        description: "Por favor, digite seu e-mail.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.password) {
+      toast({
+        title: "Senha obrigatória",
+        description: "Por favor, digite sua senha.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      toast({
+        title: "E-mail inválido",
+        description: "Por favor, digite um e-mail válido.",
         variant: "destructive",
       });
       return;

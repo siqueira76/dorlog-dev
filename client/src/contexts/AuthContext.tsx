@@ -112,16 +112,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Wait for auth token
       await result.user.getIdToken();
       
-      console.log('Tentando fazer login e salvar/buscar usuário no Firestore...');
+      // Try to get/create user document but don't block login if it fails
       const userDoc = await createUserDocument(result.user);
       if (userDoc) {
         setCurrentUser(userDoc);
         toast({
           title: "Login realizado com sucesso!",
-          description: "Dados carregados do Firestore.",
+          description: "Bem-vindo de volta ao DorLog.",
         });
       } else {
-        // Fallback user data
+        // Create fallback user data
         const fallbackUser: User = {
           id: result.user.uid,
           name: result.user.displayName || '',
@@ -131,19 +131,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setCurrentUser(fallbackUser);
         toast({
           title: "Login realizado com sucesso!",
-          description: "Usando dados locais (Firestore não disponível).",
+          description: "Bem-vindo de volta ao DorLog.",
         });
       }
     } catch (error: any) {
-      console.error('Login error:', error);
       let errorMessage = "Erro no login. Tente novamente.";
       
       if (error.code === 'auth/user-not-found') {
-        errorMessage = "Usuário não encontrado.";
+        errorMessage = "E-mail não cadastrado. Crie uma conta primeiro.";
       } else if (error.code === 'auth/wrong-password') {
-        errorMessage = "Senha incorreta.";
+        errorMessage = "Senha incorreta. Verifique e tente novamente.";
       } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "E-mail inválido.";
+        errorMessage = "Formato de e-mail inválido.";
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Muitas tentativas. Aguarde antes de tentar novamente.";
+      } else if (error.code === 'auth/user-disabled') {
+        errorMessage = "Esta conta foi desabilitada.";
       }
       
       toast({
@@ -169,47 +172,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
         displayName: name,
       });
 
-      console.log('🔄 Tentando salvar usuário no Firestore (obrigatório)...');
-      // Require Firestore save for registration
-      const userDoc = await createUserDocument(result.user, { name }, true);
+      console.log('🔄 Tentando salvar usuário no Firestore...');
+      // Try to save in Firestore but don't require it for registration success
+      const userDoc = await createUserDocument(result.user, { name }, false);
       
       if (userDoc) {
         setCurrentUser(userDoc);
         toast({
-          title: "✅ Conta criada com sucesso!",
+          title: "Conta criada com sucesso!",
           description: "Usuário registrado no sistema.",
         });
       } else {
-        throw new Error('Falha ao salvar no Firestore');
+        // Use fallback even for new registrations
+        const fallbackUser: User = {
+          id: result.user.uid,
+          name: name,
+          email: result.user.email || '',
+          provider: 'email',
+        };
+        setCurrentUser(fallbackUser);
+        toast({
+          title: "Conta criada com sucesso!",
+          description: "Registro concluído. Configure o Firestore para funcionalidade completa.",
+        });
       }
     } catch (error: any) {
       console.error('❌ Erro no registro:', error);
       
-      // If user was created in Firebase Auth but failed in Firestore, delete it
-      if (firebaseUser) {
-        try {
-          console.log('🔄 Removendo usuário do Firebase Auth devido a falha no Firestore...');
-          await firebaseUser.delete();
-          console.log('✅ Usuário removido do Firebase Auth');
-        } catch (deleteError) {
-          console.error('❌ Erro ao remover usuário do Firebase Auth:', deleteError);
-        }
-      }
-      
       let errorMessage = "Erro ao criar conta. Tente novamente.";
       
-      if (error.message?.includes('Firestore')) {
-        errorMessage = "Erro de configuração do banco de dados. Contacte o suporte.";
-      } else if (error.code === 'auth/email-already-in-use') {
-        errorMessage = "Este e-mail já está em uso.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "Este e-mail já está cadastrado. Faça login ou use outro e-mail.";
       } else if (error.code === 'auth/weak-password') {
         errorMessage = "A senha deve ter pelo menos 6 caracteres.";
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = "E-mail inválido.";
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = "Método de registro não permitido.";
       }
       
       toast({
-        title: "❌ Erro no cadastro",
+        title: "Erro no cadastro",
         description: errorMessage,
         variant: "destructive",
       });
@@ -229,19 +232,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Small delay to ensure Firebase Auth is fully initialized
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      console.log('🔄 Verificando/criando usuário no Firestore...');
-      // For Google login, try to save but don't require it for existing users
+      // Try to get/create user document but don't block login if it fails
       const userDoc = await createUserDocument(result.user, undefined, false);
       
       if (userDoc) {
         setCurrentUser(userDoc);
         toast({
-          title: "✅ Login realizado com sucesso!",
-          description: "Dados carregados do Firestore.",
+          title: "Login realizado com sucesso!",
+          description: "Bem-vindo ao DorLog.",
         });
       } else {
-        // For Google login, we can proceed with fallback for existing users
-        // but new users should ideally be saved to Firestore
+        // Use fallback for Google login
         const fallbackUser: User = {
           id: result.user.uid,
           name: result.user.displayName || '',
@@ -250,18 +251,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         };
         setCurrentUser(fallbackUser);
         toast({
-          title: "⚠️ Login realizado",
-          description: "Conectado com dados limitados.",
+          title: "Login realizado com sucesso!",
+          description: "Bem-vindo ao DorLog.",
         });
       }
     } catch (error: any) {
-      console.error('❌ Erro no login com Google:', error);
       let errorMessage = "Erro no login com Google. Tente novamente.";
       
       if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = "Login cancelado pelo usuário.";
-      } else if (error.code === 'permission-denied') {
-        errorMessage = "Erro de permissão. Verifique as configurações do Firebase.";
+        errorMessage = "Login cancelado. Tente novamente.";
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = "Popup bloqueado pelo navegador. Permita popups para este site.";
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        errorMessage = "Esta conta já existe com outro método de login.";
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = "Login com Google não está configurado.";
       }
       
       toast({

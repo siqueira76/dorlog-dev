@@ -27,19 +27,39 @@ export default function Register() {
     e.preventDefault();
     
     // Validation
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+    if (!formData.name.trim()) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos.",
+        title: "Nome obrigatório",
+        description: "Por favor, digite seu nome completo.",
         variant: "destructive",
       });
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    if (!formData.email.trim()) {
       toast({
-        title: "Senhas não conferem",
-        description: "A confirmação de senha deve ser igual à senha.",
+        title: "E-mail obrigatório",
+        description: "Por favor, digite um e-mail válido.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      toast({
+        title: "E-mail inválido",
+        description: "Por favor, digite um e-mail no formato válido.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.password) {
+      toast({
+        title: "Senha obrigatória",
+        description: "Por favor, digite uma senha.",
         variant: "destructive",
       });
       return;
@@ -54,10 +74,19 @@ export default function Register() {
       return;
     }
 
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Senhas não conferem",
+        description: "Digite a mesma senha nos dois campos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!formData.acceptTerms) {
       toast({
-        title: "Aceite os termos",
-        description: "Você deve aceitar os termos de uso e política de privacidade.",
+        title: "Termos de uso",
+        description: "Aceite os termos de uso para continuar.",
         variant: "destructive",
       });
       return;
