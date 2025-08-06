@@ -44,7 +44,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const createUserDocument = async (firebaseUser: FirebaseUser, additionalData?: any) => {
     if (!firebaseUser) return;
 
-    const userRef = doc(db, 'users', firebaseUser.uid);
+    const userRef = doc(db, 'usuarios', firebaseUser.uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
@@ -203,7 +203,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       // Update Firestore document
-      const userRef = doc(db, 'users', firebaseUser.uid);
+      const userRef = doc(db, 'usuarios', firebaseUser.uid);
       await updateDoc(userRef, {
         name,
         updatedAt: new Date(),
