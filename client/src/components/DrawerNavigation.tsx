@@ -94,13 +94,24 @@ export default function DrawerNavigation({ isOpen, onClose, onNavigate }: Drawer
               {/* Subscription Status Badge */}
               {currentUser?.isSubscriptionActive !== undefined && (
                 <div className="pt-3">
-                  <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
-                    currentUser.isSubscriptionActive 
-                      ? 'bg-green-100/90 text-green-800 border border-green-200/50' 
-                      : 'bg-white/20 text-white/90 border border-white/30'
-                  }`}>
-                    {currentUser.isSubscriptionActive ? '✓ Assinante Ativo' : 'Não Assinante'}
-                  </div>
+                  {currentUser.isSubscriptionActive ? (
+                    <div className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-green-100/90 text-green-800 border border-green-200/50">
+                      ✓ Premium Ativo
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-orange-100/90 text-orange-800 border border-orange-200/50">
+                        Plano Gratuito
+                      </div>
+                      <Button
+                        onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_example', '_blank')}
+                        size="sm"
+                        className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white text-xs font-medium rounded-full px-4 py-2 transition-all duration-200 transform hover:scale-105 shadow-md"
+                      >
+                        Fazer Upgrade ↗
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

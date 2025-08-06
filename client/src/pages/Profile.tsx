@@ -202,19 +202,30 @@ export default function Profile() {
                 </>
               ) : (
                 <>
-                  <Badge variant="secondary" className="bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 text-sm font-medium">
-                    Não Assinante
+                  <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-200 px-4 py-2 text-sm font-medium">
+                    Plano Gratuito
                   </Badge>
-                  <p className="text-sm text-muted-foreground text-center mb-2">
-                    Assine agora para ter acesso completo a todos os recursos
-                  </p>
-                  <Button
-                    onClick={() => window.open('https://google.com.br', '_blank')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors flex items-center gap-2"
-                  >
-                    <ExternalLink size={16} />
-                    Assinar Agora
-                  </Button>
+                  <div className="text-center space-y-3 max-w-sm">
+                    <h5 className="text-sm font-semibold text-foreground">
+                      Desbloqueie todo o potencial do DorLog
+                    </h5>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Tenha acesso a relatórios avançados, sincronização em nuvem, 
+                      lembretes inteligentes e muito mais.
+                    </p>
+                    <div className="pt-2">
+                      <Button
+                        onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_example', '_blank')}
+                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center gap-2 px-6 py-3"
+                      >
+                        <ExternalLink size={16} />
+                        Assinar Premium
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        A partir de R$ 9,99/mês
+                      </p>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
