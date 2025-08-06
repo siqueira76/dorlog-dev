@@ -5,6 +5,7 @@ export interface User {
   provider: 'email' | 'google';
   createdAt?: Date;
   updatedAt?: Date;
+  isSubscriptionActive?: boolean;
 }
 
 export interface UserProfile {
@@ -15,4 +16,10 @@ export interface UserProfile {
 export interface PasswordUpdate {
   currentPassword: string;
   newPassword: string;
+}
+
+export interface Subscription {
+  email: string;
+  data: Date;
+  active?: boolean;
 }

@@ -11,9 +11,9 @@ import {
   EmailAuthProvider,
   User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
-import { User } from '@/types/user';
+import { User, Subscription } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -27,6 +27,7 @@ interface AuthContextType {
   updateUserProfile: (name: string) => Promise<void>;
   updateUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
   testFirestoreConnection: () => Promise<boolean>;
+  checkSubscriptionStatus: (email: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Create or update user document in Firestore with controlled error handling
+  // Create or update user document in Firestore with controlled error handling and subscription check
   const createUserDocument = async (firebaseUser: FirebaseUser, additionalData?: any, requireSave: boolean = false) => {
     if (!firebaseUser?.uid) {
       console.log('❌ createUserDocument: firebaseUser.uid não encontrado');
@@ -81,24 +82,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const userSnap = await getDoc(userRef);
       console.log('📊 Resultado da consulta:', userSnap.exists() ? 'Documento existe' : 'Documento não existe');
 
+      let userData: User;
+
       if (!userSnap.exists()) {
         const { displayName, email } = firebaseUser;
         const provider = firebaseUser.providerData[0]?.providerId === 'google.com' ? 'google' : 'email';
         
-        const userData = {
+        // Check subscription status for the user
+        const isSubscriptionActive = email ? await checkSubscriptionStatus(email) : false;
+        
+        userData = {
           id: firebaseUser.uid,
           name: displayName || additionalData?.name || '',
           email: email || '',
           provider,
           createdAt: new Date(),
           updatedAt: new Date(),
+          isSubscriptionActive,
         };
 
         console.log('💾 Criando novo documento no Firestore:', {
           uid: firebaseUser.uid,
           email: userData.email,
           name: userData.name,
-          provider: userData.provider
+          provider: userData.provider,
+          isSubscriptionActive
         });
 
         await setDoc(userRef, userData);
@@ -108,7 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const verifySnap = await getDoc(userRef);
         if (verifySnap.exists()) {
           console.log('✅ Usuário salvo e verificado no Firestore!');
-          return userData as User;
+          return userData;
         } else {
           console.log('❌ Verificação falhou - documento não foi criado');
           if (requireSave) throw new Error('Falha ao verificar usuário salvo');
@@ -116,7 +124,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } else {
         console.log('✅ Usuário existente encontrado no Firestore');
-        return userSnap.data() as User;
+        const existingUserData = userSnap.data() as User;
+        
+        // Check subscription status for existing user
+        const isSubscriptionActive = existingUserData.email ? 
+          await checkSubscriptionStatus(existingUserData.email) : false;
+        
+        // Update the user data with current subscription status
+        userData = {
+          ...existingUserData,
+          isSubscriptionActive,
+        };
+        
+        // Update the document with the latest subscription status
+        await updateDoc(userRef, { 
+          isSubscriptionActive,
+          updatedAt: new Date()
+        });
+        
+        console.log('🔄 Status de assinatura atualizado:', isSubscriptionActive);
+        
+        return userData;
       }
     } catch (error: any) {
       console.error('❌ Erro ao interagir com Firestore:', {
@@ -137,6 +165,67 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       
       return null;
+    }
+  };
+
+  // Check subscription status in Firestore
+  const checkSubscriptionStatus = async (email: string): Promise<boolean> => {
+    try {
+      console.log('🔍 Verificando status de assinatura para:', email);
+      
+      const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+      const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+      const hasValidConfig = projectId && apiKey && projectId !== 'demo-project';
+      
+      if (!hasValidConfig) {
+        console.log('❌ Configuração Firebase incompleta - não é possível verificar assinaturas');
+        return false;
+      }
+
+      const subscriptionRef = doc(db, 'assinaturas', email);
+      const subscriptionSnap = await getDoc(subscriptionRef);
+      
+      if (!subscriptionSnap.exists()) {
+        console.log('📋 Nenhuma assinatura encontrada para:', email);
+        return false;
+      }
+
+      const subscriptionData = subscriptionSnap.data() as Subscription;
+      const subscriptionDate = subscriptionData.data;
+      const currentDate = new Date();
+
+      let subscriptionDateObj: Date;
+      
+      // Handle Firestore Timestamp objects and regular Date objects
+      if (subscriptionDate && typeof subscriptionDate === 'object' && 'toDate' in subscriptionDate) {
+        // It's a Firestore Timestamp
+        subscriptionDateObj = (subscriptionDate as any).toDate();
+      } else if (subscriptionDate instanceof Date) {
+        // It's already a Date
+        subscriptionDateObj = subscriptionDate;
+      } else {
+        // Try to parse as string or other format
+        subscriptionDateObj = new Date(subscriptionDate as any);
+      }
+
+      // Check if subscription date is in the past (which means it's active)
+      const isActive = subscriptionDateObj < currentDate;
+      
+      console.log('📊 Status da assinatura:', {
+        email,
+        subscriptionDate: subscriptionDateObj.toISOString(),
+        currentDate: currentDate.toISOString(),
+        isActive
+      });
+
+      return isActive;
+    } catch (error: any) {
+      console.error('❌ Erro ao verificar assinatura:', {
+        email,
+        message: error.message,
+        code: error.code
+      });
+      return false;
     }
   };
 
