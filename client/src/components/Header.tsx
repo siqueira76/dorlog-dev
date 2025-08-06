@@ -1,5 +1,6 @@
-import { Menu, Activity } from 'lucide-react';
+import { Menu, Activity, Crown, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 interface HeaderProps {
   title: string;
@@ -7,6 +8,8 @@ interface HeaderProps {
 }
 
 export default function Header({ title, onMenuClick }: HeaderProps) {
+  const { currentUser } = useAuth();
+
   return (
     <header className="bg-card shadow-sm border-b border-border sticky top-0 z-30">
       <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
@@ -31,7 +34,31 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
           </div>
         </div>
         
-        <div className="w-10"></div> {/* Spacer for centering */}
+        {/* Status da Assinatura */}
+        <div className="flex items-center">
+          {currentUser?.isSubscriptionActive !== undefined && (
+            currentUser.isSubscriptionActive ? (
+              // Usuário Premium
+              <div className="flex items-center bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-lg px-2 py-1">
+                <Crown className="h-3 w-3 text-emerald-600 mr-1" />
+                <span className="text-xs font-bold text-emerald-700">Premium</span>
+              </div>
+            ) : (
+              // Usuário Gratuito - CTA para upgrade
+              <Button
+                onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_premium_dorlog', '_blank')}
+                size="sm"
+                className="h-7 px-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-xs font-bold rounded-lg transition-all duration-300 hover:scale-105 shadow-sm"
+              >
+                <div className="flex items-center gap-1">
+                  <Crown className="h-3 w-3" />
+                  <span className="hidden sm:inline">Pro</span>
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </div>
+              </Button>
+            )
+          )}
+        </div>
       </div>
     </header>
   );
