@@ -1,0 +1,89 @@
+### **Descrição da Funcionalidade: Infraestrutura Inicial e Autenticação com Firebase**
+
+Esta funcionalidade é responsável por configurar a base da aplicação DorLog como uma Progressive Web App (PWA) responsiva, com foco em dispositivos móveis e desktops, utilizando **React** e **TailwindCSS** (ou outro framework escolhido). Após isso, será feita a integração completa com o **Firebase**, incluindo autenticação (`Auth`), banco de dados (`Firestore`), armazenamento de arquivos (`Storage`) e notificações (`FCM`). Além disso, permite logout, e edição/consulta dos dados do usuário logado.
+
+### **Requisitos Funcionais**
+
+- Configurar Firebase (Auth, Firestore, Storage)
+- Implementar cadastro com email e senha
+- Implementar login com email e senha
+- Implementar login com conta Google `signInWithPopup`
+- Implementar logout
+- Consultar dados do usuário autenticado
+- Editar nome e senha do usuário logado
+- Salvar/atualizar dados do usuário no Firestore:
+    - `id(mesmo id fo firebase auth uid)`
+    - `nome`
+    - `email`
+    - `provider`
+### **Requisitos Funcionais Interface Base**
+
+#### 🌞 **Modo Visual (Cor e Tema)**
+
+- A aplicação utilizará **apenas o modo claro (light mode)**.
+- Os componentes devem usar **cores suaves, alto contraste e boa legibilidade**, com base em uma paleta com fundo claro (ex: `#F5F7FA`) e textos escuros.
+- **Não implementar tema escuro**, nem lógica de alternância entre temas.
+
+#### 📱💻 **Layout Unificado Mobile + Desktop**
+
+- A interface será **unificada para dispositivos móveis e desktops**.
+- Mesmo em resoluções de desktop, a experiência será **semelhante à de um aplicativo mobile**, centralizando o conteúdo e otimizando para toque e simplicidade.
+- Elementos terão **tamanhos grandes, acessíveis e espaços generosos**.
+- O layout deve se adaptar fluidamente às larguras de tela, mantendo a mesma hierarquia visual.
+
+#### 🧭 **Navegação Principal - Bottom Tabs**
+
+A navegação principal da aplicação será feita por **bottom navigation tabs fixas**, com **quatro abas** visíveis **em todas as telas logadas**:
+
+1. **Home** (ícone de casa)
+2. **Médicos** (ícone de estetoscópio ou usuário médico)
+3. **Medicamentos** (ícone de pílula ou frasco)
+4. **Relatórios** (ícone de gráfico ou relatório)
+
+- Essa navegação deve ser **posicionada na parte inferior da tela**, tanto em mobile quanto em desktop.
+- Deve ser responsiva, com ícones bem espaçados e rótulos de texto visíveis.
+#### 🧱 **Header Padrão Reutilizável**
+
+Em todas as telas da aplicação logada, haverá um **header fixo no topo da tela**, com as seguintes características:
+
+- **Ícone de menu (três linhas)** à esquerda, que abre um **drawer lateral** com menus e configurações do usuário.
+- O título da tela pode ser exibido no centro, com tipografia clara e hierarquia visual bem definida.
+- O botão de menu lateral abrirá uma **navegação do tipo drawer lateral**, com seções como:
+    
+    - Perfil / Conta
+    - Logout
+    - Acesso aos relatórios
+    - [Outros menus futuros]
+#### ♻️ **Template Reutilizável de Layout**
+
+- O **layout padrão de tela logada** deve ser construído com base nesse template fixo:
+    
+    - `Header` no topo com botão de menu
+    - `Conteúdo principal` no centro da tela, com padding interno generoso
+    - `Bottom navigation` fixo ao final da tela
+- Esse **template será reutilizado em todas as telas logadas** da aplicação, mantendo **consistência e previsibilidade de navegação**.
+
+#### ✅ **Outras Diretrizes Visuais Importantes**
+
+- Tipografia limpa, moderna e acessível (ex: Inter, Roboto ou similar).
+- Componentes com **cantos arredondados (border-radius bem visível)**.
+- Uso de `Card`, `Input`, `Button`, `Alert`, `Drawer`, `Modal`, e `Tab` respeitando a estética suave e amigável.
+- Ícones devem vir de bibliotecas como **Lucide** ou **Material Icons**, com estilos coesos.
+
+### **Restrições de Segurança e Boas Práticas**
+
+- Nunca salvar senhas diretamente em Firestore
+- Sempre usar `env` para credenciais do Firebase (como `apiKey`, `projectId`)
+- Não criar coleções ou documentos que não foram explicitamente descritos
+- Proteger as rotas que dependem de autenticação com verificação de token
+- Utilizar regras do Firestore para garantir que usuários só acessem seus próprios dados
+
+### **Orientações de Desenvolvimento Padrão**
+
+- Manter separação clara entre lógica de autenticação e UI
+- Utilizar contexto (`AuthContext`) para centralizar estado do usuário
+- Implementar carregamento (`loading`) e tratamento de erros na interface
+- Validar os campos de e-mail e senha no front-end antes de enviar
+
+
+Eu quero criar uma parte aqui do prompt para falar sobre como a aplicação será desenvolvida em termos de UI, UX e também do modo da aplicação, o modo de cores. A aplicação terá apenas o modo de cor claro, a aplicação será no modo light, e além disso a aplicação terá uma interface gráfica unificada entre a aplicação mobile e a aplicação desktop. Mesmo em uma aplicação desktop, a experiência pode ser uma experiência similar à de uma aplicação mobile, que vai ter embaixo uma navegação em abas, vai ser um bottom navigation usando quatro abas, a primeira aba é da tela home, a segunda aba é onde a gente vai colocar os medicos, e na terceira aba é onde nós teremos os medicamentos e a quarta temos os reports. Independente de ser mobile ou de ser desktop, essa navegação vai aparecer embaixo, e na parte superior, onde nós temos o header, e esse template deve ser reutilizado para todas as interfaces da nossa aplicação, lá em cima no header vai ter um botão parecido com aquelas três listas, para abrir um drawer, uma navegação na lateral para ter os menus de usuário, logout, seleção de e-books e coisas relacionadas à nossa aplicação, que será fornecida no futuro. O importante nesse momento é criar um prompt com todas as características de interface que nós vamos precisar implementar nessa primeira versão, o primeiro prompt que vai dar início à nossa aplicação.
