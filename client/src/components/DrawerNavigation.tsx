@@ -10,7 +10,7 @@ interface DrawerNavigationProps {
 }
 
 export default function DrawerNavigation({ isOpen, onClose, onNavigate }: DrawerNavigationProps) {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, firebaseUser, logout } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -64,8 +64,22 @@ export default function DrawerNavigation({ isOpen, onClose, onNavigate }: Drawer
           {/* User Profile Section */}
           <div className="flex flex-col items-center text-center">
             {/* Avatar */}
-            <div className="bg-white/20 backdrop-blur-sm w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-lg">
-              <User className="h-8 w-8 text-white" />
+            <div className="relative w-16 h-16 mb-4">
+              {firebaseUser?.photoURL ? (
+                <img
+                  src={firebaseUser.photoURL}
+                  alt="Foto do perfil"
+                  className="w-16 h-16 rounded-full object-cover shadow-lg border-2 border-white/30"
+                  onError={(e) => {
+                    // Fallback to icon if image fails to load
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+              ) : null}
+              <div className={`bg-white/20 backdrop-blur-sm w-16 h-16 rounded-full flex items-center justify-center shadow-lg ${firebaseUser?.photoURL ? 'hidden' : ''}`}>
+                <User className="h-8 w-8 text-white" />
+              </div>
             </div>
             
             {/* User Info */}
