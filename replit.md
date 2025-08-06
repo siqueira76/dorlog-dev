@@ -2,6 +2,13 @@
 
 DorLog is a Progressive Web App (PWA) designed for health management, specifically focused on pain tracking, medication management, and healthcare provider coordination. The application is built as a mobile-first experience that works seamlessly across devices, featuring a clean, light-mode interface with Firebase authentication and Firestore data storage.
 
+## Current Status
+- Firebase authentication fully implemented (email/password + Google OAuth)
+- User persistence configured for "usuarios" collection with proper security rules
+- Fallback authentication system in place for Firestore permission issues
+- Mobile-first UI with bottom navigation and drawer menu completed
+- All core pages implemented (Home, Profile, Doctors, Medications, Reports)
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.

@@ -42,34 +42,52 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Create or update user document in Firestore
   const createUserDocument = async (firebaseUser: FirebaseUser, additionalData?: any) => {
-    if (!firebaseUser) return;
+    if (!firebaseUser || !firebaseUser.uid) {
+      console.error('No valid Firebase user provided');
+      return null;
+    }
+
+    // Wait for token to be available to ensure proper authentication
+    try {
+      await firebaseUser.getIdToken();
+    } catch (error) {
+      console.error('Failed to get ID token:', error);
+      return null;
+    }
 
     const userRef = doc(db, 'usuarios', firebaseUser.uid);
-    const userSnap = await getDoc(userRef);
+    
+    try {
+      const userSnap = await getDoc(userRef);
 
-    if (!userSnap.exists()) {
-      const { displayName, email } = firebaseUser;
-      const provider = firebaseUser.providerData[0]?.providerId === 'google.com' ? 'google' : 'email';
-      
-      try {
-        await setDoc(userRef, {
+      if (!userSnap.exists()) {
+        const { displayName, email } = firebaseUser;
+        const provider = firebaseUser.providerData[0]?.providerId === 'google.com' ? 'google' : 'email';
+        
+        const userData = {
           id: firebaseUser.uid,
           name: displayName || additionalData?.name || '',
           email: email || '',
           provider,
           createdAt: new Date(),
           updatedAt: new Date(),
-        });
-      } catch (error) {
-        console.error('Error creating user document:', error);
-        throw error;
-      }
-    }
+        };
 
-    // Get the user document
-    const updatedUserSnap = await getDoc(userRef);
-    if (updatedUserSnap.exists()) {
-      return updatedUserSnap.data() as User;
+        await setDoc(userRef, userData);
+        return userData as User;
+      } else {
+        // Document exists, return the data
+        return userSnap.data() as User;
+      }
+    } catch (error: any) {
+      console.error('Error accessing user document:', error);
+      
+      // If permission denied, the user might not be properly authenticated
+      if (error.code === 'permission-denied') {
+        console.error('Permission denied - user may not be properly authenticated');
+      }
+      
+      return null;
     }
   };
 
@@ -146,6 +164,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const loginWithGoogle = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
+      
+      // Wait for authentication token to be available
+      await result.user.getIdToken();
+      
+      // Small delay to ensure Firebase Auth is fully initialized
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const userDoc = await createUserDocument(result.user);
       setCurrentUser(userDoc || null);
       
@@ -159,6 +184,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       if (error.code === 'auth/popup-closed-by-user') {
         errorMessage = "Login cancelado pelo usuário.";
+      } else if (error.code === 'permission-denied') {
+        errorMessage = "Erro de permissão. Verifique as configurações do Firebase.";
       }
       
       toast({
@@ -270,18 +297,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setFirebaseUser(firebaseUser);
       
       if (firebaseUser) {
-        try {
-          const userDoc = await createUserDocument(firebaseUser);
-          setCurrentUser(userDoc || null);
-        } catch (error) {
-          console.error('Error getting user document:', error);
-          setCurrentUser(null);
-        }
+        // Wait a bit for authentication to fully complete
+        setTimeout(async () => {
+          try {
+            const userDoc = await createUserDocument(firebaseUser);
+            if (userDoc) {
+              setCurrentUser(userDoc);
+            } else {
+              // Fallback: create user object from Firebase Auth data if Firestore fails
+              const fallbackUser: User = {
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName || '',
+                email: firebaseUser.email || '',
+                provider: firebaseUser.providerData[0]?.providerId === 'google.com' ? 'google' : 'email',
+              };
+              setCurrentUser(fallbackUser);
+              
+              toast({
+                title: "Aviso",
+                description: "Conectado com dados limitados. Algumas funcionalidades podem não estar disponíveis.",
+                variant: "default",
+              });
+            }
+          } catch (error) {
+            console.error('Error getting user document:', error);
+            
+            // Fallback: create user object from Firebase Auth data
+            const fallbackUser: User = {
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || '',
+              email: firebaseUser.email || '',
+              provider: firebaseUser.providerData[0]?.providerId === 'google.com' ? 'google' : 'email',
+            };
+            setCurrentUser(fallbackUser);
+            
+            toast({
+              title: "Aviso de Configuração",
+              description: "Conectado com dados limitados. Verifique as configurações do Firestore.",
+              variant: "default",
+            });
+          } finally {
+            setLoading(false);
+          }
+        }, 100);
       } else {
         setCurrentUser(null);
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return unsubscribe;
