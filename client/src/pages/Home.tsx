@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Pill, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, Pill, AlertCircle, CheckCircle, Sun, Moon } from 'lucide-react';
 
 export default function Home() {
   const { currentUser } = useAuth();
@@ -41,27 +41,53 @@ export default function Home() {
       {/* Quick Actions */}
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-foreground mb-4">Ações Rápidas</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
+          {/* Registrar Crise - Vermelho */}
           <Button
             variant="outline"
-            className="bg-card p-4 rounded-xl shadow-sm border border-border hover:shadow-md transition-shadow h-auto flex-col space-y-3"
+            className="bg-card p-4 rounded-xl shadow-sm border border-red-200 hover:shadow-md hover:border-red-300 transition-all h-auto flex-col space-y-3"
             data-testid="button-register-pain"
           >
-            <div className="bg-secondary w-12 h-12 rounded-xl flex items-center justify-center">
-              <Plus className="h-6 w-6 text-secondary-foreground" />
+            <div className="bg-red-500 w-12 h-12 rounded-xl flex items-center justify-center">
+              <Plus className="h-6 w-6 text-white" />
             </div>
-            <p className="text-sm font-medium text-foreground">Registrar Crise</p>
+            <p className="text-sm font-medium text-red-700">Registrar Crise</p>
           </Button>
           
+          {/* Tomar Remédio - Azul */}
           <Button
             variant="outline"
-            className="bg-card p-4 rounded-xl shadow-sm border border-border hover:shadow-md transition-shadow h-auto flex-col space-y-3"
+            className="bg-card p-4 rounded-xl shadow-sm border border-blue-200 hover:shadow-md hover:border-blue-300 transition-all h-auto flex-col space-y-3"
             data-testid="button-take-medication"
           >
             <div className="bg-blue-500 w-12 h-12 rounded-xl flex items-center justify-center">
               <Pill className="h-6 w-6 text-white" />
             </div>
-            <p className="text-sm font-medium text-foreground">Tomar Remédio</p>
+            <p className="text-sm font-medium text-blue-700">Tomar Remédio</p>
+          </Button>
+          
+          {/* Diário Manhã - Amarelo/Laranja */}
+          <Button
+            variant="outline"
+            className="bg-card p-4 rounded-xl shadow-sm border border-orange-200 hover:shadow-md hover:border-orange-300 transition-all h-auto flex-col space-y-3"
+            data-testid="button-diary-morning"
+          >
+            <div className="bg-orange-400 w-12 h-12 rounded-xl flex items-center justify-center">
+              <Sun className="h-6 w-6 text-white" />
+            </div>
+            <p className="text-sm font-medium text-orange-700">Diário Manhã</p>
+          </Button>
+          
+          {/* Diário Noite - Roxo/Azul escuro */}
+          <Button
+            variant="outline"
+            className="bg-card p-4 rounded-xl shadow-sm border border-indigo-200 hover:shadow-md hover:border-indigo-300 transition-all h-auto flex-col space-y-3"
+            data-testid="button-diary-night"
+          >
+            <div className="bg-indigo-600 w-12 h-12 rounded-xl flex items-center justify-center">
+              <Moon className="h-6 w-6 text-white" />
+            </div>
+            <p className="text-sm font-medium text-indigo-700">Diário Noite</p>
           </Button>
         </div>
       </div>
