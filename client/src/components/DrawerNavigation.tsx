@@ -1,4 +1,4 @@
-import { User, BarChart3, Settings, LogOut, X } from 'lucide-react';
+import { User, BarChart3, Settings, LogOut, X, Crown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -102,23 +102,24 @@ export default function DrawerNavigation({ isOpen, onClose, onNavigate }: Drawer
                       Premium
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center space-y-2 w-full max-w-[180px]">
-                      <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100/90 text-orange-800 border border-orange-200/50">
-                        📦 Gratuito
-                      </div>
-                      <Button
-                        onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_premium_dorlog', '_blank')}
-                        size="sm" 
-                        className="w-full bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 hover:from-purple-600 hover:via-blue-600 hover:to-indigo-600 text-white text-xs font-bold rounded-lg px-2.5 py-2 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
-                      >
-                        <div className="flex items-center justify-center gap-1">
-                          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                          </svg>
-                          Upgrade
+                    <Button
+                      onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_premium_dorlog', '_blank')}
+                      variant="outline"
+                      size="sm"
+                      className="group relative mt-2 bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 hover:from-orange-100 hover:via-amber-100 hover:to-yellow-100 border border-orange-200/60 hover:border-orange-300 text-orange-800 hover:text-orange-900 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 active:scale-95"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+                          <span className="text-xs font-semibold tracking-tight">Gratuito</span>
                         </div>
-                      </Button>
-                    </div>
+                        <div className="w-px h-4 bg-orange-300"></div>
+                        <div className="flex items-center gap-1">
+                          <Crown className="h-3.5 w-3.5 text-amber-600 group-hover:text-amber-700 transition-colors" />
+                          <span className="text-xs font-bold tracking-wide">Upgrade</span>
+                        </div>
+                      </div>
+                    </Button>
                   )}
                 </div>
               )}
