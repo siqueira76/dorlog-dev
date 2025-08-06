@@ -11,6 +11,9 @@ DorLog is a Progressive Web App (PWA) designed for health management, specifical
 - All core pages implemented (Home, Profile, Doctors, Medications, Reports)
 - Console errors eliminated and clean development environment achieved
 - **FIRESTORE INTEGRATION COMPLETE** - Users being saved and retrieved successfully
+- **SUBSCRIPTION SYSTEM IMPLEMENTED** - Active subscription verification via "assinaturas" collection
+- Profile page displays subscription status with appropriate badges and call-to-action buttons
+- Home page updated with "Registrar Crise" button (August 6, 2025)
 
 # User Preferences
 
@@ -34,6 +37,11 @@ Preferred communication style: Simple, everyday language.
   - Password change functionality
 - **Firestore** for user data persistence with real-time synchronization
 - **AuthContext** providing centralized authentication state management
+- **Subscription System** with automatic verification:
+  - Checks "assinaturas" collection using user's email as document ID
+  - Validates subscription date (past date = active subscription)
+  - Updates user profile with subscription status flag
+  - Real-time subscription status updates on login
 
 ## UI/UX Design Patterns
 - **Light mode only** with high contrast, accessible color scheme

@@ -50,7 +50,7 @@ export default function Home() {
             <div className="bg-secondary w-12 h-12 rounded-xl flex items-center justify-center">
               <Plus className="h-6 w-6 text-secondary-foreground" />
             </div>
-            <p className="text-sm font-medium text-foreground">Registrar Dor</p>
+            <p className="text-sm font-medium text-foreground">Registrar Crise</p>
           </Button>
           
           <Button
