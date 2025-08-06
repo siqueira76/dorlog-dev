@@ -47,9 +47,9 @@ export default function DrawerNavigation({ isOpen, onClose, onNavigate }: Drawer
         data-testid="drawer-navigation"
       >
         {/* Drawer Header */}
-        <div className="bg-gradient-to-br from-primary via-primary to-primary/90 px-6 py-8">
+        <div className="bg-gradient-to-br from-primary via-primary to-primary/90 px-5 py-5">
           {/* Close Button */}
-          <div className="flex justify-end mb-6">
+          <div className="flex justify-end mb-4">
             <Button
               variant="ghost"
               size="icon"
@@ -64,12 +64,12 @@ export default function DrawerNavigation({ isOpen, onClose, onNavigate }: Drawer
           {/* User Profile Section */}
           <div className="flex flex-col items-center text-center">
             {/* Avatar */}
-            <div className="relative w-16 h-16 mb-4">
+            <div className="relative w-12 h-12 mb-3">
               {firebaseUser?.photoURL ? (
                 <img
                   src={firebaseUser.photoURL}
                   alt="Foto do perfil"
-                  className="w-16 h-16 rounded-full object-cover shadow-lg border-2 border-white/30"
+                  className="w-12 h-12 rounded-full object-cover shadow-lg border-2 border-white/30"
                   onError={(e) => {
                     // Fallback to icon if image fails to load
                     e.currentTarget.style.display = 'none';
@@ -77,45 +77,45 @@ export default function DrawerNavigation({ isOpen, onClose, onNavigate }: Drawer
                   }}
                 />
               ) : null}
-              <div className={`bg-white/20 backdrop-blur-sm w-16 h-16 rounded-full flex items-center justify-center shadow-lg ${firebaseUser?.photoURL ? 'hidden' : ''}`}>
-                <User className="h-8 w-8 text-white" />
+              <div className={`bg-white/20 backdrop-blur-sm w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${firebaseUser?.photoURL ? 'hidden' : ''}`}>
+                <User className="h-6 w-6 text-white" />
               </div>
             </div>
             
             {/* User Info */}
             <div className="space-y-1">
-              <h3 className="text-white font-semibold text-lg leading-tight" data-testid="text-user-name">
+              <h3 className="text-white font-semibold text-base leading-tight" data-testid="text-user-name">
                 {currentUser?.name || 'Usuário'}
               </h3>
-              <p className="text-primary-foreground/70 text-sm font-medium" data-testid="text-user-email">
+              <p className="text-primary-foreground/70 text-xs font-medium" data-testid="text-user-email">
                 {currentUser?.email || 'email@exemplo.com'}
               </p>
               
               {/* Subscription Status Badge */}
               {currentUser?.isSubscriptionActive !== undefined && (
-                <div className="pt-4 flex flex-col items-center">
+                <div className="pt-2 flex flex-col items-center">
                   {currentUser.isSubscriptionActive ? (
-                    <div className="inline-flex items-center px-4 py-2 rounded-full text-xs font-bold bg-emerald-100/90 text-emerald-800 border-2 border-emerald-300/50 shadow-sm">
-                      <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100/90 text-emerald-800 border-2 border-emerald-300/50 shadow-sm">
+                      <svg className="w-2.5 h-2.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
                       </svg>
-                      Premium Ativo
+                      Premium
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center space-y-3 w-full max-w-[200px]">
-                      <div className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-orange-100/90 text-orange-800 border border-orange-200/50">
+                    <div className="flex flex-col items-center space-y-2 w-full max-w-[180px]">
+                      <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100/90 text-orange-800 border border-orange-200/50">
                         📦 Gratuito
                       </div>
                       <Button
                         onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_premium_dorlog', '_blank')}
                         size="sm" 
-                        className="w-full bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 hover:from-purple-600 hover:via-blue-600 hover:to-indigo-600 text-white text-xs font-bold rounded-xl px-3 py-2.5 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                        className="w-full bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 hover:from-purple-600 hover:via-blue-600 hover:to-indigo-600 text-white text-xs font-bold rounded-lg px-2.5 py-2 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
                       >
-                        <div className="flex items-center justify-center gap-1.5">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex items-center justify-center gap-1">
+                          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                           </svg>
-                          Fazer Upgrade
+                          Upgrade
                         </div>
                       </Button>
                     </div>
