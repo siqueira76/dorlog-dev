@@ -252,8 +252,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       console.log('🔄 Iniciando processo de registro no Firestore...');
-      // For new registrations, try harder to save in Firestore
-      const userDoc = await createUserDocument(result.user, { name }, true);
+      // For new registrations, try to save in Firestore but don't fail if blocked
+      const userDoc = await createUserDocument(result.user, { name }, false);
       
       if (userDoc) {
         setCurrentUser(userDoc);

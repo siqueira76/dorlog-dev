@@ -1,12 +1,16 @@
-# ✅ FIRESTORE CONFIGURAÇÃO - RESOLVIDO
+# 🚨 FIRESTORE CONFIGURAÇÃO OBRIGATÓRIA
 
-## 🎉 STATUS ATUAL
+## ❌ PROBLEMA IDENTIFICADO
+**ERRO ATUAL:** `Missing or insufficient permissions` - Firestore está bloqueando todas as operações.
+
+## 📊 STATUS ATUAL
 ✅ Firebase Authentication - FUNCIONANDO  
 ✅ Chaves de API - CONFIGURADAS  
-✅ **Conexão com Firestore - ESTABELECIDA**  
-✅ **Sistema de fallback implementado**  
+✅ Usuários conseguem fazer login/registro
+❌ **FIRESTORE BLOQUEADO** - Regras restritivas impedem salvamento
+❌ **Usuários não persistem no banco**
 
-## 🔧 CONFIGURAÇÃO NECESSÁRIA DO FIRESTORE
+## 🔧 CONFIGURAÇÃO OBRIGATÓRIA DO FIRESTORE
 
 Para funcionalidade completa, configure as regras do Firestore:
 
