@@ -39,13 +39,49 @@ service cloud.firestore {
 - Clique em **"Publish"** 
 - Aguarde a confirmação
 
+## 🚨 AÇÃO OBRIGATÓRIA - CONFIGURE AS REGRAS DO FIRESTORE
+
+**ERRO ATUAL:** `permission-denied` - As regras do Firestore estão bloqueando o acesso.
+
+**PASSOS OBRIGATÓRIOS:**
+
+1. Acesse: https://console.firebase.google.com/
+2. Selecione seu projeto DorLog
+3. Vá em **Firestore Database** > **Rules**
+4. **COLE EXATAMENTE** estas regras:
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // USUARIOS - Cada usuário pode ler/escrever seus próprios dados
+    match /usuarios/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // TESTES - Para verificação de conectividade
+    match /test/{document} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+5. **Clique em "Publish"** e aguarde confirmação
+
+## 🧪 TESTE DEPOIS DA CONFIGURAÇÃO
+
+1. Faça login com Google
+2. Console deve mostrar: `✅ Usuário salvo e verificado no Firestore!`
+3. Verifique no Firebase Console que a coleção "usuarios" foi criada
+
 ## 🛡️ SISTEMA DE SEGURANÇA IMPLEMENTADO
 
-O sistema agora possui:
-- **Fallback robusto**: Funciona mesmo sem Firestore configurado
-- **Autenticação segura**: Usuários são autenticados via Firebase Auth
-- **Persistência opcional**: Dados são salvos no Firestore quando possível
-- **Logs detalhados**: Sistema reporta status de conexão no console  
+O sistema possui:
+- **Autenticação segura**: Usuários autenticados via Firebase Auth
+- **Fallback robusto**: Funciona mesmo com problemas no Firestore  
+- **Logs detalhados**: Monitora todas as operações
+- **Persistência segura**: Dados salvos apenas para usuários autenticados  
 
 ## 🔍 Estrutura Esperada do Documento
 

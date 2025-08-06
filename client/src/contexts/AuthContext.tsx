@@ -121,9 +121,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error: any) {
       console.error('❌ Erro ao interagir com Firestore:', {
         message: error.message,
-        code: error.code,
-        stack: error.stack
+        code: error.code
       });
+      
+      if (error.code === 'permission-denied') {
+        console.error('🚨 ERRO DE PERMISSÃO FIRESTORE:');
+        console.error('- Configure as regras no Firebase Console');
+        console.error('- Vá para Firestore Database > Rules');
+        console.error('- Permita acesso à coleção "usuarios" para usuários autenticados');
+        console.error('- Verifique FIRESTORE_SETUP.md para instruções detalhadas');
+      }
       
       if (requireSave) {
         throw new Error(`Falha crítica no Firestore: ${error.message}`);

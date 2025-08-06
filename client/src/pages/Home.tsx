@@ -1,10 +1,43 @@
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Pill, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, Pill, AlertCircle, CheckCircle, TestTube } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
-  const { currentUser } = useAuth();
+  const { currentUser, testFirestoreConnection } = useAuth();
+  const { toast } = useToast();
+  const [isTesting, setIsTesting] = useState(false);
+
+  const handleTestFirestore = async () => {
+    setIsTesting(true);
+    try {
+      console.log('🧪 Usuário solicitou teste do Firestore...');
+      const result = await testFirestoreConnection();
+      
+      if (result) {
+        toast({
+          title: "✅ Firestore Funcionando!",
+          description: "Conexão com banco de dados estabelecida com sucesso.",
+        });
+      } else {
+        toast({
+          title: "❌ Erro no Firestore", 
+          description: "Configure as regras do Firestore. Veja FIRESTORE_SETUP.md",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "❌ Teste Falhou",
+        description: "Erro ao testar conexão com Firestore.",
+        variant: "destructive", 
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   const recentActivities = [
     {
@@ -64,6 +97,33 @@ export default function Home() {
             <p className="text-sm font-medium text-foreground">Tomar Remédio</p>
           </Button>
         </div>
+      </div>
+
+      {/* Firestore Test Section */}
+      <div className="mb-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-foreground">Teste de Banco de Dados</h4>
+                <p className="text-sm text-muted-foreground">Verificar conexão com Firestore</p>
+              </div>
+              <Button
+                onClick={handleTestFirestore}
+                disabled={isTesting}
+                size="sm"
+                variant="outline"
+              >
+                {isTesting ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                ) : (
+                  <TestTube className="h-4 w-4" />
+                )}
+                {isTesting ? 'Testando...' : 'Testar'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Recent Activity */}
