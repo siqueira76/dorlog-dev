@@ -15,23 +15,6 @@ import Medications from "@/pages/Medications";
 import Reports from "@/pages/Reports";
 import NotFound from "@/pages/not-found";
 
-function AuthenticatedRoutes() {
-  return (
-    <Layout>
-      <Switch>
-        <Route path="/home" component={Home} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/doctors" component={Doctors} />
-        <Route path="/medications" component={Medications} />
-        <Route path="/reports" component={Reports} />
-        <Route>
-          <Redirect to="/home" />
-        </Route>
-      </Switch>
-    </Layout>
-  );
-}
-
 function AppRoutes() {
   const { currentUser, loading } = useAuth();
 
@@ -53,30 +36,40 @@ function AppRoutes() {
         {currentUser ? <Redirect to="/home" /> : <Register />}
       </Route>
       
-      {/* Protected routes */}
+      {/* Protected routes - direct component rendering */}
       <Route path="/home">
         <ProtectedRoute>
-          <AuthenticatedRoutes />
+          <Layout>
+            <Home />
+          </Layout>
         </ProtectedRoute>
       </Route>
       <Route path="/profile">
         <ProtectedRoute>
-          <AuthenticatedRoutes />
+          <Layout>
+            <Profile />
+          </Layout>
         </ProtectedRoute>
       </Route>
       <Route path="/doctors">
         <ProtectedRoute>
-          <AuthenticatedRoutes />
+          <Layout>
+            <Doctors />
+          </Layout>
         </ProtectedRoute>
       </Route>
       <Route path="/medications">
         <ProtectedRoute>
-          <AuthenticatedRoutes />
+          <Layout>
+            <Medications />
+          </Layout>
         </ProtectedRoute>
       </Route>
       <Route path="/reports">
         <ProtectedRoute>
-          <AuthenticatedRoutes />
+          <Layout>
+            <Reports />
+          </Layout>
         </ProtectedRoute>
       </Route>
       

@@ -95,8 +95,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (email: string, password: string) => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Wait for auth token
+      await result.user.getIdToken();
+      
       const userDoc = await createUserDocument(result.user);
-      setCurrentUser(userDoc || null);
+      if (userDoc) {
+        setCurrentUser(userDoc);
+      } else {
+        // Fallback user data
+        const fallbackUser: User = {
+          id: result.user.uid,
+          name: result.user.displayName || '',
+          email: result.user.email || '',
+          provider: 'email',
+        };
+        setCurrentUser(fallbackUser);
+      }
+      
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta ao DorLog.",
@@ -132,8 +148,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
         displayName: name,
       });
 
+      // Wait for auth token
+      await result.user.getIdToken();
+
       const userDoc = await createUserDocument(result.user, { name });
-      setCurrentUser(userDoc || null);
+      if (userDoc) {
+        setCurrentUser(userDoc);
+      } else {
+        // Fallback user data
+        const fallbackUser: User = {
+          id: result.user.uid,
+          name: name,
+          email: result.user.email || '',
+          provider: 'email',
+        };
+        setCurrentUser(fallbackUser);
+      }
       
       toast({
         title: "Conta criada com sucesso!",
@@ -172,7 +202,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const userDoc = await createUserDocument(result.user);
-      setCurrentUser(userDoc || null);
+      if (userDoc) {
+        setCurrentUser(userDoc);
+      } else {
+        // Fallback user data
+        const fallbackUser: User = {
+          id: result.user.uid,
+          name: result.user.displayName || '',
+          email: result.user.email || '',
+          provider: 'google',
+        };
+        setCurrentUser(fallbackUser);
+      }
       
       toast({
         title: "Login realizado com sucesso!",
