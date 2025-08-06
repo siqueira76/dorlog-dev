@@ -45,16 +45,23 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
                 <span className="text-xs font-bold text-emerald-700 tracking-wide">Premium</span>
               </div>
             ) : (
-              // Usuário Gratuito - CTA limpo
+              // Usuário Gratuito - CTA elegante e informativo
               <Button
                 onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_premium_dorlog', '_blank')}
+                variant="outline"
                 size="sm"
-                className="h-8 px-3 bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-600 hover:from-purple-600 hover:via-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-xl transition-colors duration-200 shadow-lg"
+                className="group relative h-9 px-3 bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 hover:from-orange-100 hover:via-amber-100 hover:to-yellow-100 border border-orange-200/60 hover:border-orange-300 text-orange-800 hover:text-orange-900 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 active:scale-95"
               >
-                <div className="flex items-center gap-1.5">
-                  <Crown className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline font-bold tracking-wide">Pro</span>
-                  <ExternalLink className="h-3 w-3" />
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+                    <span className="text-xs font-semibold tracking-tight">Gratuito</span>
+                  </div>
+                  <div className="w-px h-4 bg-orange-300"></div>
+                  <div className="flex items-center gap-1">
+                    <Crown className="h-3.5 w-3.5 text-amber-600 group-hover:text-amber-700 transition-colors" />
+                    <span className="text-xs font-bold tracking-wide">Upgrade</span>
+                  </div>
                 </div>
               </Button>
             )
