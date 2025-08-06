@@ -40,16 +40,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Create or update user document in Firestore
-  const createUserDocument = async (firebaseUser: FirebaseUser, additionalData?: any) => {
-    if (!firebaseUser?.uid) return null;
+  // Create or update user document in Firestore with enhanced validation
+  const createUserDocument = async (firebaseUser: FirebaseUser, additionalData?: any, requireSave: boolean = false) => {
+    if (!firebaseUser?.uid) {
+      console.error('Firebase user ou UID inválido');
+      return null;
+    }
 
     try {
-      // Get valid authentication token
-      const token = await firebaseUser.getIdToken(true); // Force refresh
-      if (!token) return null;
+      // Wait for proper authentication
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Get authentication token with proper error handling
+      const token = await firebaseUser.getIdToken(true);
+      if (!token) {
+        console.error('Token de autenticação não disponível');
+        return null;
+      }
 
+      console.log('Token obtido, tentando acessar Firestore...');
       const userRef = doc(db, 'usuarios', firebaseUser.uid);
+      
+      // Check if user exists
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
@@ -65,16 +77,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
           updatedAt: new Date(),
         };
 
-        console.log('Salvando usuário no Firestore:', userData);
+        console.log('Criando novo usuário no Firestore:', userData);
         await setDoc(userRef, userData);
-        console.log('Usuário salvo com sucesso no Firestore');
-        return userData as User;
+        
+        // Verify the document was created
+        const verifySnap = await getDoc(userRef);
+        if (verifySnap.exists()) {
+          console.log('✅ Usuário criado e verificado no Firestore');
+          return userData as User;
+        } else {
+          console.error('❌ Falha na verificação: usuário não foi salvo');
+          if (requireSave) throw new Error('Falha ao salvar usuário no Firestore');
+          return null;
+        }
       } else {
-        console.log('Usuário já existe no Firestore:', userSnap.data());
+        console.log('✅ Usuário existente encontrado no Firestore');
         return userSnap.data() as User;
       }
     } catch (error: any) {
-      console.error('Erro ao salvar usuário no Firestore:', error);
+      console.error('❌ Erro detalhado ao acessar Firestore:', error);
+      
+      if (error.code === 'permission-denied') {
+        console.error('Erro de permissão - verifique as regras do Firestore');
+      } else if (error.code === 'unavailable') {
+        console.error('Firestore indisponível');
+      }
+      
+      if (requireSave) {
+        throw new Error(`Falha crítica no Firestore: ${error.message}`);
+      }
+      
       return null;
     }
   };
@@ -130,46 +162,52 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // Register with email and password
+  // Register with email and password - requires Firestore save
   const register = async (email: string, password: string, name: string) => {
+    let firebaseUser: FirebaseUser | null = null;
+    
     try {
+      console.log('🔄 Iniciando processo de registro...');
       const result = await createUserWithEmailAndPassword(auth, email, password);
+      firebaseUser = result.user;
       
       // Update display name
       await updateProfile(result.user, {
         displayName: name,
       });
 
-      // Wait for auth token
-      await result.user.getIdToken();
-
-      console.log('Tentando criar usuário no Firestore...');
-      const userDoc = await createUserDocument(result.user, { name });
+      console.log('🔄 Tentando salvar usuário no Firestore (obrigatório)...');
+      // Require Firestore save for registration
+      const userDoc = await createUserDocument(result.user, { name }, true);
+      
       if (userDoc) {
         setCurrentUser(userDoc);
         toast({
-          title: "Conta criada com sucesso!",
-          description: "Usuário salvo no Firestore.",
+          title: "✅ Conta criada com sucesso!",
+          description: "Usuário registrado no sistema.",
         });
       } else {
-        // Fallback user data
-        const fallbackUser: User = {
-          id: result.user.uid,
-          name: name,
-          email: result.user.email || '',
-          provider: 'email',
-        };
-        setCurrentUser(fallbackUser);
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Usando dados locais (Firestore não disponível).",
-        });
+        throw new Error('Falha ao salvar no Firestore');
       }
     } catch (error: any) {
-      console.error('Register error:', error);
+      console.error('❌ Erro no registro:', error);
+      
+      // If user was created in Firebase Auth but failed in Firestore, delete it
+      if (firebaseUser) {
+        try {
+          console.log('🔄 Removendo usuário do Firebase Auth devido a falha no Firestore...');
+          await firebaseUser.delete();
+          console.log('✅ Usuário removido do Firebase Auth');
+        } catch (deleteError) {
+          console.error('❌ Erro ao remover usuário do Firebase Auth:', deleteError);
+        }
+      }
+      
       let errorMessage = "Erro ao criar conta. Tente novamente.";
       
-      if (error.code === 'auth/email-already-in-use') {
+      if (error.message?.includes('Firestore')) {
+        errorMessage = "Erro de configuração do banco de dados. Contacte o suporte.";
+      } else if (error.code === 'auth/email-already-in-use') {
         errorMessage = "Este e-mail já está em uso.";
       } else if (error.code === 'auth/weak-password') {
         errorMessage = "A senha deve ter pelo menos 6 caracteres.";
@@ -178,7 +216,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       
       toast({
-        title: "Erro no cadastro",
+        title: "❌ Erro no cadastro",
         description: errorMessage,
         variant: "destructive",
       });
@@ -186,9 +224,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // Login with Google
+  // Login with Google - Check if user exists, create if new
   const loginWithGoogle = async () => {
     try {
+      console.log('🔄 Iniciando login com Google...');
       const result = await signInWithPopup(auth, googleProvider);
       
       // Wait for authentication token to be available
@@ -197,16 +236,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Small delay to ensure Firebase Auth is fully initialized
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      console.log('Tentando fazer login com Google e salvar no Firestore...');
-      const userDoc = await createUserDocument(result.user);
+      console.log('🔄 Verificando/criando usuário no Firestore...');
+      // For Google login, try to save but don't require it for existing users
+      const userDoc = await createUserDocument(result.user, undefined, false);
+      
       if (userDoc) {
         setCurrentUser(userDoc);
         toast({
-          title: "Login realizado com sucesso!",
+          title: "✅ Login realizado com sucesso!",
           description: "Dados carregados do Firestore.",
         });
       } else {
-        // Fallback user data
+        // For Google login, we can proceed with fallback for existing users
+        // but new users should ideally be saved to Firestore
         const fallbackUser: User = {
           id: result.user.uid,
           name: result.user.displayName || '',
@@ -215,17 +257,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         };
         setCurrentUser(fallbackUser);
         toast({
-          title: "Login realizado com sucesso!",
-          description: "Usando dados locais (Firestore não disponível).",
+          title: "⚠️ Login realizado",
+          description: "Conectado com dados limitados.",
         });
       }
-      
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo ao DorLog.",
-      });
     } catch (error: any) {
-      console.error('Google login error:', error);
+      console.error('❌ Erro no login com Google:', error);
       let errorMessage = "Erro no login com Google. Tente novamente.";
       
       if (error.code === 'auth/popup-closed-by-user') {
@@ -235,7 +272,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       
       toast({
-        title: "Erro no login",
+        title: "❌ Erro no login",
         description: errorMessage,
         variant: "destructive",
       });
