@@ -596,6 +596,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     updateUserProfile,
     updateUserPassword,
     testFirestoreConnection,
+    checkSubscriptionStatus,
   };
 
   return (

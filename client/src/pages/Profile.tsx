@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { ExternalLink } from 'lucide-react';
 
 export default function Profile() {
   const { currentUser, updateUserProfile, updateUserPassword, testFirestoreConnection } = useAuth();
@@ -181,6 +183,42 @@ export default function Profile() {
               {isUpdatingProfile ? 'Salvando...' : 'Salvar Informações'}
             </Button>
           </form>
+
+          <Separator />
+
+          {/* Subscription Status */}
+          <div>
+            <h4 className="font-medium text-foreground mb-4">Status da Assinatura</h4>
+            
+            <div className="flex flex-col items-center space-y-4 p-4 bg-muted/50 rounded-xl">
+              {currentUser?.isSubscriptionActive ? (
+                <>
+                  <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200 px-4 py-2 text-sm font-medium">
+                    ✓ Assinante Ativo
+                  </Badge>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Você tem acesso completo a todos os recursos do DorLog
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Badge variant="secondary" className="bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 text-sm font-medium">
+                    Não Assinante
+                  </Badge>
+                  <p className="text-sm text-muted-foreground text-center mb-2">
+                    Assine agora para ter acesso completo a todos os recursos
+                  </p>
+                  <Button
+                    onClick={() => window.open('https://google.com.br', '_blank')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors flex items-center gap-2"
+                  >
+                    <ExternalLink size={16} />
+                    Assinar Agora
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
 
           <Separator />
 
