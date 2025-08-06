@@ -188,47 +188,76 @@ export default function Profile() {
 
           {/* Subscription Status */}
           <div>
-            <h4 className="font-medium text-foreground mb-4">Status da Assinatura</h4>
+            <h4 className="font-medium text-foreground mb-6">Plano de Assinatura</h4>
             
-            <div className="flex flex-col items-center space-y-4 p-4 bg-muted/50 rounded-xl">
-              {currentUser?.isSubscriptionActive ? (
-                <>
-                  <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200 px-4 py-2 text-sm font-medium">
-                    ✓ Assinante Ativo
-                  </Badge>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Você tem acesso completo a todos os recursos do DorLog
-                  </p>
-                </>
-              ) : (
-                <>
-                  <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-200 px-4 py-2 text-sm font-medium">
-                    Plano Gratuito
-                  </Badge>
-                  <div className="text-center space-y-3 max-w-sm">
-                    <h5 className="text-sm font-semibold text-foreground">
-                      Desbloqueie todo o potencial do DorLog
-                    </h5>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Tenha acesso a relatórios avançados, sincronização em nuvem, 
-                      lembretes inteligentes e muito mais.
+            {currentUser?.isSubscriptionActive ? (
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <Badge className="bg-green-100 text-green-800 hover:bg-green-200 px-4 py-2 text-sm font-semibold border border-green-300">
+                      🏆 Premium Ativo
+                    </Badge>
+                    <h5 className="text-lg font-bold text-green-800 mt-3">Você é Premium!</h5>
+                    <p className="text-sm text-green-700 mt-2 max-w-md mx-auto leading-relaxed">
+                      Desfrute de acesso completo a todos os recursos avançados do DorLog, 
+                      incluindo relatórios detalhados e sincronização em nuvem.
                     </p>
-                    <div className="pt-2">
-                      <Button
-                        onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_example', '_blank')}
-                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center gap-2 px-6 py-3"
-                      >
-                        <ExternalLink size={16} />
-                        Assinar Premium
-                      </Button>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        A partir de R$ 9,99/mês
-                      </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gradient-to-br from-orange-50 via-purple-50 to-blue-50 border border-purple-200 rounded-2xl p-6">
+                <div className="text-center space-y-5">
+                  <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mx-auto">
+                    <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                  </div>
+                  
+                  <div>
+                    <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200 px-4 py-2 text-sm font-semibold border border-orange-300">
+                      📦 Plano Gratuito
+                    </Badge>
+                    <h5 className="text-xl font-bold text-gray-800 mt-3">
+                      Potencialize sua experiência!
+                    </h5>
+                    <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto leading-relaxed">
+                      Desbloqueie relatórios avançados, sincronização automática, 
+                      lembretes inteligentes e backup em nuvem.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <Button
+                      onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_premium_dorlog', '_blank')}
+                      size="lg"
+                      className="w-full bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 hover:from-purple-700 hover:via-blue-700 hover:to-indigo-700 text-white font-bold text-base py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg"
+                    >
+                      <div className="flex items-center justify-center gap-3">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        Upgrade para Premium
+                      </div>
+                    </Button>
+                    
+                    <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
+                      <span className="bg-white px-3 py-1 rounded-full border border-gray-200">
+                        💳 A partir de R$ 9,99/mês
+                      </span>
+                      <span className="bg-white px-3 py-1 rounded-full border border-gray-200">
+                        ✨ Cancele quando quiser
+                      </span>
                     </div>
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <Separator />

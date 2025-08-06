@@ -93,22 +93,30 @@ export default function DrawerNavigation({ isOpen, onClose, onNavigate }: Drawer
               
               {/* Subscription Status Badge */}
               {currentUser?.isSubscriptionActive !== undefined && (
-                <div className="pt-3">
+                <div className="pt-4 flex flex-col items-center">
                   {currentUser.isSubscriptionActive ? (
-                    <div className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-green-100/90 text-green-800 border border-green-200/50">
-                      ✓ Premium Ativo
+                    <div className="inline-flex items-center px-4 py-2 rounded-full text-xs font-bold bg-emerald-100/90 text-emerald-800 border-2 border-emerald-300/50 shadow-sm">
+                      <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      Premium Ativo
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="flex flex-col items-center space-y-3 w-full max-w-[200px]">
                       <div className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-orange-100/90 text-orange-800 border border-orange-200/50">
-                        Plano Gratuito
+                        📦 Gratuito
                       </div>
                       <Button
-                        onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_example', '_blank')}
-                        size="sm"
-                        className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white text-xs font-medium rounded-full px-4 py-2 transition-all duration-200 transform hover:scale-105 shadow-md"
+                        onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_premium_dorlog', '_blank')}
+                        size="sm" 
+                        className="w-full bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 hover:from-purple-600 hover:via-blue-600 hover:to-indigo-600 text-white text-xs font-bold rounded-xl px-3 py-2.5 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                       >
-                        Fazer Upgrade ↗
+                        <div className="flex items-center justify-center gap-1.5">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                          </svg>
+                          Fazer Upgrade
+                        </div>
                       </Button>
                     </div>
                   )}
