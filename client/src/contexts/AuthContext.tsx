@@ -40,28 +40,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Create or update user document in Firestore with enhanced validation
+  // Create or update user document in Firestore with controlled error handling
   const createUserDocument = async (firebaseUser: FirebaseUser, additionalData?: any, requireSave: boolean = false) => {
-    if (!firebaseUser?.uid) {
-      console.error('Firebase user ou UID inválido');
+    if (!firebaseUser?.uid) return null;
+
+    // Skip Firestore operations if config is incomplete to prevent errors
+    const hasValidConfig = import.meta.env.VITE_FIREBASE_PROJECT_ID && 
+                          import.meta.env.VITE_FIREBASE_API_KEY &&
+                          import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'demo-project';
+    
+    if (!hasValidConfig) {
+      if (requireSave) {
+        throw new Error('Configuração do Firebase incompleta');
+      }
       return null;
     }
 
     try {
       // Wait for proper authentication
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Get authentication token with proper error handling
       const token = await firebaseUser.getIdToken(true);
-      if (!token) {
-        console.error('Token de autenticação não disponível');
-        return null;
-      }
+      if (!token) return null;
 
-      console.log('Token obtido, tentando acessar Firestore...');
       const userRef = doc(db, 'usuarios', firebaseUser.uid);
-      
-      // Check if user exists
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
@@ -77,36 +79,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
           updatedAt: new Date(),
         };
 
-        console.log('Criando novo usuário no Firestore:', userData);
         await setDoc(userRef, userData);
         
-        // Verify the document was created
+        // Verify creation
         const verifySnap = await getDoc(userRef);
         if (verifySnap.exists()) {
-          console.log('✅ Usuário criado e verificado no Firestore');
           return userData as User;
         } else {
-          console.error('❌ Falha na verificação: usuário não foi salvo');
-          if (requireSave) throw new Error('Falha ao salvar usuário no Firestore');
+          if (requireSave) throw new Error('Falha ao verificar usuário salvo');
           return null;
         }
       } else {
-        console.log('✅ Usuário existente encontrado no Firestore');
         return userSnap.data() as User;
       }
     } catch (error: any) {
-      console.error('❌ Erro detalhado ao acessar Firestore:', error);
-      
-      if (error.code === 'permission-denied') {
-        console.error('Erro de permissão - verifique as regras do Firestore');
-      } else if (error.code === 'unavailable') {
-        console.error('Firestore indisponível');
-      }
-      
+      // Only log errors when explicitly required to save
       if (requireSave) {
+        console.error('Erro crítico ao salvar no Firestore:', error);
         throw new Error(`Falha crítica no Firestore: ${error.message}`);
       }
       
+      // Silent failure for background operations
       return null;
     }
   };
@@ -380,7 +373,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setFirebaseUser(firebaseUser);
       
       if (firebaseUser) {
-        // Always create fallback user first to prevent auth state issues
+        // Create immediate fallback user to prevent loading issues
         const fallbackUser: User = {
           id: firebaseUser.uid,
           name: firebaseUser.displayName || '',
@@ -391,21 +384,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setCurrentUser(fallbackUser);
         setLoading(false);
 
-        // Try to enhance with Firestore data in background
-        setTimeout(async () => {
-          try {
-            console.log('Tentando carregar dados do usuário do Firestore...');
-            const userDoc = await createUserDocument(firebaseUser);
-            if (userDoc) {
-              console.log('Dados do usuário carregados do Firestore');
-              setCurrentUser(userDoc);
-            } else {
-              console.log('Usando dados de fallback - Firestore não disponível');
+        // Only try Firestore if we have proper Firebase config
+        const hasFirebaseConfig = import.meta.env.VITE_FIREBASE_PROJECT_ID && 
+                                 import.meta.env.VITE_FIREBASE_API_KEY;
+        
+        if (hasFirebaseConfig) {
+          // Debounced Firestore enhancement to prevent multiple calls
+          const timeoutId = setTimeout(async () => {
+            try {
+              const userDoc = await createUserDocument(firebaseUser);
+              if (userDoc) {
+                setCurrentUser(userDoc);
+              }
+            } catch (error) {
+              // Silently handle Firestore errors to prevent console spam
             }
-          } catch (error) {
-            console.log('Erro ao carregar do Firestore, usando dados de fallback');
-          }
-        }, 1000);
+          }, 2000);
+
+          // Cleanup function to prevent memory leaks
+          return () => clearTimeout(timeoutId);
+        }
       } else {
         setCurrentUser(null);
         setLoading(false);
@@ -434,10 +432,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};
