@@ -47,30 +47,49 @@ export default function DrawerNavigation({ isOpen, onClose, onNavigate }: Drawer
         data-testid="drawer-navigation"
       >
         {/* Drawer Header */}
-        <div className="bg-primary p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mr-3">
-                <User className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-white font-medium" data-testid="text-user-name">
-                  {currentUser?.name || 'Usuário'}
-                </h3>
-                <p className="text-primary-foreground/80 text-sm" data-testid="text-user-email">
-                  {currentUser?.email || 'email@exemplo.com'}
-                </p>
-              </div>
-            </div>
+        <div className="bg-gradient-to-br from-primary via-primary to-primary/90 px-6 py-8">
+          {/* Close Button */}
+          <div className="flex justify-end mb-6">
             <Button
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 rounded-full transition-all duration-200 hover:scale-105"
               data-testid="button-close-drawer"
             >
               <X className="h-5 w-5" />
             </Button>
+          </div>
+          
+          {/* User Profile Section */}
+          <div className="flex flex-col items-center text-center">
+            {/* Avatar */}
+            <div className="bg-white/20 backdrop-blur-sm w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-lg">
+              <User className="h-8 w-8 text-white" />
+            </div>
+            
+            {/* User Info */}
+            <div className="space-y-1">
+              <h3 className="text-white font-semibold text-lg leading-tight" data-testid="text-user-name">
+                {currentUser?.name || 'Usuário'}
+              </h3>
+              <p className="text-primary-foreground/70 text-sm font-medium" data-testid="text-user-email">
+                {currentUser?.email || 'email@exemplo.com'}
+              </p>
+              
+              {/* Subscription Status Badge */}
+              {currentUser?.isSubscriptionActive !== undefined && (
+                <div className="pt-3">
+                  <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
+                    currentUser.isSubscriptionActive 
+                      ? 'bg-green-100/90 text-green-800 border border-green-200/50' 
+                      : 'bg-white/20 text-white/90 border border-white/30'
+                  }`}>
+                    {currentUser.isSubscriptionActive ? '✓ Assinante Ativo' : 'Não Assinante'}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
