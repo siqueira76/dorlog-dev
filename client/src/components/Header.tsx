@@ -1,4 +1,4 @@
-import { Menu } from 'lucide-react';
+import { Menu, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface HeaderProps {
@@ -20,9 +20,16 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
           <Menu className="h-5 w-5" />
         </Button>
         
-        <h1 className="text-lg font-semibold text-foreground" data-testid="text-page-title">
-          {title}
-        </h1>
+        {/* Logo e Nome do App */}
+        <div className="flex items-center gap-2">
+          <div className="bg-gradient-to-br from-primary to-primary/80 w-8 h-8 rounded-lg flex items-center justify-center">
+            <Activity className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-bold text-primary leading-none">DorLog</span>
+            <span className="text-xs text-muted-foreground leading-none">{title}</span>
+          </div>
+        </div>
         
         <div className="w-10"></div> {/* Spacer for centering */}
       </div>
