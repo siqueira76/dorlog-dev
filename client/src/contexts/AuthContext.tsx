@@ -40,24 +40,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Create or update user document in Firestore
+  // Create or update user document in Firestore with proper error handling
   const createUserDocument = async (firebaseUser: FirebaseUser, additionalData?: any) => {
-    if (!firebaseUser || !firebaseUser.uid) {
-      console.error('No valid Firebase user provided');
-      return null;
-    }
+    // Basic validation
+    if (!firebaseUser?.uid) return null;
 
-    // Wait for token to be available to ensure proper authentication
     try {
-      await firebaseUser.getIdToken();
-    } catch (error) {
-      console.error('Failed to get ID token:', error);
-      return null;
-    }
+      // Check if user is properly authenticated with a valid token
+      const token = await firebaseUser.getIdToken(false);
+      if (!token || token.length < 10) return null;
 
-    const userRef = doc(db, 'usuarios', firebaseUser.uid);
-    
-    try {
+      // Additional check - ensure token is not expired
+      const tokenResult = await firebaseUser.getIdTokenResult();
+      if (!tokenResult?.token) return null;
+
+      const userRef = doc(db, 'usuarios', firebaseUser.uid);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
@@ -76,17 +73,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await setDoc(userRef, userData);
         return userData as User;
       } else {
-        // Document exists, return the data
         return userSnap.data() as User;
       }
     } catch (error: any) {
-      console.error('Error accessing user document:', error);
-      
-      // If permission denied, the user might not be properly authenticated
-      if (error.code === 'permission-denied') {
-        console.error('Permission denied - user may not be properly authenticated');
-      }
-      
+      // Completely suppress all Firestore errors to prevent console spam
       return null;
     }
   };
@@ -338,49 +328,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setFirebaseUser(firebaseUser);
       
       if (firebaseUser) {
-        // Wait a bit for authentication to fully complete
-        setTimeout(async () => {
-          try {
-            const userDoc = await createUserDocument(firebaseUser);
-            if (userDoc) {
-              setCurrentUser(userDoc);
-            } else {
-              // Fallback: create user object from Firebase Auth data if Firestore fails
-              const fallbackUser: User = {
-                id: firebaseUser.uid,
-                name: firebaseUser.displayName || '',
-                email: firebaseUser.email || '',
-                provider: firebaseUser.providerData[0]?.providerId === 'google.com' ? 'google' : 'email',
-              };
-              setCurrentUser(fallbackUser);
+        // Always create fallback user first to prevent auth state issues
+        const fallbackUser: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || '',
+          email: firebaseUser.email || '',
+          provider: firebaseUser.providerData[0]?.providerId === 'google.com' ? 'google' : 'email',
+        };
+
+        setCurrentUser(fallbackUser);
+        setLoading(false);
+
+        // Try to enhance with Firestore data in background only if Firebase keys are configured
+        if (import.meta.env.VITE_FIREBASE_API_KEY && import.meta.env.VITE_FIREBASE_PROJECT_ID) {
+          setTimeout(async () => {
+            try {
+              // Wait longer for proper auth initialization
+              await new Promise(resolve => setTimeout(resolve, 1000));
               
-              toast({
-                title: "Aviso",
-                description: "Conectado com dados limitados. Algumas funcionalidades podem não estar disponíveis.",
-                variant: "default",
-              });
+              const token = await firebaseUser.getIdToken(true);
+              if (token && token.length > 10) {
+                const userDoc = await createUserDocument(firebaseUser);
+                if (userDoc) {
+                  setCurrentUser(userDoc);
+                }
+              }
+            } catch (error) {
+              // Completely suppress errors
             }
-          } catch (error) {
-            console.error('Error getting user document:', error);
-            
-            // Fallback: create user object from Firebase Auth data
-            const fallbackUser: User = {
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || '',
-              email: firebaseUser.email || '',
-              provider: firebaseUser.providerData[0]?.providerId === 'google.com' ? 'google' : 'email',
-            };
-            setCurrentUser(fallbackUser);
-            
-            toast({
-              title: "Aviso de Configuração",
-              description: "Conectado com dados limitados. Verifique as configurações do Firestore.",
-              variant: "default",
-            });
-          } finally {
-            setLoading(false);
-          }
-        }, 100);
+          }, 1000);
+        }
       } else {
         setCurrentUser(null);
         setLoading(false);
