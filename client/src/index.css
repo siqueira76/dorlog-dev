@@ -27,6 +27,25 @@
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Enhanced quiz navigation - sticky footer optimization */
+.quiz-navigation-footer {
+  background: linear-gradient(to top, rgba(255,255,255,0.95) 0%, rgba(255,255,255,1) 100%);
+  backdrop-filter: blur(8px);
+}
+
+/* Mobile-optimized button states */
+@media (max-width: 768px) {
+  .quiz-nav-button {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+  }
+  
+  .quiz-nav-button:active {
+    transform: scale(0.96);
+  }
+}
+
 :root {
   --background: hsl(210, 20%, 98%);
   --foreground: hsl(222.2, 84%, 4.9%);
