@@ -58,25 +58,117 @@ export default function QuestionRenderer({ question, answer, onAnswer }: Questio
       case 'slider':
         const min = question.min ?? 0;
         const max = question.max ?? 100;
+        const currentValue = localAnswer ?? Math.floor((min + max) / 2);
+        const percentage = ((currentValue - min) / (max - min)) * 100;
+        
+        // Enhanced slider with better UX
+        const handleSliderChange = (value: number[]) => {
+          // Haptic feedback for mobile devices
+          if ('vibrate' in navigator) {
+            navigator.vibrate(10);
+          }
+          handleAnswerChange(value[0]);
+        };
+
+        // Generate descriptive labels based on context and range
+        const getValueLabel = (value: number) => {
+          if (max <= 5) {
+            // For 0-5 scales (common for medical assessments)
+            const labels = ['Nenhum', 'Muito leve', 'Leve', 'Moderado', 'Intenso', 'Muito intenso'];
+            return labels[value] || value.toString();
+          } else if (max <= 10) {
+            // For 0-10 scales
+            if (value === 0) return 'Nenhum';
+            if (value <= 2) return 'Muito baixo';
+            if (value <= 4) return 'Baixo';
+            if (value <= 6) return 'Moderado';
+            if (value <= 8) return 'Alto';
+            return 'Muito alto';
+          }
+          return value.toString();
+        };
+
         return (
-          <div className="space-y-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">
-                {localAnswer ?? Math.floor((min + max) / 2)}
+          <div className="space-y-6 py-4">
+            {/* Enhanced value display with contextual styling */}
+            <div className="text-center space-y-2">
+              <div className="relative inline-flex items-center justify-center">
+                <div 
+                  className={`text-4xl font-bold transition-all duration-300 ${
+                    currentValue === min ? 'text-green-600' :
+                    currentValue <= Math.floor(max * 0.3) ? 'text-blue-600' :
+                    currentValue <= Math.floor(max * 0.7) ? 'text-yellow-600' :
+                    'text-red-600'
+                  }`}
+                >
+                  {currentValue}
+                </div>
+                <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-transparent via-current to-transparent opacity-10 animate-pulse"></div>
+              </div>
+              <div className="text-sm font-medium text-muted-foreground">
+                {getValueLabel(currentValue)}
               </div>
             </div>
-            <Slider
-              value={[localAnswer ?? Math.floor((min + max) / 2)]}
-              onValueChange={(value) => handleAnswerChange(value[0])}
-              max={max}
-              min={min}
-              step={1}
-              className="w-full"
-              data-testid="slider-custom"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{min}</span>
-              <span>{max}</span>
+
+            {/* Enhanced slider with visual progress indicator */}
+            <div className="space-y-4 px-2">
+              <div className="relative">
+                {/* Progress background bar */}
+                <div className="absolute top-1/2 -translate-y-1/2 w-full h-1 bg-gradient-to-r from-green-200 via-yellow-200 to-red-200 rounded-full"></div>
+                
+                {/* Enhanced slider component */}
+                <Slider
+                  value={[currentValue]}
+                  onValueChange={handleSliderChange}
+                  max={max}
+                  min={min}
+                  step={1}
+                  className="w-full relative z-10"
+                  data-testid="slider-custom"
+                />
+                
+                {/* Progress indicator */}
+                <div 
+                  className="absolute top-1/2 -translate-y-1/2 h-2 bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 rounded-full transition-all duration-300"
+                  style={{ width: `${percentage}%` }}
+                ></div>
+              </div>
+
+              {/* Enhanced labels with tick marks */}
+              <div className="relative px-2">
+                <div className="flex justify-between items-center">
+                  <div className="text-center">
+                    <div className="w-1 h-3 bg-muted-foreground/30 rounded-full mx-auto mb-1"></div>
+                    <span className="text-xs font-medium text-muted-foreground">{min}</span>
+                    <div className="text-[10px] text-muted-foreground/70 mt-0.5">
+                      {max <= 5 ? 'Mínimo' : 'Nenhum'}
+                    </div>
+                  </div>
+                  
+                  {/* Middle indicator for better context */}
+                  {max > 2 && (
+                    <div className="text-center">
+                      <div className="w-0.5 h-2 bg-muted-foreground/20 rounded-full mx-auto mb-1"></div>
+                      <span className="text-xs text-muted-foreground/70">{Math.floor((min + max) / 2)}</span>
+                    </div>
+                  )}
+                  
+                  <div className="text-center">
+                    <div className="w-1 h-3 bg-muted-foreground/30 rounded-full mx-auto mb-1"></div>
+                    <span className="text-xs font-medium text-muted-foreground">{max}</span>
+                    <div className="text-[10px] text-muted-foreground/70 mt-0.5">
+                      {max <= 5 ? 'Máximo' : 'Muito alto'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Helpful instruction text */}
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">
+                Deslize para ajustar o valor
+              </p>
             </div>
           </div>
         );
