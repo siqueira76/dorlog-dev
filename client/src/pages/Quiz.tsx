@@ -55,8 +55,58 @@ export default function QuizPage() {
       if (!quizSnap.exists()) {
         console.log('❌ Documento do quiz não encontrado');
         
-        // Criar quiz de exemplo temporário para demonstração
-        const exampleQuiz: Quiz = {
+        // Criar quiz de exemplo temporário baseado no tipo
+        const exampleQuiz: Quiz = id === 'noturno' ? {
+          nome: "Quiz Noturno - Demonstração",
+          disparo: "notificacao",
+          perguntas: {
+            "1": {
+              id: 1,
+              texto: "Como foi seu dia hoje?",
+              tipo: "emojis"
+            },
+            "2": {
+              id: 2,
+              texto: "Qual é o seu nível de dor agora? (0 = sem dor, 10 = dor máxima)",
+              tipo: "eva"
+            },
+            "3": {
+              id: 3,
+              texto: "Quais atividades você realizou hoje?",
+              tipo: "checkbox",
+              opcoes: ["Exercícios", "Trabalho", "Descanso", "Tarefas domésticas", "Socialização", "Outros"]
+            },
+            "4": {
+              id: 4,
+              texto: "Como você avalia sua qualidade de sono na noite anterior?",
+              tipo: "slider",
+              min: 1,
+              max: 10
+            },
+            "5": {
+              id: 5,
+              texto: "Descreva como se sente ao final do dia:",
+              tipo: "texto"
+            },
+            "6": {
+              id: 6,
+              texto: "Que sintomas você teve hoje?",
+              tipo: "checkbox",
+              opcoes: ["Dor de cabeça", "Fadiga", "Dor muscular", "Ansiedade", "Irritabilidade", "Nenhum"]
+            },
+            "7": {
+              id: 7,
+              texto: "Qual é sua expectativa para o sono de hoje?",
+              tipo: "opcoes",
+              opcoes: ["Muito boa", "Boa", "Regular", "Ruim", "Muito ruim"]
+            },
+            "8": {
+              id: 8,
+              texto: "Algo específico que gostaria de registrar sobre hoje?",
+              tipo: "texto"
+            }
+          }
+        } : {
           nome: "Quiz Matinal - Demonstração",
           disparo: "notificacao",
           perguntas: {
@@ -129,8 +179,58 @@ export default function QuizPage() {
         console.log('⚠️ Nenhuma pergunta encontrada na subcoleção');
         console.log('🔧 Usando quiz de demonstração');
         
-        // Usar quiz de demonstração quando não há perguntas na subcoleção
-        const exampleQuiz: Quiz = {
+        // Usar quiz de demonstração baseado no tipo quando não há perguntas na subcoleção
+        const exampleQuiz: Quiz = id === 'noturno' ? {
+          nome: "Quiz Noturno - Demonstração",
+          disparo: "notificacao",
+          perguntas: {
+            "1": {
+              id: 1,
+              texto: "Como foi seu dia hoje?",
+              tipo: "emojis"
+            },
+            "2": {
+              id: 2,
+              texto: "Qual é o seu nível de dor agora? (0 = sem dor, 10 = dor máxima)",
+              tipo: "eva"
+            },
+            "3": {
+              id: 3,
+              texto: "Quais atividades você realizou hoje?",
+              tipo: "checkbox",
+              opcoes: ["Exercícios", "Trabalho", "Descanso", "Tarefas domésticas", "Socialização", "Outros"]
+            },
+            "4": {
+              id: 4,
+              texto: "Como você avalia sua qualidade de sono na noite anterior?",
+              tipo: "slider",
+              min: 1,
+              max: 10
+            },
+            "5": {
+              id: 5,
+              texto: "Descreva como se sente ao final do dia:",
+              tipo: "texto"
+            },
+            "6": {
+              id: 6,
+              texto: "Que sintomas você teve hoje?",
+              tipo: "checkbox",
+              opcoes: ["Dor de cabeça", "Fadiga", "Dor muscular", "Ansiedade", "Irritabilidade", "Nenhum"]
+            },
+            "7": {
+              id: 7,
+              texto: "Qual é sua expectativa para o sono de hoje?",
+              tipo: "opcoes",
+              opcoes: ["Muito boa", "Boa", "Regular", "Ruim", "Muito ruim"]
+            },
+            "8": {
+              id: 8,
+              texto: "Algo específico que gostaria de registrar sobre hoje?",
+              tipo: "texto"
+            }
+          }
+        } : {
           nome: "Quiz Matinal - Demonstração",
           disparo: "notificacao",
           perguntas: {
@@ -236,8 +336,58 @@ export default function QuizPage() {
       if (err.code === 'permission-denied') {
         console.log('🔧 Usando quiz de demonstração devido ao erro de permissão');
         
-        // Usar quiz de demonstração como fallback
-        const exampleQuiz: Quiz = {
+        // Usar quiz de demonstração baseado no tipo como fallback
+        const exampleQuiz: Quiz = id === 'noturno' ? {
+          nome: "Quiz Noturno - Demonstração",
+          disparo: "notificacao",
+          perguntas: {
+            "1": {
+              id: 1,
+              texto: "Como foi seu dia hoje?",
+              tipo: "emojis"
+            },
+            "2": {
+              id: 2,
+              texto: "Qual é o seu nível de dor agora? (0 = sem dor, 10 = dor máxima)",
+              tipo: "eva"
+            },
+            "3": {
+              id: 3,
+              texto: "Quais atividades você realizou hoje?",
+              tipo: "checkbox",
+              opcoes: ["Exercícios", "Trabalho", "Descanso", "Tarefas domésticas", "Socialização", "Outros"]
+            },
+            "4": {
+              id: 4,
+              texto: "Como você avalia sua qualidade de sono na noite anterior?",
+              tipo: "slider",
+              min: 1,
+              max: 10
+            },
+            "5": {
+              id: 5,
+              texto: "Descreva como se sente ao final do dia:",
+              tipo: "texto"
+            },
+            "6": {
+              id: 6,
+              texto: "Que sintomas você teve hoje?",
+              tipo: "checkbox",
+              opcoes: ["Dor de cabeça", "Fadiga", "Dor muscular", "Ansiedade", "Irritabilidade", "Nenhum"]
+            },
+            "7": {
+              id: 7,
+              texto: "Qual é sua expectativa para o sono de hoje?",
+              tipo: "opcoes",
+              opcoes: ["Muito boa", "Boa", "Regular", "Ruim", "Muito ruim"]
+            },
+            "8": {
+              id: 8,
+              texto: "Algo específico que gostaria de registrar sobre hoje?",
+              tipo: "texto"
+            }
+          }
+        } : {
           nome: "Quiz Matinal - Demonstração",
           disparo: "notificacao",
           perguntas: {

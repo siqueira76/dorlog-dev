@@ -89,6 +89,7 @@ export default function Home() {
             variant="outline"
             className="group bg-gradient-to-br from-indigo-50 to-purple-100 hover:from-indigo-100 hover:to-purple-200 border-indigo-200 hover:border-indigo-300 hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all duration-300 ease-out h-28 flex-col space-y-3 rounded-2xl p-5 animate-in slide-in-from-bottom-4 fade-in-0 duration-500 delay-[450ms]"
             data-testid="button-diary-night"
+            onClick={() => setLocation('/quiz/noturno')}
           >
             <div className="bg-gradient-to-br from-indigo-600 to-purple-700 group-hover:from-indigo-700 group-hover:to-purple-800 group-hover:scale-110 group-active:scale-95 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 ease-out">
               <Moon className="h-7 w-7 text-white group-hover:animate-pulse group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 ease-out" />
