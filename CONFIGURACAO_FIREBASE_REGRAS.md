@@ -109,23 +109,42 @@ Após configurar as regras, crie o documento do quiz:
 }
 ```
 
-### 🔧 ERRO ATUAL IDENTIFICADO
-O documento `quizzes/matinal` existe no seu Firestore mas está **INCOMPLETO**. 
+### 🎯 ESTRUTURA IDENTIFICADA NA IMAGEM
+O usuário criou corretamente a estrutura com **subcoleção**:
 
-**Dados atuais encontrados:**
+```
+📂 quizzes (coleção)
+ └── 📄 matinal (documento)
+     ├── nome: "Quiz Matinal"  
+     ├── disparo: "notificacao"
+     └── 📂 perguntas (subcoleção)
+          ├── 📄 1 (documento com dados da pergunta)
+          └── 📄 2 (documento com dados da pergunta)
+```
+
+### ✅ FORMATO CORRETO PARA CADA PERGUNTA
+Cada documento na subcoleção `perguntas` deve ter:
+
+**Documento ID: `1`**
 ```json
 {
-  "nome": "Quiz Matinal",
-  "disparo": "notificacao"
+  "id": 1,
+  "texto": "Como você dormiu?",
+  "tipo": "opcoes",
+  "opcoes": ["Bom", "Médio", "Ruim", "Não dormi"]
 }
 ```
 
-**FALTANDO:** O campo `perguntas` com todas as questões.
+**Documento ID: `2`**  
+```json
+{
+  "id": 2,
+  "texto": "Qual seu nível de dor?",
+  "tipo": "eva"
+}
+```
 
-### ✅ SOLUÇÃO
-1. Vá no Firebase Console > Firestore Database
-2. Encontre a coleção `quizzes` > documento `matinal`
-3. **EDITE** o documento para incluir o campo `perguntas` com a estrutura completa acima
+O código foi atualizado para funcionar com subcoleções!
 
 ## ⚡ TESTE RÁPIDO
 

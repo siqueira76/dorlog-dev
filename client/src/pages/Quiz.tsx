@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRoute, useLocation } from 'wouter';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Quiz, QuizQuestion, QuizAnswer, QuizSession } from '@/types/quiz';
 import { Button } from '@/components/ui/button';
@@ -115,15 +115,21 @@ export default function QuizPage() {
       }
 
       console.log('✅ Documento do quiz encontrado');
-      const quizData = quizSnap.data() as Quiz;
+      const quizData = quizSnap.data();
       
       console.log('📊 Dados do quiz:', quizData);
       
-      if (!quizData || !quizData.perguntas || Object.keys(quizData.perguntas).length === 0) {
-        console.log('⚠️ Documento do quiz existe mas não tem perguntas válidas');
+      // Agora buscar as perguntas na subcoleção
+      console.log('📁 Buscando perguntas na subcoleção...');
+      const perguntasRef = collection(db, 'quizzes', id, 'perguntas');
+      const perguntasQuery = query(perguntasRef, orderBy('id'));
+      const perguntasSnap = await getDocs(perguntasQuery);
+      
+      if (perguntasSnap.empty) {
+        console.log('⚠️ Nenhuma pergunta encontrada na subcoleção');
         console.log('🔧 Usando quiz de demonstração');
         
-        // Usar quiz de demonstração quando o documento existe mas não tem perguntas
+        // Usar quiz de demonstração quando não há perguntas na subcoleção
         const exampleQuiz: Quiz = {
           nome: "Quiz Matinal - Demonstração",
           disparo: "notificacao",
@@ -170,29 +176,44 @@ export default function QuizPage() {
         
         toast({
           title: "Modo Demonstração",
-          description: "O documento do quiz existe mas não possui perguntas. Adicione as perguntas no Firestore ou use o quiz de demonstração.",
+          description: "Nenhuma pergunta encontrada na subcoleção. Usando quiz de demonstração.",
         });
         
         setLoading(false);
         return;
       }
 
-      setQuiz(quizData);
+      // Converter documentos da subcoleção para o formato esperado
+      const perguntasMap: Record<string, QuizQuestion> = {};
+      const questionsArray: QuizQuestion[] = [];
+      
+      perguntasSnap.forEach((doc) => {
+        const perguntaData = doc.data() as QuizQuestion;
+        const perguntaId = doc.id;
+        
+        console.log('📋 Pergunta carregada:', perguntaId, perguntaData);
+        
+        perguntasMap[perguntaId] = perguntaData;
+        questionsArray.push(perguntaData);
+      });
 
+      const completeQuiz: Quiz = {
+        nome: quizData?.nome || 'Quiz',
+        disparo: quizData?.disparo || 'manual',
+        perguntas: perguntasMap
+      };
+
+      setQuiz(completeQuiz);
+      
       // Ordenar perguntas por ID
-      const questions = Object.values(quizData.perguntas).sort((a, b) => {
+      const sortedQuestions = questionsArray.sort((a, b) => {
         const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
         const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
         return aId - bId;
       });
       
-      console.log('📝 Perguntas ordenadas:', questions);
-
-      if (questions.length === 0) {
-        throw new Error('Nenhuma pergunta encontrada no quiz');
-      }
-
-      setOrderedQuestions(questions);
+      console.log('📝 Perguntas ordenadas:', sortedQuestions);
+      setOrderedQuestions(sortedQuestions);
 
       // Inicializar sessão do quiz
       const newSession: QuizSession = {
