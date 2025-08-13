@@ -164,36 +164,11 @@ export const EvaScale: React.FC<EvaScaleProps> = ({
           </div>
         </div>
 
-        {/* Botões de seleção rápida com melhor UX */}
-        <div className="space-y-3">
-          <p className="text-center text-sm text-gray-600 font-medium">Ou clique em um número:</p>
-          <div className="grid grid-cols-6 sm:grid-cols-11 gap-2">
-            {Array.from({ length: 11 }, (_, i) => (
-              <Button
-                key={i}
-                variant={selectedValue === i ? "default" : "outline"}
-                size="sm"
-                className={`h-10 w-full text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${
-                  selectedValue === i 
-                    ? `${getScaleColor(i)} text-white border-2 shadow-lg` 
-                    : 'hover:bg-gray-50 border-2 border-gray-200'
-                }`}
-                onClick={() => handleValueChange(i)}
-                data-testid={`eva-button-${i}`}
-                style={selectedValue === i ? {
-                  borderColor: getScaleColorHex(i),
-                  boxShadow: `0 4px 12px ${getScaleColorHex(i)}30`
-                } : undefined}
-              >
-                {i}
-              </Button>
-            ))}
-          </div>
-        </div>
+
 
         {/* Dicas visuais */}
-        <div className="text-center text-xs text-gray-500 space-y-1">
-          <p>💡 Clique na barra, arraste ou use os botões numéricos</p>
+        <div className="text-center text-sm text-gray-600 space-y-1">
+          <p>💡 Clique na barra ou arraste para selecionar o nível de dor</p>
           <p>Use a escala que melhor representa sua dor atual</p>
         </div>
       </CardContent>
