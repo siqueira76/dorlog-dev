@@ -13,6 +13,7 @@ import Profile from "@/pages/Profile";
 import Doctors from "@/pages/Doctors";
 import Medications from "@/pages/Medications";
 import Reports from "@/pages/Reports";
+import Quiz from "@/pages/Quiz";
 import NotFound from "@/pages/not-found";
 
 function AppRoutes() {
@@ -69,6 +70,13 @@ function AppRoutes() {
         <ProtectedRoute>
           <Layout>
             <Reports />
+          </Layout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/quiz/:quizId">
+        <ProtectedRoute>
+          <Layout>
+            <Quiz />
           </Layout>
         </ProtectedRoute>
       </Route>

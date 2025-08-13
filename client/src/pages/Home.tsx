@@ -2,9 +2,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Pill, AlertCircle, CheckCircle, Sunrise, Moon, BookOpen, Activity } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 export default function Home() {
   const { currentUser } = useAuth();
+  const [, setLocation] = useLocation();
 
   const recentActivities = [
     {
@@ -74,6 +76,7 @@ export default function Home() {
             variant="outline"
             className="group bg-gradient-to-br from-amber-50 to-orange-100 hover:from-amber-100 hover:to-orange-200 border-orange-200 hover:border-orange-300 hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all duration-300 ease-out h-28 flex-col space-y-3 rounded-2xl p-5 animate-in slide-in-from-bottom-4 fade-in-0 duration-500 delay-[300ms]"
             data-testid="button-diary-morning"
+            onClick={() => setLocation('/quiz/matinal')}
           >
             <div className="bg-gradient-to-br from-amber-400 to-orange-500 group-hover:from-amber-500 group-hover:to-orange-600 group-hover:scale-110 group-active:scale-95 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 ease-out">
               <Sunrise className="h-7 w-7 text-white group-hover:animate-spin group-hover:scale-110 transition-all duration-500 ease-out" />

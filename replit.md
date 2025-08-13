@@ -14,6 +14,8 @@ DorLog is a Progressive Web App (PWA) designed for health management, specifical
 - **SUBSCRIPTION SYSTEM IMPLEMENTED** - Active subscription verification via "assinaturas" collection
 - Profile page displays subscription status with appropriate badges and call-to-action buttons
 - Home page updated with "Registrar Crise" button (August 6, 2025)
+- **QUIZ SYSTEM IMPLEMENTED** - Dynamic quiz functionality with modular question rendering
+- Quiz matinal accessible from Home page "Diário Manhã" button (August 13, 2025)
 
 # User Preferences
 
@@ -50,6 +52,7 @@ Preferred communication style: Simple, everyday language.
 - **Consistent header component** with menu toggle across all authenticated pages
 - **Card-based layouts** for content organization
 - **Progressive Web App** capabilities with offline support
+- **Dynamic Quiz System** with modular question rendering supporting multiple question types
 
 ## Backend Architecture
 - **Express.js** server with TypeScript
@@ -61,6 +64,9 @@ Preferred communication style: Simple, everyday language.
 ## Data Layer
 - **PostgreSQL** database with Drizzle schema management
 - **Firestore** for user profiles and authentication-related data
+  - "usuarios" collection for user data
+  - "assinaturas" collection for subscription management
+  - "quizzes" collection for dynamic quiz content and metadata
 - **Firebase Storage** for file uploads (configured but not yet implemented)
 - **Session management** using PostgreSQL-backed sessions
 
