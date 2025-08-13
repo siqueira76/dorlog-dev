@@ -72,7 +72,14 @@ export const EvaScale: React.FC<EvaScaleProps> = ({
     const rect = event.currentTarget.getBoundingClientRect();
     const clickX = event.clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
-    const newValue = Math.round((percentage / 100) * 10);
+    // Ajuste para garantir que 100% resulte em 10, não 9
+    let newValue = Math.round((percentage / 100) * 10);
+    // Garantir que valores muito próximos do fim sejam 10
+    if (percentage >= 95) {
+      newValue = 10;
+    }
+    // Garantir que não ultrapasse os limites
+    newValue = Math.max(0, Math.min(10, newValue));
     handleValueChange(newValue);
   };
 
@@ -130,14 +137,14 @@ export const EvaScale: React.FC<EvaScaleProps> = ({
             {/* Progresso preenchido */}
             <div 
               className="absolute top-0 left-0 h-full bg-black bg-opacity-10 transition-all duration-300 ease-out"
-              style={{ width: `${(selectedValue / 10) * 100}%` }}
+              style={{ width: `${Math.min(100, (selectedValue / 10) * 100)}%` }}
             ></div>
             
             {/* Indicador da posição atual */}
             <div 
               className={`absolute top-1/2 w-6 h-6 bg-white border-4 border-gray-800 rounded-full shadow-xl transition-all duration-300 transform -translate-y-1/2 cursor-pointer hover:scale-125 ${isAnimating ? 'scale-125' : ''}`}
               style={{ 
-                left: `${(selectedValue / 10) * 100}%`, 
+                left: `${Math.min(100, (selectedValue / 10) * 100)}%`, 
                 transform: 'translateX(-50%) translateY(-50%)',
                 borderColor: getScaleColorHex(selectedValue)
               }}
