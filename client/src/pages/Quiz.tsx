@@ -751,13 +751,118 @@ export default function QuizPage() {
               answer={getCurrentAnswer(currentQuestion.id)}
               onAnswer={handleAnswer}
             />
+            
+            {/* Integrated navigation buttons within the question card */}
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <div className="flex justify-between items-center gap-3">
+                {/* Previous button */}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if ('vibrate' in navigator) {
+                      navigator.vibrate(10);
+                    }
+                    goToPreviousQuestion();
+                  }}
+                  disabled={session.currentQuestionIndex === 0}
+                  data-testid="button-previous-question-inline"
+                  className={`
+                    quiz-nav-button h-12 px-4 min-w-[100px] touch-target transition-all duration-200 font-medium
+                    ${session.currentQuestionIndex === 0 
+                      ? 'opacity-30 cursor-not-allowed' 
+                      : 'hover:shadow-md active:scale-95 hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <span>Anterior</span>
+                </Button>
+
+                {/* Progress info */}
+                <div className="flex flex-col items-center px-2">
+                  <div className="text-xs text-muted-foreground font-medium">
+                    {session.currentQuestionIndex + 1} de {orderedQuestions.length}
+                  </div>
+                  <div className="flex gap-1 mt-1">
+                    {orderedQuestions.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`
+                          w-2 h-2 rounded-full transition-colors duration-200
+                          ${index <= session.currentQuestionIndex 
+                            ? 'bg-blue-500' 
+                            : 'bg-gray-300'
+                          }
+                        `}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Next/Complete button */}
+                {isLastQuestion ? (
+                  <Button
+                    onClick={() => {
+                      if ('vibrate' in navigator) {
+                        navigator.vibrate([20, 50, 20]);
+                      }
+                      completeQuiz();
+                    }}
+                    disabled={!canGoNext}
+                    className={`
+                      quiz-nav-button h-12 px-4 min-w-[100px] touch-target transition-all duration-200 font-medium
+                      bg-green-600 hover:bg-green-700 text-white
+                      ${!canGoNext 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : 'hover:shadow-md active:scale-95 shadow-green-200'
+                      }
+                    `}
+                    data-testid="button-complete-quiz-inline"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <span>Concluir</span>
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      if ('vibrate' in navigator) {
+                        navigator.vibrate(15);
+                      }
+                      goToNextQuestion();
+                    }}
+                    disabled={!canGoNext}
+                    data-testid="button-next-question-inline"
+                    className={`
+                      quiz-nav-button h-12 px-4 min-w-[100px] touch-target transition-all duration-200 font-medium
+                      bg-blue-600 hover:bg-blue-700 text-white
+                      ${!canGoNext 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : 'hover:shadow-md active:scale-95 shadow-blue-200'
+                      }
+                    `}
+                  >
+                    <span>Próxima</span>
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+              </div>
+              
+              {/* Answer requirement hint */}
+              {!canGoNext && (
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-full inline-block border border-amber-200">
+                    Responda esta pergunta para continuar
+                  </p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Enhanced mobile navigation footer - always visible and prominent */}
-      <div className="flex-shrink-0 sticky bottom-0 quiz-navigation-footer border-t shadow-lg">
-        {/* Enhanced progress indicator bar */}
+      {/* Simplified progress footer - minimal and clean */}
+      <div className="flex-shrink-0 bg-white border-t">
+        {/* Progress indicator bar only */}
         <div className="h-1 bg-gray-200">
           <div 
             className="h-full bg-blue-500 transition-all duration-300 ease-out"
@@ -767,112 +872,9 @@ export default function QuizPage() {
           />
         </div>
         
-        {/* Navigation buttons container */}
-        <div className="px-4 py-4">
-          <div className="flex justify-between items-center gap-3">
-            {/* Previous button - enhanced for mobile */}
-            <Button
-              variant="outline"
-              onClick={() => {
-                // Add haptic feedback
-                if ('vibrate' in navigator) {
-                  navigator.vibrate(10);
-                }
-                goToPreviousQuestion();
-              }}
-              disabled={session.currentQuestionIndex === 0}
-              data-testid="button-previous-question"
-              className={`
-                quiz-nav-button h-12 px-4 min-w-[100px] touch-target transition-all duration-200 font-medium
-                ${session.currentQuestionIndex === 0 
-                  ? 'opacity-50 cursor-not-allowed' 
-                  : 'hover:shadow-md active:scale-95 hover:bg-gray-50'
-                }
-              `}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              <span>Anterior</span>
-            </Button>
-
-            {/* Center progress info */}
-            <div className="flex flex-col items-center px-2">
-              <div className="text-xs text-muted-foreground font-medium">
-                {session.currentQuestionIndex + 1} de {orderedQuestions.length}
-              </div>
-              <div className="flex gap-1 mt-1">
-                {orderedQuestions.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`
-                      w-2 h-2 rounded-full transition-colors duration-200
-                      ${index <= session.currentQuestionIndex 
-                        ? 'bg-blue-500' 
-                        : 'bg-gray-300'
-                      }
-                    `}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Next/Complete button - enhanced for mobile */}
-            {isLastQuestion ? (
-              <Button
-                onClick={() => {
-                  // Add haptic feedback for completion
-                  if ('vibrate' in navigator) {
-                    navigator.vibrate([20, 50, 20]); // Success pattern
-                  }
-                  completeQuiz();
-                }}
-                disabled={!canGoNext}
-                className={`
-                  quiz-nav-button h-12 px-4 min-w-[100px] touch-target transition-all duration-200 font-medium
-                  bg-green-600 hover:bg-green-700 text-white
-                  ${!canGoNext 
-                    ? 'opacity-50 cursor-not-allowed' 
-                    : 'hover:shadow-md active:scale-95 shadow-green-200'
-                  }
-                `}
-                data-testid="button-complete-quiz"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                <span>Concluir</span>
-              </Button>
-            ) : (
-              <Button
-                onClick={() => {
-                  // Add haptic feedback
-                  if ('vibrate' in navigator) {
-                    navigator.vibrate(15);
-                  }
-                  goToNextQuestion();
-                }}
-                disabled={!canGoNext}
-                data-testid="button-next-question"
-                className={`
-                  quiz-nav-button h-12 px-4 min-w-[100px] touch-target transition-all duration-200 font-medium
-                  bg-blue-600 hover:bg-blue-700 text-white
-                  ${!canGoNext 
-                    ? 'opacity-50 cursor-not-allowed' 
-                    : 'hover:shadow-md active:scale-95 shadow-blue-200'
-                  }
-                `}
-              >
-                <span>Próxima</span>
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            )}
-          </div>
-          
-          {/* Answer requirement hint - subtle but helpful */}
-          {!canGoNext && (
-            <div className="mt-3 text-center">
-              <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-full inline-block border border-amber-200">
-                Responda esta pergunta para continuar
-              </p>
-            </div>
-          )}
+        {/* Optional quiz title reminder */}
+        <div className="px-4 py-2 text-center">
+          <p className="text-xs text-muted-foreground">{quiz.nome}</p>
         </div>
       </div>
     </div>
