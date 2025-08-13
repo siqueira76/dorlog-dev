@@ -143,7 +143,7 @@ export default function QuizPage() {
               id: 6,
               texto: "Que sintomas você teve hoje?",
               tipo: "checkbox",
-              opcoes: ["Dor de cabeça", "Fadiga", "Dor muscular", "Ansiedade", "Irritabilidade", "Nenhum"]
+              opcoes: ["Dor de cabeça", "Fadiga", "Dor muscular", "Ansiedade", "Irritabilidade", "Depressivo", "Nenhum"]
             },
             "7": {
               id: 7,
@@ -318,7 +318,7 @@ export default function QuizPage() {
               id: 6,
               texto: "Que sintomas você teve hoje?",
               tipo: "checkbox",
-              opcoes: ["Dor de cabeça", "Fadiga", "Dor muscular", "Ansiedade", "Irritabilidade", "Nenhum"]
+              opcoes: ["Dor de cabeça", "Fadiga", "Dor muscular", "Ansiedade", "Irritabilidade", "Depressivo", "Nenhum"]
             },
             "7": {
               id: 7,
@@ -526,7 +526,7 @@ export default function QuizPage() {
               id: 6,
               texto: "Que sintomas você teve hoje?",
               tipo: "checkbox",
-              opcoes: ["Dor de cabeça", "Fadiga", "Dor muscular", "Ansiedade", "Irritabilidade", "Nenhum"]
+              opcoes: ["Dor de cabeça", "Fadiga", "Dor muscular", "Ansiedade", "Irritabilidade", "Depressivo", "Nenhum"]
             },
             "7": {
               id: 7,
