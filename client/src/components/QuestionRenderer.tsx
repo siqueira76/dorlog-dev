@@ -82,37 +82,117 @@ export default function QuestionRenderer({ question, answer, onAnswer }: Questio
         );
 
       case 'checkbox':
+        const selectedItems = Array.isArray(localAnswer) ? localAnswer : [];
+        const numOptions = question.opcoes?.length || 0;
+        
+        // Determine grid layout based on number of options for optimal mobile experience
+        const getCheckboxGridClass = (count: number) => {
+          if (count <= 2) return "grid grid-cols-1 gap-3 max-w-sm mx-auto";
+          if (count <= 4) return "grid grid-cols-1 gap-3 max-w-md mx-auto";
+          if (count <= 6) return "grid grid-cols-2 gap-3 max-w-lg mx-auto";
+          return "grid grid-cols-2 gap-2 max-w-xl mx-auto";
+        };
+
         return (
-          <div className="space-y-3">
-            {question.opcoes?.map((opcao, index) => {
-              const isChecked = Array.isArray(localAnswer) ? localAnswer.includes(opcao) : false;
-              return (
-                <div key={index} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`checkbox-${index}`}
-                    checked={isChecked}
-                    onCheckedChange={(checked) => {
-                      let newAnswer = Array.isArray(localAnswer) ? [...localAnswer] : [];
-                      if (checked) {
-                        if (!newAnswer.includes(opcao)) {
-                          newAnswer.push(opcao);
-                        }
-                      } else {
+          <div className="space-y-4">
+            {/* Selection counter for better feedback */}
+            {selectedItems.length > 0 && (
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  {selectedItems.length} selecionado{selectedItems.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+            )}
+
+            {/* Modern card-based checkbox options */}
+            <div className={getCheckboxGridClass(numOptions)}>
+              {question.opcoes?.map((opcao, index) => {
+                const isSelected = selectedItems.includes(opcao);
+                
+                return (
+                  <Card
+                    key={index}
+                    className={`
+                      checkbox-card relative cursor-pointer transition-all duration-200 touch-target
+                      hover:shadow-md active:scale-98 transform select-none
+                      ${isSelected 
+                        ? 'ring-2 ring-blue-500 bg-blue-50 border-blue-200 shadow-sm' 
+                        : 'hover:border-gray-300 hover:bg-gray-50'
+                      }
+                    `}
+                    onClick={() => {
+                      // Add haptic feedback for mobile devices
+                      if ('vibrate' in navigator) {
+                        navigator.vibrate(10); // Very light vibration
+                      }
+                      
+                      let newAnswer = [...selectedItems];
+                      if (isSelected) {
                         newAnswer = newAnswer.filter(item => item !== opcao);
+                      } else {
+                        newAnswer.push(opcao);
                       }
                       handleAnswerChange(newAnswer);
                     }}
-                    data-testid={`checkbox-${index}`}
-                  />
-                  <label
-                    htmlFor={`checkbox-${index}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    data-testid={`checkbox-card-${index}`}
                   >
-                    {opcao}
-                  </label>
-                </div>
-              );
-            })}
+                    <CardContent className="p-4 relative">
+                      {/* Selection indicator with enhanced visual feedback */}
+                      <div className={`
+                        absolute top-3 right-3 w-6 h-6 rounded-full border-2 
+                        flex items-center justify-center transition-all duration-300
+                        ${isSelected 
+                          ? 'bg-blue-500 border-blue-500 scale-110 shadow-sm' 
+                          : 'border-gray-300 bg-white hover:border-gray-400'
+                        }
+                      `}>
+                        {isSelected && (
+                          <svg 
+                            className="w-3.5 h-3.5 text-white animate-pulse" 
+                            fill="currentColor" 
+                            viewBox="0 0 20 20"
+                          >
+                            <path 
+                              fillRule="evenodd" 
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
+                              clipRule="evenodd" 
+                            />
+                          </svg>
+                        )}
+                      </div>
+
+                      {/* Option text with better spacing and typography */}
+                      <div className={`
+                        pr-8 text-sm font-medium leading-relaxed
+                        ${isSelected ? 'text-blue-900' : 'text-gray-700'}
+                      `}>
+                        {opcao}
+                      </div>
+
+                      {/* Subtle accent bar for selected items */}
+                      {isSelected && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l-lg" />
+                      )}
+
+                      {/* Enhanced visual state overlay */}
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-blue-500 opacity-5 rounded-lg pointer-events-none" />
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Help text for mobile users */}
+            {question.opcoes && question.opcoes.length > 1 && (
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">
+                  Toque para selecionar múltiplas opções
+                </p>
+              </div>
+            )}
           </div>
         );
 

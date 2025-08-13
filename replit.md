@@ -20,6 +20,7 @@ DorLog is a Progressive Web App (PWA) designed for health management, specifical
 - Quiz matinal accessible from Home page "Diário Manhã" button (August 13, 2025)
 - **QUIZ NOTURNO IMPLEMENTED** - Night diary quiz accessible from "Diário Noite" button (August 13, 2025)
 - **QUIZ EMERGENCIAL IMPLEMENTED** - Emergency crisis quiz accessible from "Registrar Crise" button (August 13, 2025)
+- **MODERN CHECKBOX UX IMPLEMENTED** - Enhanced mobile-first checkbox components with card-based design, haptic feedback, and improved accessibility (August 13, 2025)
 - Firebase security rules configuration required for quiz access - see CONFIGURACAO_FIREBASE_REGRAS.md
 
 # User Preferences

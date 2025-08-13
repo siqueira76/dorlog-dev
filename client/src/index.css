@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Enhanced mobile touch interactions for quiz components */
+.active\:scale-98:active {
+  transform: scale(0.98);
+}
+
+/* Improved checkbox card interactions */
+@media (hover: hover) {
+  .checkbox-card:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* Better touch targets for mobile */
+.touch-target {
+  min-height: 44px; /* iOS/Android recommended minimum */
+  min-width: 44px;
+}
+
+/* Smooth transitions for all interactive quiz elements */
+.quiz-response-container * {
+  transition-property: transform, box-shadow, background-color, border-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 :root {
   --background: hsl(210, 20%, 98%);
   --foreground: hsl(222.2, 84%, 4.9%);
