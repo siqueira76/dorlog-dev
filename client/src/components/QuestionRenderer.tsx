@@ -147,48 +147,74 @@ export default function QuestionRenderer({ question, answer, onAnswer }: Questio
       case 'emojis':
         // Se a pergunta tem opções específicas, use-as. Caso contrário, use as opções padrão
         if (question.opcoes && question.opcoes.length > 0) {
-          // Mapear opções específicas do Firebase para emojis
-          const getEmojiForOption = (opcao: string) => {
-            const emojiMap: { [key: string]: string } = {
-              'Ansioso': '😰',
-              'Triste': '😢', 
-              'Irritado': '😠',
-              'Calmo': '😌',
-              'Feliz': '😊',
-              'Depressivo': '😔',
-              'Deprecivo': '😔' // Alternativa caso esteja escrito assim
+          // Mapear opções específicas do Firebase para emojis e cores
+          const getEmojiDataForOption = (opcao: string) => {
+            const emojiMap: { [key: string]: { emoji: string; color: string; bgColor: string } } = {
+              'Ansioso': { emoji: '😰', color: 'text-orange-600', bgColor: 'hover:bg-orange-50 data-[selected=true]:bg-orange-100' },
+              'Triste': { emoji: '😢', color: 'text-blue-600', bgColor: 'hover:bg-blue-50 data-[selected=true]:bg-blue-100' }, 
+              'Irritado': { emoji: '😠', color: 'text-red-600', bgColor: 'hover:bg-red-50 data-[selected=true]:bg-red-100' },
+              'Calmo': { emoji: '😌', color: 'text-green-600', bgColor: 'hover:bg-green-50 data-[selected=true]:bg-green-100' },
+              'Feliz': { emoji: '😊', color: 'text-yellow-600', bgColor: 'hover:bg-yellow-50 data-[selected=true]:bg-yellow-100' },
+              'Depressivo': { emoji: '😔', color: 'text-purple-600', bgColor: 'hover:bg-purple-50 data-[selected=true]:bg-purple-100' },
+              'Deprecivo': { emoji: '😔', color: 'text-purple-600', bgColor: 'hover:bg-purple-50 data-[selected=true]:bg-purple-100' }
             };
-            return emojiMap[opcao] || '😐';
+            return emojiMap[opcao] || { emoji: '😐', color: 'text-gray-600', bgColor: 'hover:bg-gray-50 data-[selected=true]:bg-gray-100' };
           };
 
-          // Determinar layout responsivo baseado no número de opções
+          // Layout responsivo otimizado para melhor UX
           const getGridClass = (numOptions: number) => {
-            if (numOptions <= 2) return "grid grid-cols-1 sm:grid-cols-2 gap-3";
-            if (numOptions <= 3) return "grid grid-cols-1 sm:grid-cols-3 gap-3";
-            if (numOptions <= 4) return "grid grid-cols-2 sm:grid-cols-4 gap-3";
-            return "grid grid-cols-2 sm:grid-cols-3 gap-3";
+            if (numOptions <= 2) return "grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto";
+            if (numOptions <= 3) return "grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto";
+            if (numOptions <= 4) return "grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto";
+            return "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 max-w-4xl mx-auto";
           };
           
           return (
             <div className={getGridClass(question.opcoes.length)}>
-              {question.opcoes.map((opcao, index) => (
-                <Button
-                  key={index}
-                  variant={localAnswer === opcao ? "default" : "outline"}
-                  className={`h-24 flex-col space-y-2 p-3 transition-all duration-200 hover:scale-105 ${
-                    localAnswer === opcao 
-                      ? "bg-primary text-primary-foreground shadow-lg" 
-                      : "hover:bg-muted/50"
-                  }`}
-                  onClick={() => handleAnswerChange(opcao)}
-                  data-testid={`button-emoji-${index}`}
-                >
-                  <span className="text-3xl mb-1">{getEmojiForOption(opcao)}</span>
-                  <span className="text-xs font-medium text-center leading-tight break-words">
-                    {opcao}
-                  </span>
-                </Button>
-              ))}
+              {question.opcoes.map((opcao, index) => {
+                const emojiData = getEmojiDataForOption(opcao);
+                const isSelected = localAnswer === opcao;
+                
+                return (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    data-selected={isSelected}
+                    className={`
+                      h-28 flex-col space-y-2 p-4 transition-all duration-300 
+                      border-2 rounded-xl relative overflow-hidden
+                      ${isSelected 
+                        ? `${emojiData.bgColor} border-current shadow-lg transform scale-105 ${emojiData.color}` 
+                        : `${emojiData.bgColor} border-gray-200 hover:border-gray-300 hover:shadow-md hover:scale-102`
+                      }
+                      active:scale-95 focus:ring-2 focus:ring-offset-2 focus:ring-primary/20
+                    `}
+                    onClick={() => handleAnswerChange(opcao)}
+                    data-testid={`button-emoji-${index}`}
+                  >
+                    {/* Indicador de seleção */}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 w-3 h-3 bg-current rounded-full opacity-80" />
+                    )}
+                    
+                    {/* Emoji com animação */}
+                    <div className={`text-4xl mb-2 transition-transform duration-200 ${isSelected ? 'animate-pulse' : ''}`}>
+                      {emojiData.emoji}
+                    </div>
+                    
+                    {/* Label com melhor tipografia */}
+                    <span className={`
+                      text-sm font-semibold text-center leading-tight break-words
+                      ${isSelected ? 'text-current' : 'text-gray-700'}
+                    `}>
+                      {opcao}
+                    </span>
+                    
+                    {/* Efeito de hover sutil */}
+                    <div className="absolute inset-0 bg-white opacity-0 hover:opacity-5 transition-opacity duration-200 pointer-events-none" />
+                  </Button>
+                );
+              })}
             </div>
           );
         }
@@ -232,18 +258,33 @@ export default function QuestionRenderer({ question, answer, onAnswer }: Questio
   };
 
   return (
-    <div className="space-y-6">
-      {/* Pergunta */}
-      <div>
-        <h2 className="text-xl font-semibold text-foreground mb-4" data-testid="text-question">
+    <div className="space-y-8 quiz-button-enter">
+      {/* Pergunta com melhor apresentação */}
+      <div className="text-center space-y-2">
+        <h2 className="text-2xl font-bold text-foreground leading-tight" data-testid="text-question">
           {question.texto}
         </h2>
+        {question.tipo === 'emojis' && (
+          <p className="text-sm text-muted-foreground">
+            Selecione a opção que melhor descreve seu estado emocional
+          </p>
+        )}
       </div>
 
-      {/* Renderização da resposta */}
-      <div>
+      {/* Renderização da resposta com container melhorado */}
+      <div className="quiz-response-container">
         {renderQuestion()}
       </div>
+      
+      {/* Feedback visual para seleção */}
+      {localAnswer && question.tipo === 'emojis' && (
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            Selecionado: {localAnswer}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

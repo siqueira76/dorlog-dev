@@ -40,4 +40,41 @@
   .drawer-overlay {
     backdrop-filter: blur(2px);
   }
+  
+  /* Custom animations for quiz buttons */
+  .quiz-button-enter {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .quiz-button-selected {
+    animation: bounceIn 0.4s ease-out;
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes bounceIn {
+    0% {
+      transform: scale(0.8);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  /* Smooth hover scale */
+  .hover\:scale-102:hover {
+    transform: scale(1.02);
+  }
 }
