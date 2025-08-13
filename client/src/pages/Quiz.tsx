@@ -37,13 +37,84 @@ export default function QuizPage() {
       setLoading(true);
       setError(null);
 
+      console.log('🧪 Tentando carregar quiz:', id);
+      
+      // Verificar configuração do Firebase
+      const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+      const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+      
+      if (!projectId || !apiKey || projectId === 'demo-project') {
+        throw new Error('Configuração Firebase inválida');
+      }
+
       const quizRef = doc(db, 'quizzes', id);
+      
+      console.log('📁 Tentando acessar documento quiz:', `quizzes/${id}`);
       const quizSnap = await getDoc(quizRef);
 
       if (!quizSnap.exists()) {
-        throw new Error('Quiz não encontrado');
+        console.log('❌ Documento do quiz não encontrado');
+        
+        // Criar quiz de exemplo temporário para demonstração
+        const exampleQuiz: Quiz = {
+          nome: "Quiz Matinal - Demonstração",
+          disparo: "notificacao",
+          perguntas: {
+            "1": {
+              id: 1,
+              texto: "Como você se sente ao acordar hoje?",
+              tipo: "emojis"
+            },
+            "2": {
+              id: 2,
+              texto: "Qual é o seu nível de dor neste momento? (0 = sem dor, 10 = dor máxima)",
+              tipo: "eva"
+            },
+            "3": {
+              id: 3,
+              texto: "Que sintomas você está sentindo hoje?",
+              tipo: "checkbox",
+              opcoes: ["Dor de cabeça", "Náusea", "Fadiga", "Dor muscular", "Ansiedade", "Nenhum"]
+            },
+            "4": {
+              id: 4,
+              texto: "Descreva brevemente como foi sua noite de sono:",
+              tipo: "texto"
+            }
+          }
+        };
+
+        console.log('🔧 Usando quiz de demonstração');
+        setQuiz(exampleQuiz);
+
+        // Ordenar perguntas por ID
+        const questions = Object.values(exampleQuiz.perguntas).sort((a, b) => {
+          const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
+          const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
+          return aId - bId;
+        });
+
+        setOrderedQuestions(questions);
+
+        // Inicializar sessão do quiz
+        const newSession: QuizSession = {
+          quizId: id,
+          answers: [],
+          currentQuestionIndex: 0,
+          startTime: new Date(),
+        };
+
+        setSession(newSession);
+        
+        toast({
+          title: "Modo Demonstração",
+          description: "Usando quiz de exemplo. Configure a coleção 'quizzes' no Firestore para usar dados reais.",
+        });
+        
+        return;
       }
 
+      console.log('✅ Documento do quiz encontrado');
       const quizData = quizSnap.data() as Quiz;
       setQuiz(quizData);
 
@@ -65,12 +136,25 @@ export default function QuizPage() {
       };
 
       setSession(newSession);
+      
+      console.log('✅ Quiz carregado com sucesso');
     } catch (err: any) {
-      console.error('Erro ao carregar quiz:', err);
-      setError(err.message || 'Erro ao carregar quiz');
+      console.error('❌ Erro ao carregar quiz:', err);
+      
+      let errorMessage = 'Erro ao carregar quiz';
+      
+      if (err.code === 'permission-denied') {
+        errorMessage = 'Acesso negado. Configure as regras de segurança do Firestore para permitir leitura da coleção "quizzes".';
+      } else if (err.code === 'unavailable') {
+        errorMessage = 'Serviço indisponível. Verifique sua conexão com a internet.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar o quiz. Tente novamente.",
+        title: "Erro ao Carregar Quiz",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
