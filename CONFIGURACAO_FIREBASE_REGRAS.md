@@ -76,6 +76,8 @@ Após configurar as regras, crie o documento do quiz:
 
 ### 2. Adicione os seguintes dados:
 
+🚨 **ATENÇÃO**: Você deve criar TODOS os campos, especialmente o campo `perguntas`
+
 ```json
 {
   "nome": "Quiz Matinal",
@@ -106,6 +108,24 @@ Após configurar as regras, crie o documento do quiz:
   }
 }
 ```
+
+### 🔧 ERRO ATUAL IDENTIFICADO
+O documento `quizzes/matinal` existe no seu Firestore mas está **INCOMPLETO**. 
+
+**Dados atuais encontrados:**
+```json
+{
+  "nome": "Quiz Matinal",
+  "disparo": "notificacao"
+}
+```
+
+**FALTANDO:** O campo `perguntas` com todas as questões.
+
+### ✅ SOLUÇÃO
+1. Vá no Firebase Console > Firestore Database
+2. Encontre a coleção `quizzes` > documento `matinal`
+3. **EDITE** o documento para incluir o campo `perguntas` com a estrutura completa acima
 
 ## ⚡ TESTE RÁPIDO
 

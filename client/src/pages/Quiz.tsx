@@ -116,6 +116,67 @@ export default function QuizPage() {
 
       console.log('✅ Documento do quiz encontrado');
       const quizData = quizSnap.data() as Quiz;
+      
+      console.log('📊 Dados do quiz:', quizData);
+      
+      if (!quizData || !quizData.perguntas || Object.keys(quizData.perguntas).length === 0) {
+        console.log('⚠️ Documento do quiz existe mas não tem perguntas válidas');
+        console.log('🔧 Usando quiz de demonstração');
+        
+        // Usar quiz de demonstração quando o documento existe mas não tem perguntas
+        const exampleQuiz: Quiz = {
+          nome: "Quiz Matinal - Demonstração",
+          disparo: "notificacao",
+          perguntas: {
+            "1": {
+              id: 1,
+              texto: "Como você se sente ao acordar hoje?",
+              tipo: "emojis"
+            },
+            "2": {
+              id: 2,
+              texto: "Qual é o seu nível de dor neste momento? (0 = sem dor, 10 = dor máxima)",
+              tipo: "eva"
+            },
+            "3": {
+              id: 3,
+              texto: "Que sintomas você está sentindo hoje?",
+              tipo: "checkbox",
+              opcoes: ["Dor de cabeça", "Náusea", "Fadiga", "Dor muscular", "Ansiedade", "Nenhum"]
+            },
+            "4": {
+              id: 4,
+              texto: "Descreva brevemente como foi sua noite de sono:",
+              tipo: "texto"
+            }
+          }
+        };
+
+        setQuiz(exampleQuiz);
+        const questions = Object.values(exampleQuiz.perguntas).sort((a, b) => {
+          const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
+          const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
+          return aId - bId;
+        });
+        setOrderedQuestions(questions);
+        
+        const newSession: QuizSession = {
+          quizId: id,
+          answers: [],
+          currentQuestionIndex: 0,
+          startTime: new Date(),
+        };
+        setSession(newSession);
+        
+        toast({
+          title: "Modo Demonstração",
+          description: "O documento do quiz existe mas não possui perguntas. Adicione as perguntas no Firestore ou use o quiz de demonstração.",
+        });
+        
+        setLoading(false);
+        return;
+      }
+
       setQuiz(quizData);
 
       // Ordenar perguntas por ID
@@ -124,6 +185,12 @@ export default function QuizPage() {
         const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
         return aId - bId;
       });
+      
+      console.log('📝 Perguntas ordenadas:', questions);
+
+      if (questions.length === 0) {
+        throw new Error('Nenhuma pergunta encontrada no quiz');
+      }
 
       setOrderedQuestions(questions);
 
@@ -140,11 +207,66 @@ export default function QuizPage() {
       console.log('✅ Quiz carregado com sucesso');
     } catch (err: any) {
       console.error('❌ Erro ao carregar quiz:', err);
+      console.error('❌ Stack trace:', err.stack);
+      console.error('❌ Erro completo:', JSON.stringify(err, null, 2));
       
       let errorMessage = 'Erro ao carregar quiz';
       
       if (err.code === 'permission-denied') {
-        errorMessage = 'Acesso negado. Configure as regras de segurança do Firestore para permitir leitura da coleção "quizzes".';
+        console.log('🔧 Usando quiz de demonstração devido ao erro de permissão');
+        
+        // Usar quiz de demonstração como fallback
+        const exampleQuiz: Quiz = {
+          nome: "Quiz Matinal - Demonstração",
+          disparo: "notificacao",
+          perguntas: {
+            "1": {
+              id: 1,
+              texto: "Como você se sente ao acordar hoje?",
+              tipo: "emojis"
+            },
+            "2": {
+              id: 2,
+              texto: "Qual é o seu nível de dor neste momento? (0 = sem dor, 10 = dor máxima)",
+              tipo: "eva"
+            },
+            "3": {
+              id: 3,
+              texto: "Que sintomas você está sentindo hoje?",
+              tipo: "checkbox",
+              opcoes: ["Dor de cabeça", "Náusea", "Fadiga", "Dor muscular", "Ansiedade", "Nenhum"]
+            },
+            "4": {
+              id: 4,
+              texto: "Descreva brevemente como foi sua noite de sono:",
+              tipo: "texto"
+            }
+          }
+        };
+
+        setQuiz(exampleQuiz);
+        const questions = Object.values(exampleQuiz.perguntas).sort((a, b) => {
+          const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
+          const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
+          return aId - bId;
+        });
+        setOrderedQuestions(questions);
+        
+        const newSession: QuizSession = {
+          quizId: id,
+          answers: [],
+          currentQuestionIndex: 0,
+          startTime: new Date(),
+        };
+        setSession(newSession);
+        
+        toast({
+          title: "Modo Demonstração",
+          description: "Usando quiz de exemplo devido a erro de configuração.",
+        });
+        
+        setLoading(false);
+        return;
       } else if (err.code === 'unavailable') {
         errorMessage = 'Serviço indisponível. Verifique sua conexão com a internet.';
       } else if (err.message) {
