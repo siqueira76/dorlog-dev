@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
+import { EvaScale } from '@/components/EvaScale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Smile, Frown, Meh, Heart, ThumbsUp } from 'lucide-react';
 
@@ -47,29 +48,11 @@ export default function QuestionRenderer({ question, answer, onAnswer }: Questio
 
       case 'eva':
         return (
-          <div className="space-y-4">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">
-                Avalie de 0 a 10
-              </p>
-              <div className="text-3xl font-bold text-primary">
-                {localAnswer ?? 5}
-              </div>
-            </div>
-            <Slider
-              value={[localAnswer ?? 5]}
-              onValueChange={(value) => handleAnswerChange(value[0])}
-              max={10}
-              min={0}
-              step={1}
-              className="w-full"
-              data-testid="slider-eva"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>0</span>
-              <span>10</span>
-            </div>
-          </div>
+          <EvaScale
+            value={localAnswer ?? 0}
+            onChange={handleAnswerChange}
+            className="w-full"
+          />
         );
 
       case 'slider':
