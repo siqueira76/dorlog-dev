@@ -145,7 +145,56 @@ export default function QuestionRenderer({ question, answer, onAnswer }: Questio
         );
 
       case 'emojis':
-        const emojiOptions = [
+        // Se a pergunta tem opções específicas, use-as. Caso contrário, use as opções padrão
+        if (question.opcoes && question.opcoes.length > 0) {
+          // Mapear opções específicas do Firebase para emojis
+          const getEmojiForOption = (opcao: string) => {
+            const emojiMap: { [key: string]: string } = {
+              'Ansioso': '😰',
+              'Triste': '😢', 
+              'Irritado': '😠',
+              'Calmo': '😌',
+              'Feliz': '😊',
+              'Depressivo': '😔',
+              'Deprecivo': '😔' // Alternativa caso esteja escrito assim
+            };
+            return emojiMap[opcao] || '😐';
+          };
+
+          // Determinar layout responsivo baseado no número de opções
+          const getGridClass = (numOptions: number) => {
+            if (numOptions <= 2) return "grid grid-cols-1 sm:grid-cols-2 gap-3";
+            if (numOptions <= 3) return "grid grid-cols-1 sm:grid-cols-3 gap-3";
+            if (numOptions <= 4) return "grid grid-cols-2 sm:grid-cols-4 gap-3";
+            return "grid grid-cols-2 sm:grid-cols-3 gap-3";
+          };
+          
+          return (
+            <div className={getGridClass(question.opcoes.length)}>
+              {question.opcoes.map((opcao, index) => (
+                <Button
+                  key={index}
+                  variant={localAnswer === opcao ? "default" : "outline"}
+                  className={`h-24 flex-col space-y-2 p-3 transition-all duration-200 hover:scale-105 ${
+                    localAnswer === opcao 
+                      ? "bg-primary text-primary-foreground shadow-lg" 
+                      : "hover:bg-muted/50"
+                  }`}
+                  onClick={() => handleAnswerChange(opcao)}
+                  data-testid={`button-emoji-${index}`}
+                >
+                  <span className="text-3xl mb-1">{getEmojiForOption(opcao)}</span>
+                  <span className="text-xs font-medium text-center leading-tight break-words">
+                    {opcao}
+                  </span>
+                </Button>
+              ))}
+            </div>
+          );
+        }
+
+        // Fallback para opções padrão se não há opções específicas
+        const defaultEmojiOptions = [
           { emoji: '😢', value: 'muito-ruim', label: 'Muito Ruim', icon: Frown },
           { emoji: '😐', value: 'ruim', label: 'Ruim', icon: Meh },
           { emoji: '😊', value: 'bom', label: 'Bom', icon: Smile },
@@ -155,7 +204,7 @@ export default function QuestionRenderer({ question, answer, onAnswer }: Questio
 
         return (
           <div className="grid grid-cols-5 gap-2">
-            {emojiOptions.map((option, index) => {
+            {defaultEmojiOptions.map((option, index) => {
               const Icon = option.icon;
               return (
                 <Button
