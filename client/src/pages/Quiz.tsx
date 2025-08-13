@@ -56,7 +56,58 @@ export default function QuizPage() {
         console.log('❌ Documento do quiz não encontrado');
         
         // Criar quiz de exemplo temporário baseado no tipo
-        const exampleQuiz: Quiz = id === 'noturno' ? {
+        const exampleQuiz: Quiz = id === 'emergencial' ? {
+          nome: "Quiz Emergencial - Demonstração",
+          disparo: "manual",
+          perguntas: {
+            "1": {
+              id: 1,
+              texto: "Qual é a intensidade da sua dor agora? (0 = sem dor, 10 = dor insuportável)",
+              tipo: "eva"
+            },
+            "2": {
+              id: 2,
+              texto: "Onde você está sentindo dor?",
+              tipo: "checkbox",
+              opcoes: ["Cabeça", "Pescoço", "Ombros", "Costas", "Braços", "Pernas", "Abdômen", "Músculos", "Articulações", "Outro local"]
+            },
+            "3": {
+              id: 3,
+              texto: "Como você descreveria sua dor?",
+              tipo: "checkbox",
+              opcoes: ["Pulsante", "Latejante", "Aguda", "Queimação", "Formigamento", "Peso", "Pressão", "Pontada", "Cólica", "Contínua"]
+            },
+            "4": {
+              id: 4,
+              texto: "Há quanto tempo você está sentindo essa dor?",
+              tipo: "opcoes",
+              opcoes: ["Menos de 1 hora", "1-3 horas", "3-6 horas", "6-12 horas", "Mais de 12 horas", "Vários dias"]
+            },
+            "5": {
+              id: 5,
+              texto: "O que pode ter desencadeado essa crise?",
+              tipo: "checkbox",
+              opcoes: ["Estresse", "Mudança do tempo", "Falta de sono", "Atividade física", "Alimentação", "Postura", "Trabalho", "Não sei", "Outro"]
+            },
+            "6": {
+              id: 6,
+              texto: "Que outros sintomas você está sentindo?",
+              tipo: "checkbox",
+              opcoes: ["Náusea", "Vômito", "Tontura", "Sensibilidade à luz", "Sensibilidade ao som", "Fadiga", "Ansiedade", "Irritabilidade", "Nenhum"]
+            },
+            "7": {
+              id: 7,
+              texto: "Você já tomou algum medicamento para essa dor?",
+              tipo: "opcoes",
+              opcoes: ["Sim, melhorou", "Sim, não fez efeito", "Sim, piorou", "Não tomei ainda", "Não tenho medicamento"]
+            },
+            "8": {
+              id: 8,
+              texto: "Descreva qualquer informação adicional sobre esta crise:",
+              tipo: "texto"
+            }
+          }
+        } : id === 'noturno' ? {
           nome: "Quiz Noturno - Demonstração",
           disparo: "notificacao",
           perguntas: {
@@ -180,7 +231,58 @@ export default function QuizPage() {
         console.log('🔧 Usando quiz de demonstração');
         
         // Usar quiz de demonstração baseado no tipo quando não há perguntas na subcoleção
-        const exampleQuiz: Quiz = id === 'noturno' ? {
+        const exampleQuiz: Quiz = id === 'emergencial' ? {
+          nome: "Quiz Emergencial - Demonstração",
+          disparo: "manual",
+          perguntas: {
+            "1": {
+              id: 1,
+              texto: "Qual é a intensidade da sua dor agora? (0 = sem dor, 10 = dor insuportável)",
+              tipo: "eva"
+            },
+            "2": {
+              id: 2,
+              texto: "Onde você está sentindo dor?",
+              tipo: "checkbox",
+              opcoes: ["Cabeça", "Pescoço", "Ombros", "Costas", "Braços", "Pernas", "Abdômen", "Músculos", "Articulações", "Outro local"]
+            },
+            "3": {
+              id: 3,
+              texto: "Como você descreveria sua dor?",
+              tipo: "checkbox",
+              opcoes: ["Pulsante", "Latejante", "Aguda", "Queimação", "Formigamento", "Peso", "Pressão", "Pontada", "Cólica", "Contínua"]
+            },
+            "4": {
+              id: 4,
+              texto: "Há quanto tempo você está sentindo essa dor?",
+              tipo: "opcoes",
+              opcoes: ["Menos de 1 hora", "1-3 horas", "3-6 horas", "6-12 horas", "Mais de 12 horas", "Vários dias"]
+            },
+            "5": {
+              id: 5,
+              texto: "O que pode ter desencadeado essa crise?",
+              tipo: "checkbox",
+              opcoes: ["Estresse", "Mudança do tempo", "Falta de sono", "Atividade física", "Alimentação", "Postura", "Trabalho", "Não sei", "Outro"]
+            },
+            "6": {
+              id: 6,
+              texto: "Que outros sintomas você está sentindo?",
+              tipo: "checkbox",
+              opcoes: ["Náusea", "Vômito", "Tontura", "Sensibilidade à luz", "Sensibilidade ao som", "Fadiga", "Ansiedade", "Irritabilidade", "Nenhum"]
+            },
+            "7": {
+              id: 7,
+              texto: "Você já tomou algum medicamento para essa dor?",
+              tipo: "opcoes",
+              opcoes: ["Sim, melhorou", "Sim, não fez efeito", "Sim, piorou", "Não tomei ainda", "Não tenho medicamento"]
+            },
+            "8": {
+              id: 8,
+              texto: "Descreva qualquer informação adicional sobre esta crise:",
+              tipo: "texto"
+            }
+          }
+        } : id === 'noturno' ? {
           nome: "Quiz Noturno - Demonstração",
           disparo: "notificacao",
           perguntas: {
@@ -337,7 +439,58 @@ export default function QuizPage() {
         console.log('🔧 Usando quiz de demonstração devido ao erro de permissão');
         
         // Usar quiz de demonstração baseado no tipo como fallback
-        const exampleQuiz: Quiz = id === 'noturno' ? {
+        const exampleQuiz: Quiz = id === 'emergencial' ? {
+          nome: "Quiz Emergencial - Demonstração",
+          disparo: "manual",
+          perguntas: {
+            "1": {
+              id: 1,
+              texto: "Qual é a intensidade da sua dor agora? (0 = sem dor, 10 = dor insuportável)",
+              tipo: "eva"
+            },
+            "2": {
+              id: 2,
+              texto: "Onde você está sentindo dor?",
+              tipo: "checkbox",
+              opcoes: ["Cabeça", "Pescoço", "Ombros", "Costas", "Braços", "Pernas", "Abdômen", "Músculos", "Articulações", "Outro local"]
+            },
+            "3": {
+              id: 3,
+              texto: "Como você descreveria sua dor?",
+              tipo: "checkbox",
+              opcoes: ["Pulsante", "Latejante", "Aguda", "Queimação", "Formigamento", "Peso", "Pressão", "Pontada", "Cólica", "Contínua"]
+            },
+            "4": {
+              id: 4,
+              texto: "Há quanto tempo você está sentindo essa dor?",
+              tipo: "opcoes",
+              opcoes: ["Menos de 1 hora", "1-3 horas", "3-6 horas", "6-12 horas", "Mais de 12 horas", "Vários dias"]
+            },
+            "5": {
+              id: 5,
+              texto: "O que pode ter desencadeado essa crise?",
+              tipo: "checkbox",
+              opcoes: ["Estresse", "Mudança do tempo", "Falta de sono", "Atividade física", "Alimentação", "Postura", "Trabalho", "Não sei", "Outro"]
+            },
+            "6": {
+              id: 6,
+              texto: "Que outros sintomas você está sentindo?",
+              tipo: "checkbox",
+              opcoes: ["Náusea", "Vômito", "Tontura", "Sensibilidade à luz", "Sensibilidade ao som", "Fadiga", "Ansiedade", "Irritabilidade", "Nenhum"]
+            },
+            "7": {
+              id: 7,
+              texto: "Você já tomou algum medicamento para essa dor?",
+              tipo: "opcoes",
+              opcoes: ["Sim, melhorou", "Sim, não fez efeito", "Sim, piorou", "Não tomei ainda", "Não tenho medicamento"]
+            },
+            "8": {
+              id: 8,
+              texto: "Descreva qualquer informação adicional sobre esta crise:",
+              tipo: "texto"
+            }
+          }
+        } : id === 'noturno' ? {
           nome: "Quiz Noturno - Demonstração",
           disparo: "notificacao",
           perguntas: {
