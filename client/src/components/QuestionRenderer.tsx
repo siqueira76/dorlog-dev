@@ -161,12 +161,12 @@ export default function QuestionRenderer({ question, answer, onAnswer }: Questio
             return emojiMap[opcao] || { emoji: '😐', color: 'text-gray-600', bgColor: 'hover:bg-gray-50 data-[selected=true]:bg-gray-100' };
           };
 
-          // Layout responsivo otimizado para melhor UX
+          // Layout mobile-first otimizado para economia de espaço
           const getGridClass = (numOptions: number) => {
-            if (numOptions <= 2) return "grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto";
-            if (numOptions <= 3) return "grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto";
-            if (numOptions <= 4) return "grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto";
-            return "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 max-w-4xl mx-auto";
+            if (numOptions <= 2) return "grid grid-cols-2 gap-3 max-w-sm mx-auto";
+            if (numOptions <= 3) return "grid grid-cols-3 gap-2 max-w-md mx-auto";
+            if (numOptions <= 4) return "grid grid-cols-2 gap-3 max-w-sm mx-auto";
+            return "grid grid-cols-3 gap-2 max-w-lg mx-auto";
           };
           
           return (
@@ -181,37 +181,34 @@ export default function QuestionRenderer({ question, answer, onAnswer }: Questio
                     variant="outline"
                     data-selected={isSelected}
                     className={`
-                      h-28 flex-col space-y-2 p-4 transition-all duration-300 
-                      border-2 rounded-xl relative overflow-hidden
+                      h-20 flex-col space-y-1 p-2 transition-all duration-200
+                      border-2 rounded-lg relative overflow-hidden
                       ${isSelected 
-                        ? `${emojiData.bgColor} border-current shadow-lg transform scale-105 ${emojiData.color}` 
-                        : `${emojiData.bgColor} border-gray-200 hover:border-gray-300 hover:shadow-md hover:scale-102`
+                        ? `${emojiData.bgColor} border-current shadow-md ${emojiData.color}` 
+                        : `${emojiData.bgColor} border-gray-200 hover:border-gray-300`
                       }
-                      active:scale-95 focus:ring-2 focus:ring-offset-2 focus:ring-primary/20
+                      active:scale-95 focus:ring-1 focus:ring-offset-1 focus:ring-primary/30
                     `}
                     onClick={() => handleAnswerChange(opcao)}
                     data-testid={`button-emoji-${index}`}
                   >
-                    {/* Indicador de seleção */}
+                    {/* Indicador de seleção compacto */}
                     {isSelected && (
-                      <div className="absolute top-2 right-2 w-3 h-3 bg-current rounded-full opacity-80" />
+                      <div className="absolute top-1 right-1 w-2 h-2 bg-current rounded-full" />
                     )}
                     
-                    {/* Emoji com animação */}
-                    <div className={`text-4xl mb-2 transition-transform duration-200 ${isSelected ? 'animate-pulse' : ''}`}>
+                    {/* Emoji compacto */}
+                    <div className="text-2xl leading-none">
                       {emojiData.emoji}
                     </div>
                     
-                    {/* Label com melhor tipografia */}
+                    {/* Label compacto */}
                     <span className={`
-                      text-sm font-semibold text-center leading-tight break-words
+                      text-xs font-medium text-center leading-tight
                       ${isSelected ? 'text-current' : 'text-gray-700'}
                     `}>
                       {opcao}
                     </span>
-                    
-                    {/* Efeito de hover sutil */}
-                    <div className="absolute inset-0 bg-white opacity-0 hover:opacity-5 transition-opacity duration-200 pointer-events-none" />
                   </Button>
                 );
               })}
@@ -258,30 +255,30 @@ export default function QuestionRenderer({ question, answer, onAnswer }: Questio
   };
 
   return (
-    <div className="space-y-8 quiz-button-enter">
-      {/* Pergunta com melhor apresentação */}
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-foreground leading-tight" data-testid="text-question">
+    <div className="space-y-4">
+      {/* Pergunta compacta para mobile */}
+      <div className="text-center space-y-1">
+        <h2 className="text-lg sm:text-xl font-bold text-foreground leading-tight" data-testid="text-question">
           {question.texto}
         </h2>
         {question.tipo === 'emojis' && (
-          <p className="text-sm text-muted-foreground">
-            Selecione a opção que melhor descreve seu estado emocional
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Selecione uma opção
           </p>
         )}
       </div>
 
-      {/* Renderização da resposta com container melhorado */}
+      {/* Renderização da resposta otimizada */}
       <div className="quiz-response-container">
         {renderQuestion()}
       </div>
       
-      {/* Feedback visual para seleção */}
+      {/* Feedback compacto para seleção */}
       {localAnswer && question.tipo === 'emojis' && (
         <div className="text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            Selecionado: {localAnswer}
+          <div className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 rounded-md text-xs font-medium">
+            <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+            {localAnswer}
           </div>
         </div>
       )}

@@ -708,17 +708,18 @@ export default function QuizPage() {
   const canGoNext = getCurrentAnswer(currentQuestion.id) !== undefined;
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6">
-      {/* Header do Quiz */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+    <div className="flex flex-col h-[100dvh] max-w-lg mx-auto">
+      {/* Header compacto fixo */}
+      <div className="flex-shrink-0 px-4 py-3 bg-background border-b">
+        <div className="flex items-center justify-between mb-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setLocation('/')}
             data-testid="button-back-home"
+            className="h-8 px-2"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 mr-1" />
             Home
           </Button>
           <div className="text-sm text-muted-foreground">
@@ -726,14 +727,14 @@ export default function QuizPage() {
           </div>
         </div>
         
-        <h1 className="text-2xl font-bold text-foreground mb-2" data-testid="text-quiz-title">
+        <h1 className="text-lg font-bold text-foreground mb-2" data-testid="text-quiz-title">
           {quiz.nome}
         </h1>
         
-        {/* Progress Bar */}
-        <div className="w-full bg-secondary rounded-full h-2">
+        {/* Progress Bar compacto */}
+        <div className="w-full bg-secondary rounded-full h-1.5">
           <div
-            className="bg-primary h-2 rounded-full transition-all duration-300"
+            className="bg-primary h-1.5 rounded-full transition-all duration-300"
             style={{
               width: `${((session.currentQuestionIndex + 1) / orderedQuestions.length) * 100}%`,
             }}
@@ -741,49 +742,55 @@ export default function QuizPage() {
         </div>
       </div>
 
-      {/* Pergunta Atual */}
-      <Card className="shadow-sm mb-6">
-        <CardContent className="p-6">
-          <QuestionRenderer
-            question={currentQuestion}
-            answer={getCurrentAnswer(currentQuestion.id)}
-            onAnswer={handleAnswer}
-          />
-        </CardContent>
-      </Card>
+      {/* Pergunta Atual - área scrollável */}
+      <div className="flex-1 overflow-y-auto px-4 py-4">
+        <Card className="shadow-sm">
+          <CardContent className="p-4 sm:p-6">
+            <QuestionRenderer
+              question={currentQuestion}
+              answer={getCurrentAnswer(currentQuestion.id)}
+              onAnswer={handleAnswer}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Navegação */}
-      <div className="flex justify-between items-center">
-        <Button
-          variant="outline"
-          onClick={goToPreviousQuestion}
-          disabled={session.currentQuestionIndex === 0}
-          data-testid="button-previous-question"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Anterior
-        </Button>
+      {/* Navegação fixa na parte inferior */}
+      <div className="flex-shrink-0 px-4 py-3 bg-background border-t">
+        <div className="flex justify-between items-center">
+          <Button
+            variant="outline"
+            onClick={goToPreviousQuestion}
+            disabled={session.currentQuestionIndex === 0}
+            data-testid="button-previous-question"
+            className="h-10 px-3"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Anterior
+          </Button>
 
-        {isLastQuestion ? (
-          <Button
-            onClick={completeQuiz}
-            disabled={!canGoNext}
-            className="bg-green-600 hover:bg-green-700"
-            data-testid="button-complete-quiz"
-          >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Concluir
-          </Button>
-        ) : (
-          <Button
-            onClick={goToNextQuestion}
-            disabled={!canGoNext}
-            data-testid="button-next-question"
-          >
-            Próxima
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
-        )}
+          {isLastQuestion ? (
+            <Button
+              onClick={completeQuiz}
+              disabled={!canGoNext}
+              className="bg-green-600 hover:bg-green-700 h-10 px-4"
+              data-testid="button-complete-quiz"
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Concluir
+            </Button>
+          ) : (
+            <Button
+              onClick={goToNextQuestion}
+              disabled={!canGoNext}
+              data-testid="button-next-question"
+              className="h-10 px-4"
+            >
+              Próxima
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
