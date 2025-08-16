@@ -80,6 +80,9 @@ export default function AddDoctor() {
 
       // Navigate back to doctors page
       setLocation('/doctors');
+      
+      // Force refresh the doctors page by adding a query parameter
+      window.location.reload();
 
     } catch (error) {
       console.error('❌ Erro ao adicionar médico:', error);
