@@ -27,7 +27,13 @@ DorLog is a Progressive Web App (PWA) designed for health management, specifical
   - Doctor list display with real-time Firebase data fetching
   - Proper error handling and loading states
   - Mobile-first responsive design with contact information display
-- Firebase security rules configuration required for quiz and medicos access - see CONFIGURACAO_FIREBASE_REGRAS.md
+- **MEDICATIONS MANAGEMENT IMPLEMENTED** - Complete medication registration and listing functionality with Firebase persistence (August 16, 2025)
+  - Medication registration form with validation (all fields mandatory)
+  - Doctor dropdown selection with real-time doctor data fetching
+  - Medication list display with doctor name resolution
+  - Reminder time functionality and frequency tracking
+  - Proper error handling and loading states with mobile-first design
+- Firebase security rules configuration required for quiz, medicos, and medicamentos access - see CONFIGURACAO_FIREBASE_REGRAS.md
 
 # User Preferences
 
@@ -84,6 +90,7 @@ Preferred communication style: Simple, everyday language.
   - "assinaturas" collection for subscription management
   - "quizzes" collection for dynamic quiz content and metadata
   - "medicos" collection for doctor information management
+  - "medicamentos" collection for medication management with doctor associations
 - **Firebase Storage** for file uploads (configured but not yet implemented)
 - **Session management** using PostgreSQL-backed sessions
 

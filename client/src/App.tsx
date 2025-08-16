@@ -14,6 +14,7 @@ import Profile from "@/pages/Profile";
 import Doctors from "@/pages/Doctors";
 import AddDoctor from "@/pages/AddDoctor";
 import Medications from "@/pages/Medications";
+import AddMedication from "@/pages/AddMedication";
 import Reports from "@/pages/Reports";
 import Quiz from "@/pages/Quiz";
 import NotFound from "@/pages/not-found";
@@ -72,6 +73,13 @@ function AppRoutes() {
         <ProtectedRoute>
           <Layout>
             <Medications />
+          </Layout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/medications/add">
+        <ProtectedRoute>
+          <Layout>
+            <AddMedication />
           </Layout>
         </ProtectedRoute>
       </Route>

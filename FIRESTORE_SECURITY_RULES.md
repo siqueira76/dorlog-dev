@@ -38,6 +38,12 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.usuarioId;
     }
     
+    // Regras para medicamentos - permite CRUD dos próprios medicamentos
+    match /medicamentos/{medicamentoId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == resource.data.usuarioId;
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.usuarioId;
+    }
+    
     // Regras para quizzes - permite leitura para usuários autenticados
     match /quizzes/{quizId} {
       allow read: if isAuthenticated();
