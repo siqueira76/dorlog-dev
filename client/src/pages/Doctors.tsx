@@ -1,8 +1,15 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UserCheck, Plus, MapPin, Phone } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 export default function Doctors() {
+  const [, setLocation] = useLocation();
+
+  const handleAddDoctor = () => {
+    setLocation('/doctors/add');
+  };
+
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
       
@@ -14,6 +21,7 @@ export default function Doctors() {
             size="sm"
             className="bg-primary text-primary-foreground rounded-xl hover:bg-primary/90"
             data-testid="button-add-doctor"
+            onClick={handleAddDoctor}
           >
             <Plus className="h-4 w-4 mr-2" />
             Adicionar
@@ -36,6 +44,7 @@ export default function Doctors() {
             <Button
               className="bg-primary text-primary-foreground rounded-xl hover:bg-primary/90"
               data-testid="button-add-first-doctor"
+              onClick={handleAddDoctor}
             >
               <Plus className="h-4 w-4 mr-2" />
               Adicionar Primeiro Médico
