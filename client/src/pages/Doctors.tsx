@@ -10,7 +10,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 
 // Doctor type based on Firebase structure
 interface Doctor {
-  id: string;
+  id: string; // This is the Firestore document ID, not a field in the document
   nome: string;
   especialidade: string;
   crm: string;
