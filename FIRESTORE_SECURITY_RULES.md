@@ -32,6 +32,12 @@ service cloud.firestore {
       allow read: if isAuthenticated() && request.auth.token.email == email;
     }
     
+    // Regras para médicos - permite CRUD dos próprios médicos
+    match /medicos/{medicoId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == resource.data.usuarioId;
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.usuarioId;
+    }
+    
     // Regras para quizzes - permite leitura para usuários autenticados
     match /quizzes/{quizId} {
       allow read: if isAuthenticated();

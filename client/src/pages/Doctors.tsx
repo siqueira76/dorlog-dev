@@ -6,7 +6,7 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 // Doctor type based on Firebase structure
 interface Doctor {
@@ -45,8 +45,7 @@ export default function Doctors() {
       const doctorsCollection = collection(db, 'medicos');
       const q = query(
         doctorsCollection,
-        where('usuarioId', '==', firebaseUser.uid),
-        orderBy('nome', 'asc')
+        where('usuarioId', '==', firebaseUser.uid)
       );
       
       const querySnapshot = await getDocs(q);
@@ -67,8 +66,10 @@ export default function Doctors() {
         });
       });
 
-      setDoctors(doctorsData);
-      console.log('✅ Médicos carregados:', doctorsData.length);
+      // Sort doctors by name on the client side
+      const sortedDoctors = doctorsData.sort((a, b) => a.nome.localeCompare(b.nome));
+      setDoctors(sortedDoctors);
+      console.log('✅ Médicos carregados:', sortedDoctors.length);
 
     } catch (error) {
       console.error('❌ Erro ao buscar médicos:', error);
