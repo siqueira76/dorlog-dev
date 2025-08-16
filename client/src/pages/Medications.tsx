@@ -15,10 +15,10 @@ interface Medication {
   posologia: string;
   frequencia: string;
   medicoId: string;
-  lembrete: {
+  lembrete: Array<{
     hora: string;
     status: boolean;
-  };
+  }>;
   usuarioId: string;
   medicoNome?: string; // Will be populated from doctor lookup
 }
@@ -62,10 +62,11 @@ export default function Medications() {
           posologia: data.posologia || '',
           frequencia: data.frequencia || '',
           medicoId: data.medicoId || '',
-          lembrete: {
-            hora: data.lembrete?.hora || '',
-            status: data.lembrete?.status || false
-          },
+          lembrete: Array.isArray(data.lembrete) 
+            ? data.lembrete 
+            : data.lembrete?.hora 
+              ? [{ hora: data.lembrete.hora, status: data.lembrete.status || false }]
+              : [],
           usuarioId: data.usuarioId || ''
         });
       });
@@ -189,16 +190,34 @@ export default function Medications() {
                     
                     {/* Medication Information */}
                     <div className="space-y-1">
-                      {medication.lembrete.hora && (
+                      {medication.lembrete && medication.lembrete.length > 0 && (
                         <div className="flex items-center text-sm text-muted-foreground">
                           <Clock className="h-4 w-4 mr-2" />
-                          Lembrete: {medication.lembrete.hora}
+                          Lembretes: {medication.lembrete.map(l => l.hora).join(', ')}
                         </div>
                       )}
                       {medication.medicoNome && (
                         <div className="flex items-center text-sm text-muted-foreground">
                           <User className="h-4 w-4 mr-2" />
                           {medication.medicoNome}
+                        </div>
+                      )}
+                      
+                      {/* Status dos lembretes */}
+                      {medication.lembrete && medication.lembrete.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {medication.lembrete.map((lembrete, index) => (
+                            <span
+                              key={index}
+                              className={`text-xs px-2 py-1 rounded-full ${
+                                lembrete.status
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-600'
+                              }`}
+                            >
+                              {lembrete.hora} {lembrete.status ? '✓' : '○'}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>

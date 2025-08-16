@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Pill, Loader2, Clock } from 'lucide-react';
+import { ArrowLeft, Pill, Loader2, Clock, Plus, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase';
@@ -20,7 +20,7 @@ const medicationSchema = z.object({
   posologia: z.string().min(1, 'Dosagem é obrigatória'),
   frequencia: z.string().min(1, 'Frequência é obrigatória'),
   medicoId: z.string().min(1, 'Médico é obrigatório'),
-  hora: z.string().min(1, 'Hora do lembrete é obrigatória')
+  horarios: z.array(z.string()).min(1, 'Pelo menos um horário é obrigatório')
 });
 
 type MedicationFormData = z.infer<typeof medicationSchema>;
@@ -36,6 +36,7 @@ export default function AddMedication() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loadingDoctors, setLoadingDoctors] = useState(true);
+  const [horarios, setHorarios] = useState<string[]>(['']);
   const { toast } = useToast();
   const { firebaseUser } = useAuth();
 
@@ -46,9 +47,31 @@ export default function AddMedication() {
       posologia: '',
       frequencia: '',
       medicoId: '',
-      hora: ''
+      horarios: ['']
     }
   });
+
+  // Functions to handle multiple reminder times
+  const addHorario = () => {
+    const newHorarios = [...horarios, ''];
+    setHorarios(newHorarios);
+    form.setValue('horarios', newHorarios);
+  };
+
+  const removeHorario = (index: number) => {
+    if (horarios.length > 1) {
+      const newHorarios = horarios.filter((_, i) => i !== index);
+      setHorarios(newHorarios);
+      form.setValue('horarios', newHorarios);
+    }
+  };
+
+  const updateHorario = (index: number, value: string) => {
+    const newHorarios = [...horarios];
+    newHorarios[index] = value;
+    setHorarios(newHorarios);
+    form.setValue('horarios', newHorarios);
+  };
 
   // Fetch doctors for dropdown
   const fetchDoctors = async () => {
@@ -107,16 +130,28 @@ export default function AddMedication() {
     setIsSubmitting(true);
 
     try {
+      // Filter out empty times and create lembrete array
+      const validHorarios = data.horarios.filter(hora => hora.trim() !== '');
+      
+      if (validHorarios.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Pelo menos um horário de lembrete deve ser informado"
+        });
+        return;
+      }
+
       // Prepare medication data according to Firebase structure
       const medicationData = {
         nome: data.nome,
         posologia: data.posologia,
         frequencia: data.frequencia,
         medicoId: data.medicoId,
-        lembrete: {
-          hora: data.hora,
-          status: true
-        },
+        lembrete: validHorarios.map(hora => ({
+          hora,
+          status: false // false = não tomou ainda
+        })),
         usuarioId: firebaseUser.uid,
         createdAt: serverTimestamp()
       };
@@ -280,22 +315,61 @@ export default function AddMedication() {
               )}
             </div>
 
-            {/* Horário do Lembrete */}
-            <div className="space-y-2">
-              <Label htmlFor="hora" className="text-sm font-medium">
-                <Clock className="h-4 w-4 inline mr-1" />
-                Hora do Lembrete *
-              </Label>
-              <Input
-                id="hora"
-                type="time"
-                {...form.register('hora')}
-                className="rounded-xl"
-                disabled={isSubmitting}
-              />
-              {form.formState.errors.hora && (
-                <p className="text-sm text-red-500">{form.formState.errors.hora.message}</p>
+            {/* Horários dos Lembretes */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">
+                  <Clock className="h-4 w-4 inline mr-1" />
+                  Horários dos Lembretes *
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addHorario}
+                  className="text-xs"
+                  disabled={isSubmitting}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Adicionar
+                </Button>
+              </div>
+              
+              <div className="space-y-2">
+                {horarios.map((horario, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      type="time"
+                      value={horario}
+                      onChange={(e) => updateHorario(index, e.target.value)}
+                      className="rounded-xl flex-1"
+                      disabled={isSubmitting}
+                      placeholder="Selecione o horário"
+                    />
+                    {horarios.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeHorario(index)}
+                        className="p-2"
+                        disabled={isSubmitting}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              {form.formState.errors.horarios && (
+                <p className="text-sm text-red-500">{form.formState.errors.horarios.message}</p>
               )}
+              
+              <p className="text-xs text-muted-foreground">
+                Adicione todos os horários em que deve tomar o medicamento. 
+                O status será marcado automaticamente quando você confirmar que tomou.
+              </p>
             </div>
 
             {/* Submit Buttons */}
