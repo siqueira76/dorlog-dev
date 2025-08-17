@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import ReminderService from '@/services/reminderService';
 
 // Medication type based on Firebase structure
 interface Medication {
@@ -164,6 +165,13 @@ export default function Medications() {
 
     try {
       console.log('🔍 Buscando medicamentos para usuário:', firebaseUser.uid);
+      
+      // Verificar e resetar lembretes se necessário antes de buscar
+      try {
+        await ReminderService.checkAndResetIfNeeded(firebaseUser.uid);
+      } catch (error) {
+        console.error('Erro ao verificar reset de lembretes na tela medicamentos:', error);
+      }
       
       const medicationsCollection = collection(db, 'medicamentos');
       const q = query(

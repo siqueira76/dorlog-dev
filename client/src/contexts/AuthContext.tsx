@@ -15,6 +15,7 @@ import { doc, setDoc, getDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/f
 import { auth, db, googleProvider } from '@/lib/firebase';
 import { User, Subscription } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
+import ReminderService from '@/services/reminderService';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -567,6 +568,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
               const userDoc = await createUserDocument(firebaseUser);
               if (userDoc) {
                 setCurrentUser(userDoc);
+              }
+
+              // Verificar e resetar lembretes se necessário (diariamente às 0h)
+              try {
+                await ReminderService.checkAndResetIfNeeded(firebaseUser.uid);
+              } catch (error) {
+                console.error('Erro ao verificar reset de lembretes:', error);
+                // Não mostrar erro ao usuário, apenas log
               }
             } catch (error) {
               // Silently handle Firestore errors to prevent console spam

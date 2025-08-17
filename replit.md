@@ -44,6 +44,13 @@ DorLog is a Progressive Web App (PWA) designed for health management, specifical
   - Update existing quiz if same type submitted multiple times per day
   - Proper error handling and loading states during save process
   - Document ID format: {email}_{YYYY-MM-DD}
+- **AUTOMATIC REMINDER RESET SYSTEM IMPLEMENTED** - Daily automatic reset of medication reminders to false status (August 17, 2025)
+  - ReminderService class with daily reset functionality
+  - Automatic verification and reset when user logs in or accesses medications page
+  - Batch operations for atomic updates to all user medications
+  - Date tracking (lastReset field) to prevent multiple resets per day
+  - Error handling and logging for troubleshooting
+  - Backend endpoint /api/reset-reminders for manual reset if needed
 - Firebase security rules configuration required for quiz, medicos, medicamentos, and report_diario access - see CONFIGURACAO_FIREBASE_REGRAS.md
 
 # User Preferences
