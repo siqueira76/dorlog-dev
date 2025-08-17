@@ -27,6 +27,7 @@ interface Medication {
   }>;
   usuarioId: string;
   medicoNome?: string; // Will be populated from doctor lookup
+  lastReset?: string; // Data do último reset (formato YYYY-MM-DD)
 }
 
 // Doctor interface for the select dropdown
@@ -65,19 +66,30 @@ export default function Medications() {
     try {
       const formData = new FormData(e.currentTarget);
       
-      // Parse reminder times
-      const reminderTimes = (formData.get('lembrete') as string || '')
+      // Parse reminder times from form
+      const newReminderTimes = (formData.get('lembrete') as string || '')
         .split(',')
         .map(time => time.trim())
-        .filter(time => time)
-        .map(hora => ({ hora, status: false }));
+        .filter(time => time);
+
+      // Preserve existing reminder status when possible
+      const updatedReminders = newReminderTimes.map(hora => {
+        // Find existing reminder with same time to preserve status
+        const existingReminder = editingMedication.lembrete?.find(r => r.hora === hora);
+        return {
+          hora,
+          status: existingReminder ? existingReminder.status : false
+        };
+      });
 
       const updatedMedication = {
         nome: formData.get('nome') as string,
         posologia: formData.get('posologia') as string,
         frequencia: formData.get('frequencia') as string,
         medicoId: formData.get('medicoId') as string,
-        lembrete: reminderTimes
+        lembrete: updatedReminders,
+        // Preserve other fields that might exist
+        lastReset: editingMedication.lastReset
       };
 
       const medicationRef = doc(db, 'medicamentos', editingMedication.id);
@@ -249,7 +261,8 @@ export default function Medications() {
             : data.lembrete?.hora 
               ? [{ hora: data.lembrete.hora, status: data.lembrete.status || false }]
               : [],
-          usuarioId: data.usuarioId || ''
+          usuarioId: data.usuarioId || '',
+          lastReset: data.lastReset || undefined
         });
       });
 

@@ -51,6 +51,12 @@ DorLog is a Progressive Web App (PWA) designed for health management, specifical
   - Date tracking (lastReset field) to prevent multiple resets per day
   - Error handling and logging for troubleshooting
   - Backend endpoint /api/reset-reminders for manual reset if needed
+- **MEDICATION REMINDER INTERFACE ENHANCED** - Individual reminder management with visual status indicators (August 17, 2025)
+  - Individual "Tomar/Tomado" buttons for each reminder with color coding (red=pending, green=taken)
+  - Real-time status updates with loading states during Firebase operations
+  - Progress counter showing X/Y reminders taken per medication
+  - Card background colors indicating completion status (green=complete, red=pending)
+  - Preserved reminder status during medication edits (fixed bug where status was reset)
 - Firebase security rules configuration required for quiz, medicos, medicamentos, and report_diario access - see CONFIGURACAO_FIREBASE_REGRAS.md
 
 # User Preferences
