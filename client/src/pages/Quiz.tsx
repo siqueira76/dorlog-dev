@@ -1,24 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useRoute, useLocation } from 'wouter';
-import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, orderBy, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Quiz, QuizQuestion, QuizAnswer, QuizSession } from '@/types/quiz';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import QuestionRenderer from '../components/QuestionRenderer';
 
 export default function QuizPage() {
   const [, params] = useRoute('/quiz/:quizId');
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
   
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<QuizSession | null>(null);
   const [orderedQuestions, setOrderedQuestions] = useState<QuizQuestion[]>([]);
+  const [saving, setSaving] = useState(false);
 
   const quizId = params?.quizId;
 
@@ -646,22 +649,113 @@ export default function QuizPage() {
     });
   };
 
-  const completeQuiz = () => {
-    if (!session) return;
+  const completeQuiz = async () => {
+    if (!session || !currentUser || saving) return;
 
-    const completedSession: QuizSession = {
-      ...session,
-      endTime: new Date(),
+    try {
+      setSaving(true);
+      const completedSession: QuizSession = {
+        ...session,
+        endTime: new Date(),
+      };
+
+      console.log('💾 Salvando respostas do quiz...');
+      await saveQuizToReportDiario(completedSession);
+
+      toast({
+        title: "Quiz Concluído!",
+        description: "Suas respostas foram registradas com sucesso.",
+      });
+
+      // Voltar para a home
+      setLocation('/');
+    } catch (error) {
+      console.error('❌ Erro ao salvar quiz:', error);
+      toast({
+        title: "Erro ao Salvar",
+        description: "Houve um problema ao salvar suas respostas. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveQuizToReportDiario = async (completedSession: QuizSession) => {
+    if (!currentUser?.email) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const now = new Date();
+    const today = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    
+    // Document ID format: userId_YYYY-MM-DD
+    const reportDocId = `${currentUser.email}_${today}`;
+    const reportRef = doc(db, 'report_diario', reportDocId);
+
+    // Prepare quiz data according to the Firebase structure shown in the image
+    const quizData = {
+      tipo: completedSession.quizId, // 'matinal', 'noturno', or 'emergencial'
+      data: Timestamp.fromDate(now),
+      timestamp: Timestamp.fromDate(now),
+      respostas: completedSession.answers.reduce((acc, answer) => {
+        acc[answer.questionId] = answer.answer;
+        return acc;
+      }, {} as Record<string, any>),
+      inicioQuiz: Timestamp.fromDate(completedSession.startTime),
+      fimQuiz: Timestamp.fromDate(completedSession.endTime || now)
     };
 
-    // Aqui você pode salvar os resultados no Firestore se necessário
-    toast({
-      title: "Quiz Concluído!",
-      description: "Suas respostas foram registradas com sucesso.",
-    });
+    console.log('📋 Dados do quiz preparados:', quizData);
 
-    // Voltar para a home
-    setLocation('/');
+    try {
+      // Check if document exists for today
+      const reportDoc = await getDoc(reportRef);
+      
+      if (reportDoc.exists()) {
+        console.log('📄 Documento do report_diario já existe, atualizando...');
+        const existingData = reportDoc.data();
+        const existingQuizzes = existingData.quizzes || [];
+        
+        // Check if there's already a quiz of this type today
+        const existingQuizIndex = existingQuizzes.findIndex((q: any) => q.tipo === completedSession.quizId);
+        
+        if (existingQuizIndex >= 0) {
+          // Update existing quiz of same type
+          console.log(`🔄 Atualizando quiz ${completedSession.quizId} existente...`);
+          existingQuizzes[existingQuizIndex] = quizData;
+        } else {
+          // Add new quiz to array
+          console.log(`➕ Adicionando novo quiz ${completedSession.quizId}...`);
+          existingQuizzes.push(quizData);
+        }
+        
+        await updateDoc(reportRef, {
+          quizzes: existingQuizzes,
+          ultimaAtualizacao: Timestamp.fromDate(now)
+        });
+        
+        console.log('✅ Quiz atualizado no report_diario existente');
+      } else {
+        console.log('📄 Criando novo documento report_diario...');
+        // Create new document
+        const newReportData = {
+          data: Timestamp.fromDate(now),
+          usuarioId: currentUser.email,
+          quizzes: [quizData],
+          criadoEm: Timestamp.fromDate(now),
+          ultimaAtualizacao: Timestamp.fromDate(now)
+        };
+        
+        await setDoc(reportRef, newReportData);
+        console.log('✅ Novo report_diario criado com quiz');
+      }
+      
+      console.log('💾 Quiz salvo com sucesso no Firestore');
+    } catch (firestoreError) {
+      console.error('❌ Erro ao salvar no Firestore:', firestoreError);
+      throw firestoreError;
+    }
   };
 
   const getCurrentAnswer = (questionId: string | number) => {
@@ -808,19 +902,28 @@ export default function QuizPage() {
                       }
                       completeQuiz();
                     }}
-                    disabled={!canGoNext}
+                    disabled={!canGoNext || saving}
                     className={`
                       quiz-nav-button h-12 px-4 min-w-[100px] touch-target transition-all duration-200 font-medium
                       bg-green-600 hover:bg-green-700 text-white
-                      ${!canGoNext 
+                      ${(!canGoNext || saving)
                         ? 'opacity-50 cursor-not-allowed' 
                         : 'hover:shadow-md active:scale-95 shadow-green-200'
                       }
                     `}
                     data-testid="button-complete-quiz-inline"
                   >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    <span>Concluir</span>
+                    {saving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <span>Salvando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        <span>Concluir</span>
+                      </>
+                    )}
                   </Button>
                 ) : (
                   <Button

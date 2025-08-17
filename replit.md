@@ -38,7 +38,13 @@ DorLog is a Progressive Web App (PWA) designed for health management, specifical
   - Delete confirmation dialogs with proper user feedback
   - Real-time data refresh after operations
   - Mobile-first responsive design for all CRUD operations
-- Firebase security rules configuration required for quiz, medicos, and medicamentos access - see CONFIGURACAO_FIREBASE_REGRAS.md
+- **QUIZ PERSISTENCE IMPLEMENTED** - Quiz responses now saved to Firebase report_diario collection (August 17, 2025)
+  - Automatic data/timestamp population from system
+  - Single daily report_diario document per user with quiz array structure
+  - Update existing quiz if same type submitted multiple times per day
+  - Proper error handling and loading states during save process
+  - Document ID format: {email}_{YYYY-MM-DD}
+- Firebase security rules configuration required for quiz, medicos, medicamentos, and report_diario access - see CONFIGURACAO_FIREBASE_REGRAS.md
 
 # User Preferences
 
@@ -96,6 +102,7 @@ Preferred communication style: Simple, everyday language.
   - "quizzes" collection for dynamic quiz content and metadata
   - "medicos" collection for doctor information management
   - "medicamentos" collection for medication management with doctor associations
+  - "report_diario" collection for daily quiz responses and health reports
 - **Firebase Storage** for file uploads (configured but not yet implemented)
 - **Session management** using PostgreSQL-backed sessions
 

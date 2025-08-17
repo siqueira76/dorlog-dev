@@ -61,6 +61,11 @@ service cloud.firestore {
     match /quiz_responses/{responseId} {
       allow read, write: if request.auth != null;
     }
+    
+    // Report diário - usuários podem criar e acessar seus próprios relatórios
+    match /report_diario/{reportId} {
+      allow read, write: if request.auth != null && request.auth.token.email in reportId;
+    }
   }
 }
 ```
