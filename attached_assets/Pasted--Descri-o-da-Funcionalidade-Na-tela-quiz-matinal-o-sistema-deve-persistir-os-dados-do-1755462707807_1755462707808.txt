@@ -1,0 +1,44 @@
+
+#### 📄 **Descrição da Funcionalidade**
+
+Na tela quiz/matinal, o sistema deve persistir os dados do quizz emergencial na coleção do fire base report_diario no array de quizzes como um novo objeto matinal. 
+	
+#### ✅ **Requisitos da Funcionalidade**
+
+-  Requisito 1: persistir o quizz emergencial na coleção quizzes de report_diario
+- o report_diario deve conter um quiz emergencial, caso o usuario submeta mais de um quizz matinal no mesmo dia, deve atualizar os registros no mesmo report_diario.
+- o report diario é unico por dia.
+- os dados de data e time stamp o sistema deve preencher com os dados do sistema de hora e dia do registo.
+
+#### 📁 **Restrição de Pastas e Arquivos**
+
+> 	A IA deve **respeitar rigorosamente** a estrutura de dados do firebase da imagem anexa.
+
+#### 🔐 **Restrições de Segurança e Ações Proibidas**
+
+A IA deve seguir as seguintes restrições **sem exceções**:
+
+- ❌ **NÃO** deve realizar **inserções, alterações ou exclusões no banco de dados** a menos que esteja **explicitamente** descrito nos requisitos.
+- ❌ **NÃO** deve instalar dependências externas ou bibliotecas **sem autorização explícita** no prompt.
+- ❌ **NÃO** deve executar comandos que envolvam **operações destrutivas** ou modificações permanentes sem confirmação.
+- ❌ **NÃO** deve criar scripts com permissões elevadas (ex: execução de comandos shell) a menos que seja justificado e autorizado.
+- ❌ **NÃO** deve logar, imprimir ou expor **dados sensíveis**, como tokens, senhas, chaves de API, ou credenciais.
+- ✅ Sempre que necessário, **solicite ao usuário a confirmação** antes de executar qualquer ação que altere o estado do sistema ou estrutura do projeto.
+
+---
+
+#### 🧰 **Boas Práticas de Desenvolvimento (Instruções Globais)**
+
+A IA deve aplicar as seguintes boas práticas em todo o desenvolvimento:
+
+- ✅ Usar arquivos `.env` ou variáveis de ambiente para armazenar informações sensíveis (como URLs, senhas, tokens de API).
+- ✅ Utilizar nomes de variáveis e funções descritivos e semânticos.
+- ✅ Escrever código modular e reutilizável sempre que possível.
+- ✅ Adicionar comentários explicativos **apenas quando necessário** para explicar trechos complexos ou lógicos.
+- ✅ Validar entradas do usuário e tratar erros de forma segura e amigável.
+- ✅ Seguir o padrão de formatação e organização já utilizado no projeto.
+- ✅ Se houver dúvida quanto à lógica já existente, **perguntar antes de sobrescrever ou alterar trechos de código**.
+
+### 🔁 **Instrução Final**
+
+> A partir deste modelo, implemente a funcionalidade acima respeitando todos os requisitos, restrições e boas práticas indicadas. Se algo estiver indefinido, pergunte antes de prosseguir.
