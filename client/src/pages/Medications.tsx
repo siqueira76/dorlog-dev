@@ -44,6 +44,7 @@ export default function Medications() {
   const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isUpdateLoading, setIsUpdateLoading] = useState(false);
+  const [updatingReminder, setUpdatingReminder] = useState<string | null>(null); // medicationId-index
   const { firebaseUser } = useAuth();
   const { toast } = useToast();
 
@@ -124,6 +125,58 @@ export default function Medications() {
         title: "Erro",
         description: "Não foi possível remover o medicamento"
       });
+    }
+  };
+
+  // Função para marcar/desmarcar um lembrete como tomado
+  const handleToggleReminderStatus = async (medicationId: string, reminderIndex: number, currentStatus: boolean) => {
+    if (!firebaseUser) return;
+
+    const updateId = `${medicationId}-${reminderIndex}`;
+    setUpdatingReminder(updateId);
+
+    try {
+      // Encontrar o medicamento na lista local
+      const medication = medications.find(med => med.id === medicationId);
+      if (!medication) return;
+
+      // Criar cópia dos lembretes com o status atualizado
+      const updatedReminders = medication.lembrete.map((reminder, index) => 
+        index === reminderIndex 
+          ? { ...reminder, status: !currentStatus }
+          : reminder
+      );
+
+      // Atualizar no Firebase
+      const medicationRef = doc(db, 'medicamentos', medicationId);
+      await updateDoc(medicationRef, {
+        lembrete: updatedReminders
+      });
+
+      // Atualizar estado local
+      setMedications(prevMedications => 
+        prevMedications.map(med => 
+          med.id === medicationId 
+            ? { ...med, lembrete: updatedReminders }
+            : med
+        )
+      );
+
+      toast({
+        title: "Status atualizado",
+        description: `Lembrete ${!currentStatus ? 'marcado como tomado' : 'desmarcado'}`,
+        duration: 2000
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao atualizar status do lembrete:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar o status do lembrete"
+      });
+    } finally {
+      setUpdatingReminder(null);
     }
   };
 
@@ -308,8 +361,20 @@ export default function Medications() {
       ) : (
         /* Medications List */
         <div className="space-y-3">
-          {medications.map((medication) => (
-            <Card key={medication.id} className="shadow-sm border border-border">
+          {medications.map((medication) => {
+            const totalReminders = medication.lembrete?.length || 0;
+            const completedReminders = medication.lembrete?.filter(l => l.status).length || 0;
+            const allCompleted = totalReminders > 0 && completedReminders === totalReminders;
+            const hasPending = totalReminders > 0 && completedReminders < totalReminders;
+            
+            return (
+            <Card key={medication.id} className={`shadow-sm border transition-colors ${
+              allCompleted 
+                ? 'border-green-200 bg-green-50/30' 
+                : hasPending 
+                  ? 'border-red-200 bg-red-50/20' 
+                  : 'border-border'
+            }`}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -333,29 +398,53 @@ export default function Medications() {
                         </div>
                       )}
                       
-                      {/* Status dos lembretes */}
+                      {/* Lembretes com botões individuais */}
                       {medication.lembrete && medication.lembrete.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {medication.lembrete.map((lembrete, index) => (
-                            <span
-                              key={index}
-                              className={`text-xs px-2 py-1 rounded-full ${
-                                lembrete.status
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-600'
-                              }`}
-                            >
-                              {lembrete.hora} {lembrete.status ? '✓' : '○'}
+                        <div className="space-y-2 mt-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-muted-foreground font-medium">Lembretes de hoje:</p>
+                            <span className="text-xs text-muted-foreground">
+                              {medication.lembrete.filter(l => l.status).length}/{medication.lembrete.length} tomados
                             </span>
+                          </div>
+                          {medication.lembrete.map((lembrete, index) => (
+                            <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-2">
+                              <div className="flex items-center space-x-2">
+                                <Clock className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-sm font-medium">{lembrete.hora}</span>
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  lembrete.status
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {lembrete.status ? '✓ Tomado' : '○ Pendente'}
+                                </span>
+                              </div>
+                              <Button
+                                variant={lembrete.status ? "default" : "outline"}
+                                size="sm"
+                                className={`text-xs px-3 py-1 min-w-[70px] ${
+                                  lembrete.status
+                                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                                    : 'border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700'
+                                }`}
+                                onClick={() => handleToggleReminderStatus(medication.id, index, lembrete.status)}
+                                disabled={updatingReminder === `${medication.id}-${index}`}
+                                data-testid={`button-toggle-reminder-${medication.id}-${index}`}
+                              >
+                                {updatingReminder === `${medication.id}-${index}` ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  lembrete.status ? 'Tomado' : 'Tomar'
+                                )}
+                              </Button>
+                            </div>
                           ))}
                         </div>
                       )}
                     </div>
                   </div>
                   <div className="flex flex-col space-y-2">
-                    <Button variant="outline" size="sm" className="text-xs">
-                      Tomei
-                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -398,7 +487,8 @@ export default function Medications() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
