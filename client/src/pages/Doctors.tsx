@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserCheck, Plus, Mail, Phone, Edit, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { UserCheck, Plus, Mail, Phone, Edit, Trash2, Loader2 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 // Doctor type based on Firebase structure
 interface Doctor {
@@ -25,11 +29,84 @@ export default function Doctors() {
   const [, setLocation] = useLocation();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isUpdateLoading, setIsUpdateLoading] = useState(false);
   const { firebaseUser } = useAuth();
   const { toast } = useToast();
 
   const handleAddDoctor = () => {
     setLocation('/doctors/add');
+  };
+
+  const handleEditDoctor = (doctor: Doctor) => {
+    setEditingDoctor(doctor);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateDoctor = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingDoctor || !firebaseUser) return;
+
+    setIsUpdateLoading(true);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const updatedDoctor = {
+        nome: formData.get('nome') as string,
+        especialidade: formData.get('especialidade') as string,
+        crm: formData.get('crm') as string,
+        contato: {
+          telefone: formData.get('telefone') as string,
+          email: formData.get('email') as string,
+        }
+      };
+
+      const doctorRef = doc(db, 'medicos', editingDoctor.id);
+      await updateDoc(doctorRef, updatedDoctor);
+
+      setIsEditDialogOpen(false);
+      setEditingDoctor(null);
+      fetchDoctors(); // Refresh the list
+
+      toast({
+        title: "Sucesso",
+        description: "Médico atualizado com sucesso!"
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao atualizar médico:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar o médico"
+      });
+    } finally {
+      setIsUpdateLoading(false);
+    }
+  };
+
+  const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
+    if (!firebaseUser) return;
+
+    try {
+      const doctorRef = doc(db, 'medicos', doctorId);
+      await deleteDoc(doctorRef);
+
+      fetchDoctors(); // Refresh the list
+
+      toast({
+        title: "Sucesso",
+        description: `Médico ${doctorName} removido com sucesso!`
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao deletar médico:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível remover o médico"
+      });
+    }
   };
 
   // Fetch doctors from Firebase
@@ -176,15 +253,148 @@ export default function Doctors() {
                       )}
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <div className="flex flex-col space-y-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditDoctor(doctor)}
+                      data-testid={`button-edit-doctor-${doctor.id}`}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          data-testid={`button-delete-doctor-${doctor.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja remover o médico <strong>{doctor.nome}</strong>? 
+                            Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteDoctor(doctor.id, doctor.nome)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Remover
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Edit Doctor Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Médico</DialogTitle>
+          </DialogHeader>
+          {editingDoctor && (
+            <form onSubmit={handleUpdateDoctor} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-nome">Nome*</Label>
+                <Input
+                  id="edit-nome"
+                  name="nome"
+                  defaultValue={editingDoctor.nome}
+                  placeholder="Digite o nome completo"
+                  required
+                  data-testid="input-edit-nome"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-especialidade">Especialidade*</Label>
+                <Input
+                  id="edit-especialidade"
+                  name="especialidade"
+                  defaultValue={editingDoctor.especialidade}
+                  placeholder="Ex: Cardiologia, Neurologia"
+                  required
+                  data-testid="input-edit-especialidade"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-crm">CRM*</Label>
+                <Input
+                  id="edit-crm"
+                  name="crm"
+                  defaultValue={editingDoctor.crm}
+                  placeholder="Digite o CRM"
+                  required
+                  data-testid="input-edit-crm"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-telefone">Telefone</Label>
+                <Input
+                  id="edit-telefone"
+                  name="telefone"
+                  type="tel"
+                  defaultValue={editingDoctor.contato.telefone}
+                  placeholder="(11) 99999-9999"
+                  data-testid="input-edit-telefone"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  name="email"
+                  type="email"
+                  defaultValue={editingDoctor.contato.email}
+                  placeholder="medico@exemplo.com"
+                  data-testid="input-edit-email"
+                />
+              </div>
+              
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isUpdateLoading}
+                  data-testid="button-update-doctor"
+                >
+                  {isUpdateLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Atualizando...
+                    </>
+                  ) : (
+                    'Atualizar'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

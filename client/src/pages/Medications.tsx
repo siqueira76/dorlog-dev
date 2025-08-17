@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pill, Plus, Clock, Calendar, Edit, Loader2, User } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Pill, Plus, Clock, Calendar, Edit, Trash2, Loader2, User } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 // Medication type based on Firebase structure
 interface Medication {
@@ -23,15 +28,131 @@ interface Medication {
   medicoNome?: string; // Will be populated from doctor lookup
 }
 
+// Doctor interface for the select dropdown
+interface Doctor {
+  id: string;
+  nome: string;
+  especialidade: string;
+}
+
 export default function Medications() {
   const [, setLocation] = useLocation();
   const [medications, setMedications] = useState<Medication[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isUpdateLoading, setIsUpdateLoading] = useState(false);
   const { firebaseUser } = useAuth();
   const { toast } = useToast();
 
   const handleAddMedication = () => {
     setLocation('/medications/add');
+  };
+
+  const handleEditMedication = (medication: Medication) => {
+    setEditingMedication(medication);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateMedication = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingMedication || !firebaseUser) return;
+
+    setIsUpdateLoading(true);
+    try {
+      const formData = new FormData(e.currentTarget);
+      
+      // Parse reminder times
+      const reminderTimes = (formData.get('lembrete') as string || '')
+        .split(',')
+        .map(time => time.trim())
+        .filter(time => time)
+        .map(hora => ({ hora, status: false }));
+
+      const updatedMedication = {
+        nome: formData.get('nome') as string,
+        posologia: formData.get('posologia') as string,
+        frequencia: formData.get('frequencia') as string,
+        medicoId: formData.get('medicoId') as string,
+        lembrete: reminderTimes
+      };
+
+      const medicationRef = doc(db, 'medicamentos', editingMedication.id);
+      await updateDoc(medicationRef, updatedMedication);
+
+      setIsEditDialogOpen(false);
+      setEditingMedication(null);
+      fetchMedications(); // Refresh the list
+
+      toast({
+        title: "Sucesso",
+        description: "Medicamento atualizado com sucesso!"
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao atualizar medicamento:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar o medicamento"
+      });
+    } finally {
+      setIsUpdateLoading(false);
+    }
+  };
+
+  const handleDeleteMedication = async (medicationId: string, medicationName: string) => {
+    if (!firebaseUser) return;
+
+    try {
+      const medicationRef = doc(db, 'medicamentos', medicationId);
+      await deleteDoc(medicationRef);
+
+      fetchMedications(); // Refresh the list
+
+      toast({
+        title: "Sucesso",
+        description: `Medicamento ${medicationName} removido com sucesso!`
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao deletar medicamento:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível remover o medicamento"
+      });
+    }
+  };
+
+  // Fetch doctors for the select dropdown
+  const fetchDoctors = async () => {
+    if (!firebaseUser) return;
+
+    try {
+      const doctorsCollection = collection(db, 'medicos');
+      const q = query(
+        doctorsCollection,
+        where('usuarioId', '==', firebaseUser.uid)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const doctorsData: Doctor[] = [];
+      
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        doctorsData.push({
+          id: doc.id,
+          nome: data.nome || '',
+          especialidade: data.especialidade || ''
+        });
+      });
+
+      setDoctors(doctorsData.sort((a, b) => a.nome.localeCompare(b.nome)));
+    } catch (error) {
+      console.error('❌ Erro ao buscar médicos para edição:', error);
+    }
   };
 
   // Fetch medications from Firebase
@@ -112,6 +233,7 @@ export default function Medications() {
 
   useEffect(() => {
     fetchMedications();
+    fetchDoctors();
   }, [firebaseUser]);
 
   // Loading state
@@ -226,9 +348,44 @@ export default function Medications() {
                     <Button variant="outline" size="sm" className="text-xs">
                       Tomei
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditMedication(medication)}
+                      data-testid={`button-edit-medication-${medication.id}`}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          data-testid={`button-delete-medication-${medication.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja remover o medicamento <strong>{medication.nome}</strong>? 
+                            Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteMedication(medication.id, medication.nome)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Remover
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </CardContent>
@@ -236,6 +393,108 @@ export default function Medications() {
           ))}
         </div>
       )}
+
+      {/* Edit Medication Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Medicamento</DialogTitle>
+          </DialogHeader>
+          {editingMedication && (
+            <form onSubmit={handleUpdateMedication} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-nome">Nome do Medicamento*</Label>
+                <Input
+                  id="edit-nome"
+                  name="nome"
+                  defaultValue={editingMedication.nome}
+                  placeholder="Digite o nome do medicamento"
+                  required
+                  data-testid="input-edit-medication-nome"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-posologia">Posologia*</Label>
+                <Input
+                  id="edit-posologia"
+                  name="posologia"
+                  defaultValue={editingMedication.posologia}
+                  placeholder="Ex: 500mg, 1 comprimido"
+                  required
+                  data-testid="input-edit-medication-posologia"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-frequencia">Frequência*</Label>
+                <Input
+                  id="edit-frequencia"
+                  name="frequencia"
+                  defaultValue={editingMedication.frequencia}
+                  placeholder="Ex: 2 vezes ao dia, A cada 8 horas"
+                  required
+                  data-testid="input-edit-medication-frequencia"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-medicoId">Médico Responsável*</Label>
+                <Select name="medicoId" defaultValue={editingMedication.medicoId} required>
+                  <SelectTrigger data-testid="select-edit-medication-doctor">
+                    <SelectValue placeholder="Selecione um médico" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {doctors.map((doctor) => (
+                      <SelectItem key={doctor.id} value={doctor.id}>
+                        {doctor.nome} - {doctor.especialidade}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-lembrete">Horários de Lembrete</Label>
+                <Input
+                  id="edit-lembrete"
+                  name="lembrete"
+                  defaultValue={editingMedication.lembrete.map(l => l.hora).join(', ')}
+                  placeholder="Ex: 08:00, 14:00, 20:00"
+                  data-testid="input-edit-medication-lembrete"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Separe os horários por vírgula. Formato: HH:MM
+                </p>
+              </div>
+              
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isUpdateLoading}
+                  data-testid="button-update-medication"
+                >
+                  {isUpdateLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Atualizando...
+                    </>
+                  ) : (
+                    'Atualizar'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

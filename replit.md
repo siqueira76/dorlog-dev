@@ -33,6 +33,11 @@ DorLog is a Progressive Web App (PWA) designed for health management, specifical
   - Medication list display with doctor name resolution
   - Reminder time functionality and frequency tracking
   - Proper error handling and loading states with mobile-first design
+- **CRUD OPERATIONS COMPLETE** - Full delete and update functionality implemented for doctors and medications (August 17, 2025)
+  - Edit dialog forms with pre-populated data for both doctors and medications
+  - Delete confirmation dialogs with proper user feedback
+  - Real-time data refresh after operations
+  - Mobile-first responsive design for all CRUD operations
 - Firebase security rules configuration required for quiz, medicos, and medicamentos access - see CONFIGURACAO_FIREBASE_REGRAS.md
 
 # User Preferences
