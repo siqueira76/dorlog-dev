@@ -5,19 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DorLog - Redirecionando...</title>
   <script>
-    // GitHub Pages SPA redirect script
-    // This script takes the current full route and redirects to the index page
-    // with the route encoded in the URL parameters so that the SPA router can handle it
-    (function(l) {
-      if (l.search[1] === '/' ) {
-        var decoded = l.search.slice(1).split('&').map(function(s) { 
-          return s.replace(/~and~/g, '&')
-        }).join('?')
-        window.history.replaceState(null, null,
-            l.pathname.slice(0, -1) + decoded + l.hash
-        )
+    // GitHub Pages SPA redirect script for DorLog
+    (function() {
+      var currentPath = window.location.pathname;
+      var basePath = '/dorlog/';
+      
+      // Extract the route after the base path
+      var route = currentPath.replace(basePath, '');
+      
+      // If we're not on the index page, redirect to index with the route as hash
+      if (route && route !== '' && route !== 'index.html') {
+        var redirectUrl = window.location.origin + basePath + '#/' + route + window.location.search + window.location.hash;
+        window.location.replace(redirectUrl);
+      } else {
+        // Just go to the main app
+        window.location.replace(window.location.origin + basePath);
       }
-    }(window.location))
+    })();
   </script>
 </head>
 <body>

@@ -50,7 +50,19 @@ async function buildClient() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DorLog - Redirecionando...</title>
   <script>
-    window.location.replace(window.location.origin + window.location.pathname.split('/')[1] ? '/' + window.location.pathname.split('/')[1] + '/' : '/' + '?redirect=' + encodeURIComponent(window.location.pathname + window.location.search + window.location.hash));
+    (function() {
+      var currentPath = window.location.pathname;
+      var basePath = '/dorlog/';
+      
+      var route = currentPath.replace(basePath, '');
+      
+      if (route && route !== '' && route !== 'index.html') {
+        var redirectUrl = window.location.origin + basePath + '#/' + route + window.location.search + window.location.hash;
+        window.location.replace(redirectUrl);
+      } else {
+        window.location.replace(window.location.origin + basePath);
+      }
+    })();
   </script>
 </head>
 <body>
