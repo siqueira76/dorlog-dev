@@ -62,44 +62,111 @@ export default function Medications() {
     const reportDocId = `${firebaseUser.email}_${today}`;
     const reportRef = doc(db, 'report_diario', reportDocId);
 
-    // Prepare medication data according to Firebase structure
-    const medicationData = {
+    console.log('💊 Salvando medicamento no report_diario:', {
       medicamentoId: medication.id,
       nome: medication.nome,
-      posologia: medication.posologia,
-      horaTomado: reminderHora,
-      timestampTomado: Timestamp.fromDate(now),
-      data: Timestamp.fromDate(now)
-    };
-
-    console.log('💊 Dados do medicamento preparados:', medicationData);
+      horaTomado: reminderHora
+    });
 
     try {
       // Check if document exists for today
       const reportDoc = await getDoc(reportRef);
       
       if (reportDoc.exists()) {
-        console.log('📄 Documento do report_diario já existe, atualizando...');
+        console.log('📄 Documento do report_diario já existe, verificando duplicatas...');
         const existingData = reportDoc.data();
         const existingMedicamentos = existingData.medicamentos || [];
         
-        // Add new medication to array
-        console.log('➕ Adicionando novo medicamento ao array...');
-        existingMedicamentos.push(medicationData);
+        // Check if this medication already exists in today's report
+        const existingMedicationIndex = existingMedicamentos.findIndex(
+          (med: any) => med.medicamentoId === medication.id
+        );
+        
+        if (existingMedicationIndex !== -1) {
+          // Medication already exists, update frequency array
+          console.log('🔄 Medicamento já existe no report, atualizando frequência...');
+          const existingMedication = existingMedicamentos[existingMedicationIndex];
+          
+          // Initialize frequency array if it doesn't exist
+          if (!Array.isArray(existingMedication.frequencia)) {
+            existingMedication.frequencia = [];
+          }
+          
+          // Check if this specific time slot already exists
+          const existingTimeIndex = existingMedication.frequencia.findIndex(
+            (freq: any) => freq.horaTomado === reminderHora
+          );
+          
+          if (existingTimeIndex !== -1) {
+            // Time slot exists, update it
+            existingMedication.frequencia[existingTimeIndex] = {
+              horaTomado: reminderHora,
+              timestampTomado: Timestamp.fromDate(now),
+              status: 'tomado'
+            };
+            console.log('⏰ Horário específico atualizado no medicamento existente');
+          } else {
+            // Add new time slot to frequency
+            existingMedication.frequencia.push({
+              horaTomado: reminderHora,
+              timestampTomado: Timestamp.fromDate(now),
+              status: 'tomado'
+            });
+            console.log('➕ Novo horário adicionado à frequência do medicamento');
+          }
+          
+          // Update last taken info
+          existingMedication.ultimaAtualizacao = Timestamp.fromDate(now);
+          
+          // Update the medication in the array
+          existingMedicamentos[existingMedicationIndex] = existingMedication;
+          
+        } else {
+          // Medication doesn't exist, create new entry
+          console.log('➕ Criando nova entrada para medicamento...');
+          const newMedicationData = {
+            medicamentoId: medication.id,
+            nome: medication.nome,
+            posologia: medication.posologia,
+            frequencia: [{
+              horaTomado: reminderHora,
+              timestampTomado: Timestamp.fromDate(now),
+              status: 'tomado'
+            }],
+            primeiroRegistro: Timestamp.fromDate(now),
+            ultimaAtualizacao: Timestamp.fromDate(now)
+          };
+          
+          existingMedicamentos.push(newMedicationData);
+        }
         
         await updateDoc(reportRef, {
           medicamentos: existingMedicamentos,
           ultimaAtualizacao: Timestamp.fromDate(now)
         });
         
-        console.log('✅ Medicamento adicionado ao report_diario existente');
+        console.log('✅ Report_diario atualizado com medicamento');
+        
       } else {
         console.log('📄 Criando novo documento report_diario...');
-        // Create new document
+        // Create new document with improved structure
+        const newMedicationData = {
+          medicamentoId: medication.id,
+          nome: medication.nome,
+          posologia: medication.posologia,
+          frequencia: [{
+            horaTomado: reminderHora,
+            timestampTomado: Timestamp.fromDate(now),
+            status: 'tomado'
+          }],
+          primeiroRegistro: Timestamp.fromDate(now),
+          ultimaAtualizacao: Timestamp.fromDate(now)
+        };
+        
         const newReportData = {
           data: Timestamp.fromDate(now),
           usuarioId: firebaseUser.email,
-          medicamentos: [medicationData],
+          medicamentos: [newMedicationData],
           quizzes: [], // Initialize empty quizzes array
           criadoEm: Timestamp.fromDate(now),
           ultimaAtualizacao: Timestamp.fromDate(now)
@@ -109,7 +176,7 @@ export default function Medications() {
         console.log('✅ Novo report_diario criado com medicamento');
       }
       
-      console.log('💾 Medicamento salvo com sucesso no Firestore');
+      console.log('💾 Medicamento salvo com sucesso no Firestore com controle de duplicatas');
       
     } catch (error) {
       console.error('❌ Erro ao salvar medicamento no report_diario:', error);
@@ -212,6 +279,17 @@ export default function Medications() {
   const handleToggleReminderStatus = async (medicationId: string, reminderIndex: number, currentStatus: boolean) => {
     if (!firebaseUser) return;
 
+    // REGRA: Uma vez marcado como tomado (currentStatus = true), não permite desmarcar manualmente
+    if (currentStatus) {
+      toast({
+        variant: "destructive",
+        title: "Ação não permitida",
+        description: "Medicamento já foi tomado e não pode ser desmarcado manualmente. O status será resetado automaticamente no próximo dia.",
+        duration: 4000
+      });
+      return;
+    }
+
     const updateId = `${medicationId}-${reminderIndex}`;
     setUpdatingReminder(updateId);
 
@@ -220,10 +298,10 @@ export default function Medications() {
       const medication = medications.find(med => med.id === medicationId);
       if (!medication) return;
 
-      // Criar cópia dos lembretes com o status atualizado
+      // Criar cópia dos lembretes com o status atualizado (apenas false -> true é permitido)
       const updatedReminders = medication.lembrete.map((reminder, index) => 
         index === reminderIndex 
-          ? { ...reminder, status: !currentStatus }
+          ? { ...reminder, status: true, timestampTomado: new Date().toISOString() }
           : reminder
       );
 
@@ -233,17 +311,14 @@ export default function Medications() {
         lembrete: updatedReminders
       });
 
-      // Se o medicamento está sendo marcado como tomado (false -> true), 
-      // salvar no report_diario
-      if (!currentStatus) {
-        const reminderHora = medication.lembrete[reminderIndex].hora;
-        try {
-          await saveMedicationToReportDiario(medication, reminderHora);
-          console.log('✅ Medicamento salvo no report_diario com sucesso');
-        } catch (error) {
-          console.error('❌ Erro ao salvar medicamento no report_diario:', error);
-          // Não interrompe o fluxo principal, apenas loga o erro
-        }
+      // Marcar como tomado no report_diario
+      const reminderHora = medication.lembrete[reminderIndex].hora;
+      try {
+        await saveMedicationToReportDiario(medication, reminderHora);
+        console.log('✅ Medicamento salvo no report_diario com sucesso');
+      } catch (error) {
+        console.error('❌ Erro ao salvar medicamento no report_diario:', error);
+        // Não interrompe o fluxo principal, apenas loga o erro
       }
 
       // Atualizar estado local
@@ -256,9 +331,9 @@ export default function Medications() {
       );
 
       toast({
-        title: "Status atualizado",
-        description: `Lembrete ${!currentStatus ? 'marcado como tomado' : 'desmarcado'}`,
-        duration: 2000
+        title: "Medicamento tomado",
+        description: `Lembrete marcado como tomado às ${reminderHora}`,
+        duration: 3000
       });
 
     } catch (error) {

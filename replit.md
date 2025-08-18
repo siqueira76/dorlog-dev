@@ -58,6 +58,12 @@ DorLog is a Progressive Web App (PWA) designed for health management, specifical
   - Progress counter showing X/Y reminders taken per medication
   - Card background colors indicating completion status (green=complete, red=pending)
   - Preserved reminder status during medication edits (fixed bug where status was reset)
+- **IMPROVED REPORT_DIARIO MEDICATION PERSISTENCE** - Enhanced medication tracking with duplicate prevention (August 18, 2025)
+  - Prevents duplicate medication entries in the same daily report_diario document
+  - Updates frequency array with new dose times and status instead of creating duplicates
+  - Once marked as "taken", status cannot be manually changed - only automatic daily reset
+  - Improved data structure with frequency tracking per medication per day
+  - Better error handling and user feedback for medication status changes
 - Firebase security rules configuration required for quiz, medicos, medicamentos, and report_diario access - see CONFIGURACAO_FIREBASE_REGRAS.md
 
 # User Preferences
