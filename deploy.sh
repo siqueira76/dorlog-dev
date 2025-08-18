@@ -19,7 +19,8 @@ if [ $? -eq 0 ]; then
     
     if [ $? -eq 0 ]; then
         echo "✅ Deploy realizado com sucesso!"
-        echo "🌍 Site disponível em: https://SEU_USUARIO.github.io/SEU_REPOSITORIO/"
+        echo "🌍 Site disponível em: https://siqueira76.github.io/dorlog/"
+        echo "📱 Acesse: https://siqueira76.github.io/dorlog/login"
     else
         echo "❌ Erro durante o deploy!"
         exit 1

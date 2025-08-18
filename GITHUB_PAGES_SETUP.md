@@ -68,9 +68,25 @@ Após o deploy, o app estará disponível em:
 - **GitHub Pages**: `https://seu-usuario.github.io/seu-repositorio/`
 - **Replit (desenvolvimento)**: URL do ambiente Replit
 
+## Resolução do Problema 404
+
+Para resolver o erro 404 em rotas SPA no GitHub Pages:
+
+1. **404.html criado**: Arquivo especial que redireciona todas as rotas para index.html
+2. **Base Path corrigido**: Configurado como `/dorlog/` para corresponder ao nome do repositório
+3. **SPA Routing**: O React Router agora funciona corretamente com navegação direta
+
+## URLs de Acesso Corretas
+
+Após o deploy, acesse:
+- **Página principal**: `https://siqueira76.github.io/dorlog/`
+- **Login**: `https://siqueira76.github.io/dorlog/login`
+- **Outras rotas**: Funcionam automaticamente via client-side routing
+
 ## Notas Importantes
 
-1. **Base Path**: O projeto está configurado com base path relativo `./` para GitHub Pages
+1. **Base Path**: O projeto está configurado com base path `/dorlog/` para GitHub Pages
 2. **Cliente Apenas**: O GitHub Pages serve apenas arquivos estáticos, então apenas o frontend React é deployado
 3. **Firebase**: As funcionalidades de autenticação e Firestore funcionam normalmente no GitHub Pages
 4. **PWA**: As capacidades de Progressive Web App são mantidas no deploy
+5. **SPA Routing**: Arquivo 404.html garante que todas as rotas funcionem corretamente
