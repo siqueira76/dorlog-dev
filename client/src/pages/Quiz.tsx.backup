@@ -158,14 +158,9 @@ export default function QuizPage() {
               id: 8,
               texto: "Algo específico que gostaria de registrar sobre hoje?",
               tipo: "texto"
-            },
-            "9": {
-              id: 9,
-              texto: "Como está seu humor agora?",
-              tipo: "emojis",
-              opcoes: ["Ansioso", "Triste", "Irritado", "Calmo", "Feliz", "Depressivo"]
             }
-          }} : {
+          }
+        } : {
           nome: "Quiz Matinal - Demonstração",
           disparo: "notificacao",
           perguntas: {
@@ -338,14 +333,9 @@ export default function QuizPage() {
               id: 8,
               texto: "Algo específico que gostaria de registrar sobre hoje?",
               tipo: "texto"
-            },
-            "9": {
-              id: 9,
-              texto: "Como está seu humor agora?",
-              tipo: "emojis",
-              opcoes: ["Ansioso", "Triste", "Irritado", "Calmo", "Feliz", "Depressivo"]
             }
-          }} : {
+          }
+        } : {
           nome: "Quiz Matinal - Demonstração",
           disparo: "notificacao",
           perguntas: {
@@ -551,14 +541,9 @@ export default function QuizPage() {
               id: 8,
               texto: "Algo específico que gostaria de registrar sobre hoje?",
               tipo: "texto"
-            },
-            "9": {
-              id: 9,
-              texto: "Como está seu humor agora?",
-              tipo: "emojis",
-              opcoes: ["Ansioso", "Triste", "Irritado", "Calmo", "Feliz", "Depressivo"]
             }
-          }} : {
+          }
+        } : {
           nome: "Quiz Matinal - Demonstração",
           disparo: "notificacao",
           perguntas: {
