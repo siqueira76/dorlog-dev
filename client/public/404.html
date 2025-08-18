@@ -10,17 +10,16 @@
       var currentPath = window.location.pathname;
       var basePath = '/dorlog/';
       
-      // Extract the route after the base path
+      // Store the intended route in sessionStorage so the React app can read it
       var route = currentPath.replace(basePath, '');
       
-      // If we're not on the index page, redirect to index with the route as hash
       if (route && route !== '' && route !== 'index.html') {
-        var redirectUrl = window.location.origin + basePath + '#/' + route + window.location.search + window.location.hash;
-        window.location.replace(redirectUrl);
-      } else {
-        // Just go to the main app
-        window.location.replace(window.location.origin + basePath);
+        // Store the intended path for the React app to read
+        sessionStorage.setItem('dorlog_intended_path', '/' + route);
       }
+      
+      // Always redirect to the main app
+      window.location.replace(window.location.origin + basePath);
     })();
   </script>
 </head>

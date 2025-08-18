@@ -1,4 +1,5 @@
-import { Switch, Route, Redirect } from "wouter";
+import { useEffect } from "react";
+import { Switch, Route, Redirect, Router } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -21,6 +22,18 @@ import NotFound from "@/pages/not-found";
 
 function AppRoutes() {
   const { currentUser, loading } = useAuth();
+
+  // Handle intended path from 404 redirect
+  useEffect(() => {
+    const intendedPath = sessionStorage.getItem('dorlog_intended_path');
+    if (intendedPath) {
+      sessionStorage.removeItem('dorlog_intended_path');
+      // Navigate to the intended path after auth is loaded
+      if (!loading) {
+        window.history.replaceState(null, '', intendedPath);
+      }
+    }
+  }, [loading]);
 
   if (loading) {
     return (
@@ -110,12 +123,17 @@ function AppRoutes() {
 }
 
 function App() {
+  // Configure base path for GitHub Pages deployment
+  const basePath = import.meta.env.PROD ? '/dorlog' : '';
+  
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <Toaster />
-          <AppRoutes />
+          <Router base={basePath}>
+            <Toaster />
+            <AppRoutes />
+          </Router>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
