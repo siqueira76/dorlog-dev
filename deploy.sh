@@ -7,7 +7,7 @@ echo "🚀 Iniciando deploy para GitHub Pages..."
 
 # Build do cliente
 echo "📦 Construindo aplicação cliente..."
-npm run build:client
+node build-client.js
 
 # Verificar se o build foi bem-sucedido
 if [ $? -eq 0 ]; then

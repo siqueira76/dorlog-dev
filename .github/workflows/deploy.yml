@@ -29,8 +29,9 @@ jobs:
       run: npm ci
 
     - name: Build client
-      run: npm run build:client
+      run: node build-client.js
       env:
+        NODE_ENV: production
         VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
         VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
         VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}

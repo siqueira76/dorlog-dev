@@ -131,6 +131,11 @@ Preferred communication style: Simple, everyday language.
   - Automatic deployment on push to main branch
   - Firebase environment variables configured in GitHub Secrets
   - Manual deployment script available (`deploy.sh`)
+- **GitHub Pages Deployment** with automated GitHub Actions workflow
+  - Client-only build for static hosting
+  - Automatic deployment on push to main branch
+  - Firebase environment variables configured in GitHub Secrets
+  - Manual deployment script available (`deploy.sh`)
 
 # External Dependencies
 

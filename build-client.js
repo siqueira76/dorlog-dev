@@ -9,13 +9,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const config = {
+  plugins: [
+    (await import('@vitejs/plugin-react')).default(),
+  ],
   root: resolve(__dirname, 'client'),
   build: {
     outDir: resolve(__dirname, 'dist/public'),
     emptyOutDir: true,
     assetsDir: 'assets',
   },
-  base: process.env.NODE_ENV === 'production' ? '/dorlog/' : '/',
+  base: process.env.NODE_ENV === 'production' ? './' : '/',
   resolve: {
     alias: {
       '@': resolve(__dirname, 'client', 'src'),

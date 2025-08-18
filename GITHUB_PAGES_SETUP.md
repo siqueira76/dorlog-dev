@@ -27,7 +27,7 @@ Este projeto está configurado para deploy automático no GitHub Pages usando Gi
 ./deploy.sh
 ```
 
-### Usando Comandos NPM
+### Usando Comandos Manuais
 ```bash
 # Build do cliente apenas
 node build-client.js
@@ -70,7 +70,7 @@ Após o deploy, o app estará disponível em:
 
 ## Notas Importantes
 
-1. **Base Path**: O projeto está configurado com base path `/dorlog/` para GitHub Pages
+1. **Base Path**: O projeto está configurado com base path relativo `./` para GitHub Pages
 2. **Cliente Apenas**: O GitHub Pages serve apenas arquivos estáticos, então apenas o frontend React é deployado
 3. **Firebase**: As funcionalidades de autenticação e Firestore funcionam normalmente no GitHub Pages
 4. **PWA**: As capacidades de Progressive Web App são mantidas no deploy
