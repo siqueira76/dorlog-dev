@@ -3,7 +3,8 @@
 DorLog is a Progressive Web App (PWA) designed for health management, specifically focused on pain tracking, medication management, and healthcare provider coordination. The application is built as a mobile-first experience that works seamlessly across devices, featuring a clean, light-mode interface with Firebase authentication and Firestore data storage.
 
 ## Current Status
-- **PROJECT MIGRATED TO REPLIT** - Successfully migrated from Replit Agent environment (August 13, 2025)
+- **PROJECT MIGRATED TO REPLIT** - Successfully migrated from Replit Agent environment (August 18, 2025)
+- **GITHUB PAGES DEPLOYMENT CONFIGURED** - Automated deployment setup with GitHub Actions (August 18, 2025)
 - **FIREBASE CONFIGURATION COMPLETE** - All environment variables properly configured for production Firebase project "dorlog-fibro-diario"
 - Firebase authentication fully implemented (email/password + Google OAuth)
 - User persistence working perfectly in "usuarios" collection with proper security rules
@@ -125,6 +126,11 @@ Preferred communication style: Simple, everyday language.
 - **Path aliases** for clean imports (`@/`, `@shared/`)
 - **Development hot reload** with Vite middleware integration
 - **Production build** with static asset serving
+- **GitHub Pages Deployment** with automated GitHub Actions workflow
+  - Client-only build for static hosting
+  - Automatic deployment on push to main branch
+  - Firebase environment variables configured in GitHub Secrets
+  - Manual deployment script available (`deploy.sh`)
 
 # External Dependencies
 
