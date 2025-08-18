@@ -11,7 +11,7 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, deleteDoc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import ReminderService from '@/services/reminderService';
 
 // Medication type based on Firebase structure
@@ -48,6 +48,74 @@ export default function Medications() {
   const [updatingReminder, setUpdatingReminder] = useState<string | null>(null); // medicationId-index
   const { firebaseUser } = useAuth();
   const { toast } = useToast();
+
+  // Helper function to save medication to report_diario when taken
+  const saveMedicationToReportDiario = async (medication: Medication, reminderHora: string) => {
+    if (!firebaseUser?.email) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const now = new Date();
+    const today = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    
+    // Document ID format: userId_YYYY-MM-DD
+    const reportDocId = `${firebaseUser.email}_${today}`;
+    const reportRef = doc(db, 'report_diario', reportDocId);
+
+    // Prepare medication data according to Firebase structure
+    const medicationData = {
+      medicamentoId: medication.id,
+      nome: medication.nome,
+      posologia: medication.posologia,
+      horaTomado: reminderHora,
+      timestampTomado: Timestamp.fromDate(now),
+      data: Timestamp.fromDate(now)
+    };
+
+    console.log('💊 Dados do medicamento preparados:', medicationData);
+
+    try {
+      // Check if document exists for today
+      const reportDoc = await getDoc(reportRef);
+      
+      if (reportDoc.exists()) {
+        console.log('📄 Documento do report_diario já existe, atualizando...');
+        const existingData = reportDoc.data();
+        const existingMedicamentos = existingData.medicamentos || [];
+        
+        // Add new medication to array
+        console.log('➕ Adicionando novo medicamento ao array...');
+        existingMedicamentos.push(medicationData);
+        
+        await updateDoc(reportRef, {
+          medicamentos: existingMedicamentos,
+          ultimaAtualizacao: Timestamp.fromDate(now)
+        });
+        
+        console.log('✅ Medicamento adicionado ao report_diario existente');
+      } else {
+        console.log('📄 Criando novo documento report_diario...');
+        // Create new document
+        const newReportData = {
+          data: Timestamp.fromDate(now),
+          usuarioId: firebaseUser.email,
+          medicamentos: [medicationData],
+          quizzes: [], // Initialize empty quizzes array
+          criadoEm: Timestamp.fromDate(now),
+          ultimaAtualizacao: Timestamp.fromDate(now)
+        };
+        
+        await setDoc(reportRef, newReportData);
+        console.log('✅ Novo report_diario criado com medicamento');
+      }
+      
+      console.log('💾 Medicamento salvo com sucesso no Firestore');
+      
+    } catch (error) {
+      console.error('❌ Erro ao salvar medicamento no report_diario:', error);
+      throw error;
+    }
+  };
 
   const handleAddMedication = () => {
     setLocation('/medications/add');
@@ -164,6 +232,19 @@ export default function Medications() {
       await updateDoc(medicationRef, {
         lembrete: updatedReminders
       });
+
+      // Se o medicamento está sendo marcado como tomado (false -> true), 
+      // salvar no report_diario
+      if (!currentStatus) {
+        const reminderHora = medication.lembrete[reminderIndex].hora;
+        try {
+          await saveMedicationToReportDiario(medication, reminderHora);
+          console.log('✅ Medicamento salvo no report_diario com sucesso');
+        } catch (error) {
+          console.error('❌ Erro ao salvar medicamento no report_diario:', error);
+          // Não interrompe o fluxo principal, apenas loga o erro
+        }
+      }
 
       // Atualizar estado local
       setMedications(prevMedications => 
