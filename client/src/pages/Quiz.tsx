@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { queryClient } from '@/lib/queryClient';
 import QuestionRenderer from '../components/QuestionRenderer';
 
 export default function QuizPage() {
@@ -676,6 +677,14 @@ export default function QuizPage() {
 
       console.log('💾 Salvando respostas do quiz...');
       await saveQuizToReportDiario(completedSession);
+
+      // Invalidar cache da query de episódios de crise se o quiz foi do tipo emergencial
+      if (completedSession.quizId === 'emergencial') {
+        console.log('🔄 Invalidando cache de episódios de crise...');
+        queryClient.invalidateQueries({
+          queryKey: ['crisis-episodes', currentUser?.email]
+        });
+      }
 
       toast({
         title: "Quiz Concluído!",
