@@ -16,31 +16,55 @@ export default function Reports() {
     }
 
     try {
+      console.log('🔍 Buscando episódios de crise para:', currentUser.email);
+      
       // Calcular data de 30 dias atrás
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const thirtyDaysAgoTimestamp = Timestamp.fromDate(thirtyDaysAgo);
       
-      // Query na coleção report_diario
+      console.log('📅 Filtro de data - últimos 30 dias desde:', thirtyDaysAgo.toISOString());
+      
+      // Buscar documentos por email apenas (evitando índice composto)
+      // Os documentos têm ID no formato: {email}_{YYYY-MM-DD}
       const reportDiarioRef = collection(db, 'report_diario');
-      const q = query(
-        reportDiarioRef,
-        where('email', '==', currentUser.email),
-        where('data', '>=', Timestamp.fromDate(thirtyDaysAgo))
-      );
+      
+      // Estratégia 1: Buscar por documentos com prefixo do email
+      // Como os IDs são {email}_{date}, vamos buscar todos do usuário
+      const q = query(reportDiarioRef);
       
       const querySnapshot = await getDocs(q);
       let crisisCount = 0;
+      let documentsChecked = 0;
       
-      // Contar quizzes do tipo 'emergencial' em todos os documentos
+      console.log('📄 Total de documentos encontrados:', querySnapshot.size);
+      
+      // Filtrar por email e data no cliente
       querySnapshot.forEach((doc) => {
+        const docId = doc.id;
         const data = doc.data();
-        if (data.quizzes && Array.isArray(data.quizzes)) {
-          const emergencialQuizzes = data.quizzes.filter((quiz: any) => 
-            quiz.tipo === 'emergencial'
-          );
-          crisisCount += emergencialQuizzes.length;
+        
+        // Verificar se o documento pertence ao usuário atual
+        if (docId.startsWith(`${currentUser.email}_`) || data.usuarioId === currentUser.email || data.email === currentUser.email) {
+          documentsChecked++;
+          
+          // Verificar se o documento está dentro dos últimos 30 dias
+          const docData = data.data;
+          if (docData && docData >= thirtyDaysAgoTimestamp) {
+            console.log('📋 Documento válido encontrado:', docId, 'Data:', docData.toDate());
+            
+            if (data.quizzes && Array.isArray(data.quizzes)) {
+              const emergencialQuizzes = data.quizzes.filter((quiz: any) => 
+                quiz.tipo === 'emergencial'
+              );
+              console.log(`🚨 ${emergencialQuizzes.length} quiz(zes) emergencial(is) encontrado(s) em ${docId}`);
+              crisisCount += emergencialQuizzes.length;
+            }
+          }
         }
       });
+      
+      console.log(`✅ Busca concluída. Documentos verificados: ${documentsChecked}, Crises encontradas: ${crisisCount}`);
       
       return crisisCount;
     } catch (error) {
