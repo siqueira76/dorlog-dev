@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle, BookOpen } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
@@ -97,7 +98,7 @@ export default function Reports() {
         if (docId.startsWith(`${currentUser.email}_`) || data.usuarioId === currentUser.email || data.email === currentUser.email) {
           userDocuments++;
           const docData = data.data;
-          if (docData) {
+          if (docData && typeof docData.toDate === 'function') {
             const entryDate = docData.toDate();
             if (!lastEntryDate || entryDate > lastEntryDate) {
               lastEntryDate = entryDate;
@@ -169,6 +170,81 @@ export default function Reports() {
   const { data: diaryAdherence, isLoading: isLoadingDiary } = useQuery({
     queryKey: ['diary-adherence', currentUser?.email],
     queryFn: fetchDiaryAdherence,
+    enabled: !!currentUser?.email,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+
+  // Função para buscar dados de evolução da dor (quizzes noturnos)
+  const fetchPainEvolution = async (): Promise<Array<{ date: string; pain: number; dateStr: string }>> => {
+    if (!currentUser?.email) {
+      return [];
+    }
+
+    try {
+      console.log('📊 Buscando evolução da dor para:', currentUser.email);
+      
+      // Calcular data de 30 dias atrás
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const thirtyDaysAgoTimestamp = Timestamp.fromDate(thirtyDaysAgo);
+      
+      const reportDiarioRef = collection(db, 'report_diario');
+      const q = query(reportDiarioRef);
+      
+      const querySnapshot = await getDocs(q);
+      const painData: Array<{ date: string; pain: number; dateStr: string }> = [];
+      
+      // Processar documentos e extrair dados de dor
+      querySnapshot.forEach((doc) => {
+        const docId = doc.id;
+        const data = doc.data();
+        
+        // Verificar se o documento pertence ao usuário atual
+        if (docId.startsWith(`${currentUser.email}_`) || data.usuarioId === currentUser.email || data.email === currentUser.email) {
+          // Verificar se o documento está dentro dos últimos 30 dias
+          const docData = data.data;
+          if (docData && typeof docData.toDate === 'function' && docData >= thirtyDaysAgoTimestamp) {
+            const entryDate = docData.toDate();
+            
+            // Procurar por quizzes do tipo 'noturno'
+            if (data.quizzes && Array.isArray(data.quizzes)) {
+              const nightQuizzes = data.quizzes.filter((quiz: any) => quiz.tipo === 'noturno');
+              
+              nightQuizzes.forEach((quiz: any) => {
+                // Obter resposta da pergunta 1 (intensidade da dor)
+                if (quiz.respostas && quiz.respostas['1'] !== undefined) {
+                  const painLevel = Number(quiz.respostas['1']);
+                  if (!isNaN(painLevel)) {
+                    painData.push({
+                      date: entryDate.toISOString().split('T')[0], // YYYY-MM-DD
+                      dateStr: entryDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                      pain: painLevel
+                    });
+                  }
+                }
+              });
+            }
+          }
+        }
+      });
+      
+      // Ordenar por data
+      painData.sort((a, b) => a.date.localeCompare(b.date));
+      
+      console.log(`📈 Dados de evolução da dor encontrados: ${painData.length} registros`);
+      console.log('📊 Amostra dos dados:', painData.slice(0, 3));
+      
+      return painData;
+    } catch (error) {
+      console.error('Erro ao buscar evolução da dor:', error);
+      return [];
+    }
+  };
+
+  // Query para buscar evolução da dor
+  const { data: painEvolution, isLoading: isLoadingPain } = useQuery({
+    queryKey: ['pain-evolution', currentUser?.email],
+    queryFn: fetchPainEvolution,
     enabled: !!currentUser?.email,
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
@@ -247,14 +323,71 @@ export default function Reports() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Acompanhe a intensidade e frequência das suas dores ao longo do tempo
+              Acompanhe a intensidade da sua dor baseada nos diários noturnos (últimos 30 dias)
             </p>
-            <div className="bg-muted rounded-xl p-6 text-center">
-              <BarChart3 className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">
-                Dados insuficientes para gerar relatório
-              </p>
-            </div>
+            {isLoadingPain ? (
+              <div className="bg-muted rounded-xl p-6 text-center">
+                <TrendingUp className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50 animate-pulse" />
+                <p className="text-sm text-muted-foreground">
+                  Carregando dados...
+                </p>
+              </div>
+            ) : !painEvolution || painEvolution.length === 0 ? (
+              <div className="bg-muted rounded-xl p-6 text-center">
+                <BarChart3 className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">
+                  Complete alguns diários noturnos para ver sua evolução
+                </p>
+              </div>
+            ) : (
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={painEvolution}
+                    margin={{
+                      top: 5,
+                      right: 30,
+                      left: 20,
+                      bottom: 5,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis 
+                      dataKey="dateStr" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <YAxis 
+                      domain={[0, 10]} 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      label={{ value: 'Intensidade da Dor', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '12px', fill: 'hsl(var(--muted-foreground))' } }}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      }}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      formatter={(value: number) => [`${value}/10`, 'Intensidade da Dor']}
+                      labelFormatter={(label) => `Data: ${label}`}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="pain" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2, fill: 'hsl(var(--background))' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
 
