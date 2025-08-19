@@ -1,8 +1,62 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart3, TrendingUp, Calendar, Download } from 'lucide-react';
+import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function Reports() {
+  const { currentUser } = useAuth();
+
+  // Função para contar episódios de crise dos últimos 30 dias
+  const fetchCrisisEpisodes = async (): Promise<number> => {
+    if (!currentUser?.email) {
+      return 0;
+    }
+
+    try {
+      // Calcular data de 30 dias atrás
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      // Query na coleção report_diario
+      const reportDiarioRef = collection(db, 'report_diario');
+      const q = query(
+        reportDiarioRef,
+        where('email', '==', currentUser.email),
+        where('data', '>=', Timestamp.fromDate(thirtyDaysAgo))
+      );
+      
+      const querySnapshot = await getDocs(q);
+      let crisisCount = 0;
+      
+      // Contar quizzes do tipo 'emergencial' em todos os documentos
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.quizzes && Array.isArray(data.quizzes)) {
+          const emergencialQuizzes = data.quizzes.filter((quiz: any) => 
+            quiz.tipo === 'emergencial'
+          );
+          crisisCount += emergencialQuizzes.length;
+        }
+      });
+      
+      return crisisCount;
+    } catch (error) {
+      console.error('Erro ao contar episódios de crise:', error);
+      return 0;
+    }
+  };
+
+  // Query para buscar episódios de crise
+  const { data: crisisEpisodes, isLoading: isLoadingCrisis } = useQuery({
+    queryKey: ['crisis-episodes', currentUser?.email],
+    queryFn: fetchCrisisEpisodes,
+    enabled: !!currentUser?.email,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
       
@@ -29,11 +83,14 @@ export default function Reports() {
       <div className="grid grid-cols-2 gap-4 mb-6">
         <Card className="shadow-sm border border-border">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-primary mb-1" data-testid="text-pain-episodes">
-              0
+            <div className="flex items-center justify-center mb-2">
+              <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
             </div>
-            <p className="text-sm text-muted-foreground">Episódios de dor</p>
-            <p className="text-xs text-muted-foreground">Este mês</p>
+            <div className="text-2xl font-bold text-red-600 mb-1" data-testid="text-crisis-episodes">
+              {isLoadingCrisis ? '...' : (crisisEpisodes || 0)}
+            </div>
+            <p className="text-sm text-muted-foreground">Episódios de Crise</p>
+            <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
           </CardContent>
         </Card>
         
