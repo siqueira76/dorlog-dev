@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle } from 'lucide-react';
+import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle, BookOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
@@ -73,10 +73,102 @@ export default function Reports() {
     }
   };
 
+  // Função para verificar adesão ao diário
+  const fetchDiaryAdherence = async (): Promise<{ daysSinceLastEntry: number; message: string; status: 'good' | 'warning' | 'danger' | 'empty' }> => {
+    if (!currentUser?.email) {
+      return { daysSinceLastEntry: 0, message: 'Usuário não autenticado', status: 'empty' };
+    }
+
+    try {
+      console.log('📖 Verificando adesão ao diário para:', currentUser.email);
+      
+      const reportDiarioRef = collection(db, 'report_diario');
+      const q = query(reportDiarioRef);
+      
+      const querySnapshot = await getDocs(q);
+      let lastEntryDate: Date | null = null;
+      let userDocuments = 0;
+      
+      // Encontrar a data do último registro do usuário
+      querySnapshot.forEach((doc) => {
+        const docId = doc.id;
+        const data = doc.data();
+        
+        if (docId.startsWith(`${currentUser.email}_`) || data.usuarioId === currentUser.email || data.email === currentUser.email) {
+          userDocuments++;
+          const docData = data.data;
+          if (docData) {
+            const entryDate = docData.toDate();
+            if (!lastEntryDate || entryDate > lastEntryDate) {
+              lastEntryDate = entryDate;
+            }
+          }
+        }
+      });
+
+      console.log(`📊 Documentos do usuário encontrados: ${userDocuments}`);
+      console.log('📅 Último registro encontrado:', lastEntryDate?.toISOString());
+
+      // Se não há registros
+      if (!lastEntryDate || userDocuments === 0) {
+        return {
+          daysSinceLastEntry: 0,
+          message: 'Você ainda não fez nenhum registro no Diário',
+          status: 'empty'
+        };
+      }
+
+      const today = new Date();
+      const todayStr = today.toDateString();
+      const yesterdayStr = new Date(today.getTime() - 24 * 60 * 60 * 1000).toDateString();
+      const lastEntryStr = lastEntryDate.toDateString();
+
+      // Se o último registro é hoje
+      if (lastEntryStr === todayStr) {
+        return {
+          daysSinceLastEntry: 0,
+          message: 'Você está em dia com os registros no Diário',
+          status: 'good'
+        };
+      }
+
+      // Se o último registro foi ontem
+      if (lastEntryStr === yesterdayStr) {
+        return {
+          daysSinceLastEntry: 1,
+          message: 'Você ainda não fez nenhum registro hoje',
+          status: 'warning'
+        };
+      }
+
+      // Calcular dias desde o último registro
+      const diffTime = today.getTime() - lastEntryDate.getTime();
+      const daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      return {
+        daysSinceLastEntry: daysSince,
+        message: `${daysSince} ${daysSince === 1 ? 'dia' : 'dias'} sem registros`,
+        status: daysSince > 7 ? 'danger' : 'warning'
+      };
+
+    } catch (error) {
+      console.error('Erro ao verificar adesão ao diário:', error);
+      return { daysSinceLastEntry: 0, message: 'Erro ao verificar registros', status: 'empty' };
+    }
+  };
+
   // Query para buscar episódios de crise
   const { data: crisisEpisodes, isLoading: isLoadingCrisis } = useQuery({
     queryKey: ['crisis-episodes', currentUser?.email],
     queryFn: fetchCrisisEpisodes,
+    enabled: !!currentUser?.email,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+
+  // Query para verificar adesão ao diário
+  const { data: diaryAdherence, isLoading: isLoadingDiary } = useQuery({
+    queryKey: ['diary-adherence', currentUser?.email],
+    queryFn: fetchDiaryAdherence,
     enabled: !!currentUser?.email,
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
@@ -120,11 +212,26 @@ export default function Reports() {
         
         <Card className="shadow-sm border border-border">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-secondary mb-1" data-testid="text-medications-taken">
-              0
+            <div className="flex items-center justify-center mb-2">
+              <BookOpen className={`h-5 w-5 mr-2 ${
+                diaryAdherence?.status === 'good' ? 'text-green-500' :
+                diaryAdherence?.status === 'warning' ? 'text-yellow-500' :
+                diaryAdherence?.status === 'danger' ? 'text-red-500' :
+                'text-gray-400'
+              }`} />
             </div>
-            <p className="text-sm text-muted-foreground">Medicamentos</p>
-            <p className="text-xs text-muted-foreground">Este mês</p>
+            <div className={`text-2xl font-bold mb-1 ${
+              diaryAdherence?.status === 'good' ? 'text-green-600' :
+              diaryAdherence?.status === 'warning' ? 'text-yellow-600' :
+              diaryAdherence?.status === 'danger' ? 'text-red-600' :
+              'text-gray-400'
+            }`} data-testid="text-diary-adherence">
+              {isLoadingDiary ? '...' : (diaryAdherence?.daysSinceLastEntry || 0)}
+            </div>
+            <p className="text-sm text-muted-foreground">Adesão ao Diário</p>
+            <p className="text-xs text-muted-foreground leading-tight">
+              {isLoadingDiary ? 'Verificando...' : (diaryAdherence?.message || 'Carregando...')}
+            </p>
           </CardContent>
         </Card>
       </div>
