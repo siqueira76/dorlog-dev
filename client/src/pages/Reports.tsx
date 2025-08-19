@@ -340,15 +340,15 @@ export default function Reports() {
                 </p>
               </div>
             ) : (
-              <div className="h-80 w-full p-2">
+              <div className="h-80 w-full p-3">
                 {/* Header info */}
-                <div className="mb-3 text-center">
+                <div className="mb-4 text-center">
                   <span className="text-xs font-medium text-slate-500 bg-slate-50 px-3 py-1 rounded-full">
                     {painEvolution?.length || 0} registros nos últimos 30 dias
                   </span>
                 </div>
                 
-                <ResponsiveContainer width="100%" height="85%">
+                <ResponsiveContainer width="100%" height="70%">
                   <LineChart
                     data={painEvolution}
                     margin={{
@@ -474,14 +474,14 @@ export default function Reports() {
                 </ResponsiveContainer>
                 
                 {/* Legenda e estatísticas */}
-                <div className="mt-4 pt-3 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                <div className="mt-6 pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
                       <div className="w-3 h-0.5 bg-blue-500 rounded"></div>
-                      <span>Evolução da intensidade da dor</span>
+                      <span>Intensidade da dor</span>
                     </div>
                     {painEvolution && painEvolution.length > 0 && (
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-slate-600">
                         Média: <span className="font-semibold text-blue-600">
                           {(painEvolution.reduce((sum, item) => sum + item.pain, 0) / painEvolution.length).toFixed(1)}/10
                         </span>
