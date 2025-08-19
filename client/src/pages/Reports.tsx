@@ -122,7 +122,7 @@ export default function Reports() {
       const today = new Date();
       const todayStr = today.toDateString();
       const yesterdayStr = new Date(today.getTime() - 24 * 60 * 60 * 1000).toDateString();
-      const lastEntryStr = lastEntryDate.toDateString();
+      const lastEntryStr = lastEntryDate?.toDateString() || '';
 
       // Se o último registro é hoje
       if (lastEntryStr === todayStr) {
@@ -143,7 +143,7 @@ export default function Reports() {
       }
 
       // Calcular dias desde o último registro
-      const diffTime = today.getTime() - lastEntryDate.getTime();
+      const diffTime = today.getTime() - (lastEntryDate?.getTime() || 0);
       const daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
       return {
@@ -340,52 +340,155 @@ export default function Reports() {
                 </p>
               </div>
             ) : (
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-80 w-full p-2">
+                {/* Header info */}
+                <div className="mb-3 text-center">
+                  <span className="text-xs font-medium text-slate-500 bg-slate-50 px-3 py-1 rounded-full">
+                    {painEvolution?.length || 0} registros nos últimos 30 dias
+                  </span>
+                </div>
+                
+                <ResponsiveContainer width="100%" height="85%">
                   <LineChart
                     data={painEvolution}
                     margin={{
-                      top: 5,
+                      top: 10,
                       right: 30,
-                      left: 20,
-                      bottom: 5,
+                      left: 30,
+                      bottom: 15,
                     }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    {/* Gradientes e definições */}
+                    <defs>
+                      <linearGradient id="painGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02}/>
+                      </linearGradient>
+                      <filter id="dropshadow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#3b82f6" floodOpacity="0.3"/>
+                      </filter>
+                    </defs>
+                    
+                    <CartesianGrid 
+                      strokeDasharray="1 3" 
+                      stroke="#e2e8f0" 
+                      strokeOpacity={0.3}
+                      horizontal={true}
+                      vertical={false}
+                    />
+                    
                     <XAxis 
                       dataKey="dateStr" 
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      tick={{ 
+                        fontSize: 11, 
+                        fill: '#64748b',
+                        fontWeight: 500
+                      }}
+                      dy={10}
                     />
+                    
                     <YAxis 
                       domain={[0, 10]} 
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      label={{ value: 'Intensidade da Dor', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '12px', fill: 'hsl(var(--muted-foreground))' } }}
+                      tick={{ 
+                        fontSize: 11, 
+                        fill: '#64748b',
+                        fontWeight: 500
+                      }}
+                      dx={-10}
+                      tickCount={6}
+                      tickFormatter={(value) => `${value}`}
+                      label={{ 
+                        value: 'Intensidade', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        style: { 
+                          textAnchor: 'middle', 
+                          fontSize: '10px', 
+                          fill: '#64748b',
+                          fontWeight: 500
+                        }
+                      }}
                     />
+                    
                     <Tooltip 
                       contentStyle={{
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid #e2e8f0',
                         borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        padding: '8px 12px',
+                        backdropFilter: 'blur(8px)'
                       }}
-                      labelStyle={{ color: 'hsl(var(--foreground))' }}
-                      formatter={(value: number) => [`${value}/10`, 'Intensidade da Dor']}
-                      labelFormatter={(label) => `Data: ${label}`}
+                      labelStyle={{ 
+                        color: '#1e293b',
+                        fontWeight: 600,
+                        fontSize: '12px',
+                        marginBottom: '2px'
+                      }}
+                      formatter={(value: number) => [
+                        <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '14px' }}>
+                          {value}/10
+                        </span>, 
+                        'Intensidade'
+                      ]}
+                      labelFormatter={(label) => label}
+                      cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '2 2', strokeOpacity: 0.5 }}
                     />
+                    
+                    
+                    {/* Área de preenchimento sutil */}
+                    <defs>
+                      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    
+                    {/* Linha principal com visual moderno */}
                     <Line 
                       type="monotone" 
                       dataKey="pain" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={2}
-                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2, fill: 'hsl(var(--background))' }}
+                      stroke="#3b82f6" 
+                      strokeWidth={2.5}
+                      connectNulls={false}
+                      dot={{ 
+                        fill: '#3b82f6', 
+                        stroke: '#ffffff',
+                        strokeWidth: 2, 
+                        r: 4,
+                        filter: 'url(#dropshadow)'
+                      }}
+                      activeDot={{ 
+                        r: 6, 
+                        stroke: '#3b82f6', 
+                        strokeWidth: 2, 
+                        fill: '#ffffff',
+                        filter: 'url(#dropshadow)'
+                      }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
+                
+                {/* Legenda e estatísticas */}
+                <div className="mt-4 pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <div className="w-3 h-0.5 bg-blue-500 rounded"></div>
+                      <span>Evolução da intensidade da dor</span>
+                    </div>
+                    {painEvolution && painEvolution.length > 0 && (
+                      <div className="text-xs text-slate-500">
+                        Média: <span className="font-semibold text-blue-600">
+                          {(painEvolution.reduce((sum, item) => sum + item.pain, 0) / painEvolution.length).toFixed(1)}/10
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
