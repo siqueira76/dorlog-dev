@@ -65,6 +65,15 @@ DorLog is a Progressive Web App (PWA) designed for health management, specifical
   - Once marked as "taken", status cannot be manually changed - only automatic daily reset
   - Improved data structure with frequency tracking per medication per day
   - Better error handling and user feedback for medication status changes
+- **MONTHLY PDF REPORT GENERATOR IMPLEMENTED** - Complete monthly report generation feature with mobile-first design (August 20, 2025)
+  - Monthly report generator page accessible via /reports/monthly-generator route
+  - Two selection modes: single month and date range (De/Até)
+  - Current month auto-selected as default on page load
+  - Smart date filtering (end date shows only months after start date)
+  - Mobile-optimized interface with larger touch targets and improved spacing
+  - PDF generation, WhatsApp sharing, and email sharing functionality
+  - Enhanced preview system showing selected period and month count
+  - Direct access button from Reports page header for quick navigation
 - Firebase security rules configuration required for quiz, medicos, medicamentos, and report_diario access - see CONFIGURACAO_FIREBASE_REGRAS.md
 
 # User Preferences
