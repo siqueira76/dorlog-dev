@@ -5,11 +5,13 @@ import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle, MapPin, BookO
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export default function Reports() {
   const { currentUser } = useAuth();
+  const [, setLocation] = useLocation();
 
   // Função para buscar episódios de crise
   const fetchCrisisEpisodes = async (): Promise<number> => {
@@ -677,6 +679,7 @@ export default function Reports() {
               variant="outline"
               className="w-full rounded-xl"
               data-testid="button-generate-monthly-report"
+              onClick={() => setLocation('/reports/monthly-generator')}
             >
               Gerar Relatório Mensal
             </Button>

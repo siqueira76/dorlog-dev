@@ -17,6 +17,7 @@ import AddDoctor from "@/pages/AddDoctor";
 import Medications from "@/pages/Medications";
 import AddMedication from "@/pages/AddMedication";
 import Reports from "@/pages/Reports";
+import MonthlyReportGenerator from "@/pages/MonthlyReportGenerator";
 import Quiz from "@/pages/Quiz";
 import NotFound from "@/pages/not-found";
 
@@ -100,6 +101,13 @@ function AppRoutes() {
         <ProtectedRoute>
           <Layout>
             <Reports />
+          </Layout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/reports/monthly-generator">
+        <ProtectedRoute>
+          <Layout>
+            <MonthlyReportGenerator />
           </Layout>
         </ProtectedRoute>
       </Route>
