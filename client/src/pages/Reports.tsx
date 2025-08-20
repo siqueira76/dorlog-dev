@@ -349,7 +349,7 @@ export default function Reports() {
             data-testid="button-generate-pdf-report"
           >
             <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Gerar Relatório PDF</span>
+            <span className="hidden sm:inline">Gerar Relatorio Mensal</span>
             <span className="sm:hidden">PDF</span>
           </Button>
         </div>
