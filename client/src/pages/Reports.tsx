@@ -101,7 +101,7 @@ export default function Reports() {
       });
 
       console.log(`📊 Documentos do usuário encontrados: ${userDocuments}`);
-      console.log('📅 Último registro encontrado:', lastEntryDate?.toISOString());
+      console.log('📅 Último registro encontrado:', lastEntryDate ? lastEntryDate.toISOString() : null);
 
       // Se não há registros
       if (!lastEntryDate || userDocuments === 0) {
@@ -115,7 +115,7 @@ export default function Reports() {
       const today = new Date();
       const todayStr = today.toDateString();
       const yesterdayStr = new Date(today.getTime() - 24 * 60 * 60 * 1000).toDateString();
-      const lastEntryStr = lastEntryDate?.toDateString() || '';
+      const lastEntryStr = lastEntryDate ? lastEntryDate.toDateString() : '';
 
       // Se o último registro é hoje
       if (lastEntryStr === todayStr) {
@@ -136,7 +136,7 @@ export default function Reports() {
       }
 
       // Calcular dias desde o último registro
-      const diffTime = today.getTime() - (lastEntryDate?.getTime() || 0);
+      const diffTime = today.getTime() - (lastEntryDate ? lastEntryDate.getTime() : 0);
       const daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
       return {
@@ -346,31 +346,31 @@ export default function Reports() {
       </div>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-6">
         <Card className="shadow-sm border border-border">
-          <CardContent className="p-4 text-center">
+          <CardContent className="p-3 text-center">
             <div className="flex items-center justify-center mb-2">
-              <AlertTriangle className="h-5 w-5 mr-2 text-red-500" />
+              <AlertTriangle className="h-4 w-4 mr-1 text-red-500" />
             </div>
-            <div className="text-2xl font-bold mb-1 text-red-600" data-testid="text-crisis-episodes">
+            <div className="text-xl font-bold mb-1 text-red-600" data-testid="text-crisis-episodes">
               {isLoadingCrisis ? '...' : (crisisEpisodes || 0)}
             </div>
-            <p className="text-sm text-muted-foreground">Episódios de Crise</p>
+            <p className="text-xs text-muted-foreground font-medium leading-tight">Episódios de Crise</p>
             <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
           </CardContent>
         </Card>
         
         <Card className="shadow-sm border border-border">
-          <CardContent className="p-4 text-center">
+          <CardContent className="p-3 text-center">
             <div className="flex items-center justify-center mb-2">
-              <BookOpen className={`h-5 w-5 mr-2 ${
+              <BookOpen className={`h-4 w-4 mr-1 ${
                 diaryAdherence?.status === 'good' ? 'text-green-500' :
                 diaryAdherence?.status === 'warning' ? 'text-yellow-500' :
                 diaryAdherence?.status === 'danger' ? 'text-red-500' :
                 'text-gray-400'
               }`} />
             </div>
-            <div className={`text-2xl font-bold mb-1 ${
+            <div className={`text-xl font-bold mb-1 ${
               diaryAdherence?.status === 'good' ? 'text-green-600' :
               diaryAdherence?.status === 'warning' ? 'text-yellow-600' :
               diaryAdherence?.status === 'danger' ? 'text-red-600' :
@@ -378,7 +378,7 @@ export default function Reports() {
             }`} data-testid="text-diary-adherence">
               {isLoadingDiary ? '...' : (diaryAdherence?.daysSinceLastEntry || 0)}
             </div>
-            <p className="text-sm text-muted-foreground">Adesão ao Diário</p>
+            <p className="text-xs text-muted-foreground font-medium leading-tight">Adesão ao Diário</p>
             <p className="text-xs text-muted-foreground leading-tight">
               {isLoadingDiary ? 'Verificando...' : (diaryAdherence?.message || 'Carregando...')}
             </p>
