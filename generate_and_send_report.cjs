@@ -391,8 +391,32 @@ module.exports = {
   exemploUso
 };
 
-// Se o script for executado diretamente, rodar exemplo
+// Se o script for executado diretamente, rodar exemplo ou usar dados de environment
 if (require.main === module) {
-  console.log('🔧 Executando exemplo de uso...\n');
-  exemploUso().catch(console.error);
+  const userId = process.env.REPORT_USER_ID;
+  const reportMonth = process.env.REPORT_MONTH;
+  const reportData = process.env.REPORT_DATA ? JSON.parse(process.env.REPORT_DATA) : null;
+  
+  if (userId && reportMonth) {
+    console.log(`🔧 Gerando relatório para ${userId} - ${reportMonth}...\n`);
+    
+    const dadosRelatorio = reportData || {
+      totalDays: 30,
+      crisisEpisodes: 2,
+      averagePain: 3.5,
+      medicationCompliance: 90,
+      medications: [
+        { nome: 'Medicamento Exemplo', dosagem: '500mg', frequencia: 2 }
+      ],
+      doctors: [
+        { nome: 'Dr. Exemplo', especialidade: 'Especialidade', crm: 'CRM/00000' }
+      ],
+      observations: 'Relatório gerado automaticamente pelo sistema DorLog.'
+    };
+    
+    generateAndDeployReport(userId, reportMonth, dadosRelatorio).catch(console.error);
+  } else {
+    console.log('🔧 Executando exemplo de uso...\n');
+    exemploUso().catch(console.error);
+  }
 }

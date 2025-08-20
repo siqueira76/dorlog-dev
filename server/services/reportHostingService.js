@@ -3,7 +3,8 @@
  * Serviço para integração com o sistema de relatórios HTML Firebase Hosting
  */
 
-const { generateAndDeployReport, validateReportData } = require('../../generate_and_send_report.js');
+const { spawn } = require('child_process');
+const path = require('path');
 
 class ReportHostingService {
   constructor() {
@@ -16,34 +17,69 @@ class ReportHostingService {
    * Gerar relatório HTML e fazer deploy
    */
   async generateReportForUser(userId, reportMonth, reportData) {
-    try {
-      console.log(`📋 Iniciando geração de relatório para ${userId}...`);
-      
-      // Validar dados
-      validateReportData(userId, reportMonth);
-      
-      // Gerar e fazer deploy
-      const result = await generateAndDeployReport(userId, reportMonth, reportData);
-      
-      if (result.success) {
-        console.log(`✅ Relatório gerado com sucesso: ${result.reportUrl}`);
-        return {
-          success: true,
-          url: result.reportUrl,
-          fileName: result.fileName,
-          executionTime: result.executionTime
-        };
-      } else {
-        throw new Error(result.error);
+    return new Promise((resolve, reject) => {
+      try {
+        console.log(`📋 Iniciando geração de relatório para ${userId}...`);
+        
+        // Executar o script de geração de relatórios
+        const scriptPath = path.resolve(process.cwd(), 'generate_and_send_report.cjs');
+        const child = spawn('node', [scriptPath], {
+          env: { 
+            ...process.env,
+            REPORT_USER_ID: userId,
+            REPORT_MONTH: reportMonth,
+            REPORT_DATA: JSON.stringify(reportData || {})
+          },
+          stdio: ['pipe', 'pipe', 'pipe']
+        });
+
+        let output = '';
+        let errorOutput = '';
+
+        child.stdout.on('data', (data) => {
+          output += data.toString();
+          console.log(`📄 Script output: ${data.toString().trim()}`);
+        });
+
+        child.stderr.on('data', (data) => {
+          errorOutput += data.toString();
+          console.error(`📄 Script error: ${data.toString().trim()}`);
+        });
+
+        child.on('close', (code) => {
+          if (code === 0) {
+            // Parse output for success information
+            const reportUrl = `${this.baseUrl}/usuarios/report_${userId.replace('@', '_').replace('.', '_')}_${reportMonth}.html`;
+            
+            resolve({
+              success: true,
+              url: reportUrl,
+              fileName: `report_${userId.replace('@', '_').replace('.', '_')}_${reportMonth}.html`,
+              executionTime: 'completed'
+            });
+          } else {
+            resolve({
+              success: false,
+              error: `Script exited with code ${code}: ${errorOutput || output}`
+            });
+          }
+        });
+
+        child.on('error', (error) => {
+          resolve({
+            success: false,
+            error: `Failed to execute script: ${error.message}`
+          });
+        });
+        
+      } catch (error) {
+        console.error(`❌ Erro ao gerar relatório: ${error.message}`);
+        resolve({
+          success: false,
+          error: error.message
+        });
       }
-      
-    } catch (error) {
-      console.error(`❌ Erro ao gerar relatório: ${error.message}`);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
+    });
   }
 
   /**

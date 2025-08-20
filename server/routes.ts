@@ -1,6 +1,77 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { spawn } from "child_process";
+import path from "path";
+
+// Function to generate report using child process
+async function generateReportForUser(userId: string, reportMonth: string, reportData: any): Promise<any> {
+  return new Promise((resolve) => {
+    try {
+      console.log(`📋 Iniciando geração de relatório para ${userId}...`);
+      
+      // Execute the report generation script
+      const scriptPath = path.resolve(process.cwd(), 'generate_and_send_report.cjs');
+      const child = spawn('node', [scriptPath], {
+        env: { 
+          ...process.env,
+          REPORT_USER_ID: userId,
+          REPORT_MONTH: reportMonth,
+          REPORT_DATA: JSON.stringify(reportData || {})
+        },
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let output = '';
+      let errorOutput = '';
+
+      child.stdout.on('data', (data) => {
+        output += data.toString();
+        console.log(`📄 Script output: ${data.toString().trim()}`);
+      });
+
+      child.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+        console.error(`📄 Script error: ${data.toString().trim()}`);
+      });
+
+      child.on('close', (code) => {
+        const baseUrl = `https://${process.env.VITE_FIREBASE_PROJECT_ID || 'dorlog-fibro-diario'}.web.app`;
+        
+        if (code === 0) {
+          // Parse output for success information
+          const reportUrl = `${baseUrl}/usuarios/report_${userId.replace('@', '_').replace('.', '_')}_${reportMonth}.html`;
+          
+          resolve({
+            success: true,
+            url: reportUrl,
+            fileName: `report_${userId.replace('@', '_').replace('.', '_')}_${reportMonth}.html`,
+            executionTime: 'completed'
+          });
+        } else {
+          resolve({
+            success: false,
+            error: `Script exited with code ${code}: ${errorOutput || output}`
+          });
+        }
+      });
+
+      child.on('error', (error) => {
+        resolve({
+          success: false,
+          error: `Failed to execute script: ${error instanceof Error ? error.message : String(error)}`
+        });
+      });
+      
+    } catch (error) {
+      console.error(`❌ Erro ao gerar relatório: ${error instanceof Error ? error.message : String(error)}`);
+      resolve({
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -48,18 +119,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`📊 Solicitação de geração de relatório para ${userId} - ${reportMonth}`);
       
-      // Por enquanto, retornar informações sobre como usar o sistema de relatórios
-      res.json({
-        success: true,
-        message: 'Sistema de relatórios configurado. Use o script node generate_and_send_report.js',
-        userId,
-        reportMonth,
-        instructions: {
-          manual: 'Execute: node generate_and_send_report.js',
-          api: 'O sistema está configurado para geração automática de relatórios',
+      // Generate report directly using child process
+      const result = await generateReportForUser(userId, reportMonth, reportData);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          message: 'Relatório HTML gerado e hospedado com sucesso',
+          userId,
+          reportMonth,
+          reportUrl: result.url,
+          fileName: result.fileName,
+          executionTime: result.executionTime,
           firebaseUrl: `https://${process.env.VITE_FIREBASE_PROJECT_ID || 'dorlog-fibro-diario'}.web.app`
-        }
-      });
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error || 'Erro na geração do relatório',
+          userId,
+          reportMonth
+        });
+      }
       
     } catch (error) {
       console.error('Erro no endpoint generate-report:', error);

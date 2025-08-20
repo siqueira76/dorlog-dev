@@ -254,11 +254,32 @@ export default function MonthlyReportGenerator() {
         ? `🏥 *DorLog - Relatório de Saúde*\n\n📅 Período: ${periodsText}\n👤 Usuário: ${currentUser.email}\n\n📊 Acesse o relatório completo:\n${reportUrl}\n\n_Relatório gerado automaticamente pelo DorLog_`
         : `🏥 *DorLog - Relatório de Saúde*\n\n📅 Período: ${periodsText}\n👤 Usuário: ${currentUser.email}\n📊 Relatório completo com dados de saúde, medicamentos e evolução da dor.\n\n_Sistema de relatórios DorLog configurado_`;
       
-      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+      // Try native sharing first (works better on mobile)
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'DorLog - Relatório de Saúde',
+            text: message,
+            url: reportUrl || undefined
+          });
+          
+          toast({
+            title: "Compartilhamento iniciado",
+            description: "Selecione o WhatsApp na lista de aplicativos",
+          });
+          return;
+        } catch (error) {
+          // If user cancels native share, fall back to WhatsApp URL
+          console.log('Native share cancelled, using WhatsApp fallback');
+        }
+      }
+      
+      // Fallback to WhatsApp web URL
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
       
       toast({
-        title: "WhatsApp aberto",
+        title: "WhatsApp Web aberto",
         description: reportUrl ? "Mensagem com link do relatório preparada" : "Continue o compartilhamento no WhatsApp",
       });
       
@@ -540,7 +561,11 @@ Sistema DorLog`;
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
                         {periodOptions
-                          .filter(option => !fromPeriod || option.date >= periodOptions.find(opt => opt.value === fromPeriod)?.date)
+                          .filter(option => {
+                            if (!fromPeriod) return true;
+                            const fromOption = periodOptions.find(opt => opt.value === fromPeriod);
+                            return fromOption ? option.date >= fromOption.date : true;
+                          })
                           .map((option) => (
                             <SelectItem 
                               key={option.value} 
