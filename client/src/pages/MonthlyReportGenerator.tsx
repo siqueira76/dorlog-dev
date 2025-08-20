@@ -309,7 +309,7 @@ export default function MonthlyReportGenerator() {
       // Store the generated report URL
       setGeneratedPdfUrl(reportUrl);
       
-      // Try native sharing first (works better on mobile)
+      // Try native sharing first (works better on mobile and allows direct WhatsApp selection)
       if (navigator.share) {
         try {
           await navigator.share({
@@ -320,23 +320,38 @@ export default function MonthlyReportGenerator() {
           
           toast({
             title: "Compartilhamento iniciado",
-            description: "Selecione o WhatsApp na lista de aplicativos",
+            description: "Selecione o WhatsApp na lista de aplicativos para enviar o relatório",
           });
           return;
         } catch (error) {
-          // If user cancels native share, fall back to WhatsApp URL
-          console.log('Native share cancelled, using WhatsApp fallback');
+          // If user cancels native share, fall back to WhatsApp Web
+          console.log('Native share cancelled, using WhatsApp Web fallback');
         }
       }
       
-      // Open WhatsApp with a new conversation (empty phone parameter)
-      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
-      
-      toast({
-        title: "WhatsApp aberto",
-        description: reportUrl ? "Nova conversa iniciada com link do relatório" : "Continue o compartilhamento no WhatsApp",
-      });
+      // Fallback: copy to clipboard and give instructions
+      try {
+        await navigator.clipboard.writeText(message);
+        toast({
+          title: "Link copiado!",
+          description: "O link do relatório foi copiado. Cole no WhatsApp para compartilhar.",
+          duration: 5000,
+        });
+      } catch (clipboardError) {
+        // If clipboard fails, show the message to copy manually
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.value = message;
+        document.body.appendChild(tempTextArea);
+        tempTextArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempTextArea);
+        
+        toast({
+          title: "Texto selecionado",
+          description: "O texto do relatório foi selecionado. Copie e cole no WhatsApp.",
+          duration: 7000,
+        });
+      }
       
     } catch (error) {
       console.error('Erro ao gerar e compartilhar relatório:', error);
