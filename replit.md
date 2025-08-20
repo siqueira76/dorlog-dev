@@ -10,6 +10,12 @@ DorLog is a Progressive Web App (PWA) designed for health management, specifical
   - API endpoints for report generation (/api/generate-report, /api/generate-monthly-report)
   - Deploy automation script (`deploy.sh`) with comprehensive error handling
   - Complete documentation and setup guide (`FIREBASE_HOSTING_SETUP.md`)
+  - **REPORT GENERATION UX IMPROVED** - Interface simplified with automatic report generation on sharing (August 20, 2025)
+    - Removed standalone "Gerar Relatório" button from /reports/monthly-generator page
+    - Reports now generated automatically when user clicks WhatsApp or Email sharing
+    - WhatsApp sharing uses native Web Share API for direct app selection (shows system share dialog)
+    - Email sharing generates report and opens email client with pre-filled content
+    - Improved mobile experience with native sharing capabilities
 - **PROJECT SUCCESSFULLY MIGRATED TO REPLIT** - Complete migration from Replit Agent environment to standard Replit with full functionality (August 20, 2025)
   - All dependencies properly installed and configured
   - PostgreSQL database provisioned and schema applied
