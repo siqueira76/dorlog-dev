@@ -9,16 +9,22 @@ import { ArrowLeft, Download, Share2, FileText, Calendar, Mail, Clock, CheckCirc
 import { useLocation } from 'wouter';
 import { format, subMonths, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useAuth } from '@/hooks/useAuth';
+import { PDFReportService } from '@/services/pdfReportService';
+import { useToast } from '@/hooks/use-toast';
 
 type SelectionMode = 'single' | 'range';
 
 export default function MonthlyReportGenerator() {
   const [, setLocation] = useLocation();
+  const { currentUser } = useAuth();
+  const { toast } = useToast();
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('single');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('');
   const [fromPeriod, setFromPeriod] = useState<string>('');
   const [toPeriod, setToPeriod] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
 
   // Gerar opções de períodos (últimos 12 meses + próximos 3 meses)
   const generatePeriodOptions = () => {
@@ -116,49 +122,165 @@ export default function MonthlyReportGenerator() {
   };
 
   const handleGeneratePDF = async () => {
-    if (!hasValidSelection()) {
+    if (!hasValidSelection() || !currentUser?.email) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado ou período não selecionado",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsGenerating(true);
     
     try {
-      // Simular geração do PDF
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
       const periods = getSelectedPeriods();
-      console.log('Gerando PDF para os períodos:', periods);
+      console.log('🔄 Gerando PDF para os períodos:', periods);
+      
+      const pdfService = new PDFReportService();
+      const pdfBlob = await pdfService.generateReport(currentUser.email, periods);
+      
+      // Create download URL
+      const url = URL.createObjectURL(pdfBlob);
+      setGeneratedPdfUrl(url);
+      
+      // Generate filename with period info
+      const periodsText = getSelectedPeriodsText().replace(/\s+/g, '_');
+      const filename = `DorLog_Relatorio_${periodsText}.pdf`;
+      
+      // Trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Sucesso!",
+        description: "Relatório PDF gerado e baixado com sucesso",
+      });
       
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
+      console.error('❌ Erro ao gerar PDF:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao gerar o relatório PDF. Tente novamente.",
+        variant: "destructive",
+      });
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleShareWhatsApp = () => {
-    if (!hasValidSelection()) {
+  const handleShareWhatsApp = async () => {
+    if (!hasValidSelection() || !currentUser?.email) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado ou período não selecionado",
+        variant: "destructive",
+      });
       return;
     }
 
-    const periodsText = getSelectedPeriodsText();
-    const message = `Relatório de saúde - ${periodsText}`;
-    
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+    try {
+      const periodsText = getSelectedPeriodsText();
+      let pdfUrl = generatedPdfUrl;
+      
+      // Generate PDF if not already generated
+      if (!pdfUrl) {
+        setIsGenerating(true);
+        const periods = getSelectedPeriods();
+        const pdfService = new PDFReportService();
+        const pdfBlob = await pdfService.generateReport(currentUser.email, periods);
+        pdfUrl = URL.createObjectURL(pdfBlob);
+        setGeneratedPdfUrl(pdfUrl);
+        setIsGenerating(false);
+      }
+      
+      const message = `🏥 *DorLog - Relatório de Saúde*\n\n📅 Período: ${periodsText}\n👤 Usuário: ${currentUser.email}\n📊 Relatório completo com dados de saúde, medicamentos e evolução da dor.\n\n💡 Para visualizar, baixe o PDF anexo.`;
+      
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+      
+      toast({
+        title: "WhatsApp aberto",
+        description: "Continue o compartilhamento no WhatsApp. O PDF pode ser anexado manualmente.",
+      });
+      
+    } catch (error) {
+      console.error('Erro ao compartilhar via WhatsApp:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao preparar compartilhamento via WhatsApp",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleShareEmail = () => {
-    if (!hasValidSelection()) {
+  const handleShareEmail = async () => {
+    if (!hasValidSelection() || !currentUser?.email) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado ou período não selecionado",
+        variant: "destructive",
+      });
       return;
     }
 
-    const periodsText = getSelectedPeriodsText();
-    const subject = `Relatório de saúde - ${periodsText}`;
-    const body = `Segue em anexo o relatório de saúde referente ao(s) período(s): ${periodsText}.`;
-    
-    const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoUrl;
+    try {
+      const periodsText = getSelectedPeriodsText();
+      let pdfUrl = generatedPdfUrl;
+      
+      // Generate PDF if not already generated
+      if (!pdfUrl) {
+        setIsGenerating(true);
+        const periods = getSelectedPeriods();
+        const pdfService = new PDFReportService();
+        const pdfBlob = await pdfService.generateReport(currentUser.email, periods);
+        pdfUrl = URL.createObjectURL(pdfBlob);
+        setGeneratedPdfUrl(pdfUrl);
+        setIsGenerating(false);
+      }
+      
+      const subject = `DorLog - Relatório de Saúde (${periodsText})`;
+      const body = `Olá,
+
+Segue em anexo o relatório de saúde gerado pelo aplicativo DorLog.
+
+📅 Período: ${periodsText}
+👤 Usuário: ${currentUser.email}
+🕐 Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+
+📊 O relatório inclui:
+• Resumo executivo do período
+• Registro de episódios de crise
+• Evolução da intensidade da dor
+• Lista de medicamentos prescritos
+• Informações da equipe médica
+• Pontos de dor mais frequentes
+
+💡 Para anexar o PDF, utilize o botão "Gerar Relatório PDF" e salve o arquivo antes de enviá-lo.
+
+---
+DorLog - Gestão Inteligente da Sua Saúde`;
+      
+      const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailtoUrl;
+      
+      toast({
+        title: "Email aberto",
+        description: "Continue no seu cliente de email. O PDF pode ser anexado manualmente.",
+      });
+      
+    } catch (error) {
+      console.error('Erro ao compartilhar via email:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao preparar compartilhamento via email",
+        variant: "destructive",
+      });
+    }
   };
 
   const getSelectedPeriodsText = () => {
@@ -424,21 +546,35 @@ export default function MonthlyReportGenerator() {
                   <Button
                     variant="outline"
                     onClick={handleShareWhatsApp}
-                    className="h-14 rounded-xl border-green-200 hover:bg-green-50 hover:border-green-300 active:bg-green-100 dark:border-green-800 dark:hover:bg-green-950 dark:active:bg-green-900 group transition-all duration-200 touch-manipulation"
+                    disabled={isGenerating}
+                    className="h-14 rounded-xl border-green-200 hover:bg-green-50 hover:border-green-300 active:bg-green-100 dark:border-green-800 dark:hover:bg-green-950 dark:active:bg-green-900 group transition-all duration-200 touch-manipulation disabled:opacity-50"
                     data-testid="button-share-whatsapp"
                   >
-                    <Share2 className="h-5 w-5 mr-3 text-green-600 group-hover:text-green-700" />
-                    <span className="text-green-700 dark:text-green-300 text-base font-medium">Compartilhar no WhatsApp</span>
+                    {isGenerating ? (
+                      <Loader2 className="h-5 w-5 mr-3 text-green-600 animate-spin" />
+                    ) : (
+                      <Share2 className="h-5 w-5 mr-3 text-green-600 group-hover:text-green-700" />
+                    )}
+                    <span className="text-green-700 dark:text-green-300 text-base font-medium">
+                      {isGenerating ? 'Preparando...' : 'Compartilhar no WhatsApp'}
+                    </span>
                   </Button>
                   
                   <Button
                     variant="outline"
                     onClick={handleShareEmail}
-                    className="h-14 rounded-xl border-blue-200 hover:bg-blue-50 hover:border-blue-300 active:bg-blue-100 dark:border-blue-800 dark:hover:bg-blue-950 dark:active:bg-blue-900 group transition-all duration-200 touch-manipulation"
+                    disabled={isGenerating}
+                    className="h-14 rounded-xl border-blue-200 hover:bg-blue-50 hover:border-blue-300 active:bg-blue-100 dark:border-blue-800 dark:hover:bg-blue-950 dark:active:bg-blue-900 group transition-all duration-200 touch-manipulation disabled:opacity-50"
                     data-testid="button-share-email"
                   >
-                    <Mail className="h-5 w-5 mr-3 text-blue-600 group-hover:text-blue-700" />
-                    <span className="text-blue-700 dark:text-blue-300 text-base font-medium">Compartilhar por Email</span>
+                    {isGenerating ? (
+                      <Loader2 className="h-5 w-5 mr-3 text-blue-600 animate-spin" />
+                    ) : (
+                      <Mail className="h-5 w-5 mr-3 text-blue-600 group-hover:text-blue-700" />
+                    )}
+                    <span className="text-blue-700 dark:text-blue-300 text-base font-medium">
+                      {isGenerating ? 'Preparando...' : 'Compartilhar por Email'}
+                    </span>
                   </Button>
                 </div>
               </div>
