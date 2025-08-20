@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Download, Share2, FileText, Calendar, Mail, Clock, CheckCircle, Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowLeft, Download, Share2, FileText, Calendar, Mail, Clock, CheckCircle, Loader2, X } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function MonthlyReportGenerator() {
   const [, setLocation] = useLocation();
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('');
+  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Gerar opções de períodos (últimos 12 meses)
@@ -39,8 +39,29 @@ export default function MonthlyReportGenerator() {
 
   const periodOptions = generatePeriodOptions();
 
+  // Função para alternar seleção de período
+  const togglePeriodSelection = (periodValue: string) => {
+    setSelectedPeriods(prev => {
+      if (prev.includes(periodValue)) {
+        return prev.filter(p => p !== periodValue);
+      } else {
+        return [...prev, periodValue];
+      }
+    });
+  };
+
+  // Função para remover período específico
+  const removePeriod = (periodValue: string) => {
+    setSelectedPeriods(prev => prev.filter(p => p !== periodValue));
+  };
+
+  // Função para limpar todas as seleções
+  const clearAllSelections = () => {
+    setSelectedPeriods([]);
+  };
+
   const handleGeneratePDF = async () => {
-    if (!selectedPeriod) {
+    if (selectedPeriods.length === 0) {
       return;
     }
 
@@ -51,7 +72,7 @@ export default function MonthlyReportGenerator() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Aqui você implementaria a geração real do PDF
-      console.log('Gerando PDF para o período:', selectedPeriod);
+      console.log('Gerando PDF para os períodos:', selectedPeriods);
       
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
@@ -61,13 +82,12 @@ export default function MonthlyReportGenerator() {
   };
 
   const handleShareWhatsApp = () => {
-    if (!selectedPeriod) {
+    if (selectedPeriods.length === 0) {
       return;
     }
 
-    const [startDate, endDate] = selectedPeriod.split('_');
-    const periodName = format(new Date(startDate), 'MMMM yyyy', { locale: ptBR });
-    const message = `Relatório mensal de saúde - ${periodName.charAt(0).toUpperCase() + periodName.slice(1)}`;
+    const periodsText = getSelectedPeriodsText();
+    const message = `Relatório de saúde - ${periodsText}`;
     
     // URL do WhatsApp com mensagem pré-definida
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
@@ -75,26 +95,37 @@ export default function MonthlyReportGenerator() {
   };
 
   const handleShareEmail = () => {
-    if (!selectedPeriod) {
+    if (selectedPeriods.length === 0) {
       return;
     }
 
-    const [startDate, endDate] = selectedPeriod.split('_');
-    const periodName = format(new Date(startDate), 'MMMM yyyy', { locale: ptBR });
-    const subject = `Relatório mensal de saúde - ${periodName.charAt(0).toUpperCase() + periodName.slice(1)}`;
-    const body = `Segue em anexo o relatório mensal de saúde referente ao período de ${periodName}.`;
+    const periodsText = getSelectedPeriodsText();
+    const subject = `Relatório de saúde - ${periodsText}`;
+    const body = `Segue em anexo o relatório de saúde referente ao(s) período(s): ${periodsText}.`;
     
     // URL do mailto
     const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailtoUrl;
   };
 
-  const getSelectedPeriodName = () => {
-    if (!selectedPeriod) return '';
+  const getSelectedPeriodsText = () => {
+    if (selectedPeriods.length === 0) return '';
     
-    const [startDate] = selectedPeriod.split('_');
-    const periodName = format(new Date(startDate), 'MMMM yyyy', { locale: ptBR });
-    return periodName.charAt(0).toUpperCase() + periodName.slice(1);
+    const sortedPeriods = [...selectedPeriods].sort();
+    const periodNames = sortedPeriods.map(period => {
+      const [startDate] = period.split('_');
+      const periodName = format(new Date(startDate), 'MMM/yyyy', { locale: ptBR });
+      return periodName.charAt(0).toUpperCase() + periodName.slice(1);
+    });
+    
+    if (periodNames.length === 1) {
+      return periodNames[0];
+    } else if (periodNames.length === 2) {
+      return `${periodNames[0]} e ${periodNames[1]}`;
+    } else {
+      const lastPeriod = periodNames.pop();
+      return `${periodNames.join(', ')} e ${lastPeriod}`;
+    }
   };
 
   return (
@@ -138,68 +169,95 @@ export default function MonthlyReportGenerator() {
             Relatório Mensal em PDF
           </h2>
           <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
-            Selecione o período e gere um relatório completo das suas atividades de saúde
+            Selecione um ou múltiplos períodos e gere um relatório completo das suas atividades de saúde
           </p>
         </div>
 
-        {/* Seleção de período - Card principal */}
+        {/* Seleção de períodos - Card principal */}
         <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm mb-6">
           <CardHeader className="pb-4">
-            <CardTitle className="flex items-center text-lg">
-              <Clock className="h-5 w-5 mr-2 text-blue-500" />
-              Selecionar Período
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center text-lg">
+                <Clock className="h-5 w-5 mr-2 text-blue-500" />
+                Selecionar Períodos
+              </CardTitle>
+              {selectedPeriods.length > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearAllSelections}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Limpar Tudo
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <Label htmlFor="period-select" className="text-sm font-medium text-muted-foreground">
-                Escolha o mês e ano do relatório
+              <Label className="text-sm font-medium text-muted-foreground">
+                Escolha um ou múltiplos meses para o relatório
               </Label>
-              <Select 
-                value={selectedPeriod} 
-                onValueChange={setSelectedPeriod}
-              >
-                <SelectTrigger 
-                  id="period-select" 
-                  data-testid="select-report-period"
-                  className="h-12 text-base rounded-xl border-border/50 focus:border-blue-500 focus:ring-blue-500/20"
-                >
-                  <SelectValue placeholder="Toque para selecionar o período" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  {periodOptions.map((option) => (
-                    <SelectItem 
-                      key={option.value} 
-                      value={option.value}
-                      className="text-base py-3"
+              
+              {/* Lista de períodos com checkboxes */}
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {periodOptions.map((option) => (
+                  <div 
+                    key={option.value} 
+                    className="flex items-center space-x-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <Checkbox
+                      id={`period-${option.value}`}
+                      checked={selectedPeriods.includes(option.value)}
+                      onCheckedChange={() => togglePeriodSelection(option.value)}
+                      data-testid={`checkbox-period-${option.value}`}
+                    />
+                    <Label 
+                      htmlFor={`period-${option.value}`}
+                      className="flex-1 text-sm cursor-pointer"
                     >
                       {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </Label>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Preview do período selecionado */}
-            {selectedPeriod && (
+            {/* Preview dos períodos selecionados */}
+            {selectedPeriods.length > 0 && (
               <div className="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-950/30 dark:to-green-950/30 p-4 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
                     <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
                       <CheckCircle className="h-5 w-5 text-white" />
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-sm font-medium text-foreground">
-                      Período Selecionado
+                    <h4 className="text-sm font-medium text-foreground mb-2">
+                      {selectedPeriods.length === 1 ? 'Período Selecionado' : `${selectedPeriods.length} Períodos Selecionados`}
                     </h4>
-                    <p className="text-blue-600 dark:text-blue-400 font-semibold">
-                      {getSelectedPeriodName()}
-                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedPeriods.map((periodValue) => {
+                        const option = periodOptions.find(opt => opt.value === periodValue);
+                        return (
+                          <Badge 
+                            key={periodValue} 
+                            variant="secondary" 
+                            className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 flex items-center gap-1"
+                          >
+                            {option?.label}
+                            <button
+                              onClick={() => removePeriod(periodValue)}
+                              className="ml-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5"
+                              data-testid={`remove-period-${periodValue}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                    Pronto
-                  </Badge>
                 </div>
               </div>
             )}
@@ -207,7 +265,7 @@ export default function MonthlyReportGenerator() {
         </Card>
 
         {/* Botão principal de gerar PDF */}
-        {selectedPeriod && (
+        {selectedPeriods.length > 0 && (
           <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm mb-6">
             <CardContent className="p-6">
               <Button
@@ -224,7 +282,7 @@ export default function MonthlyReportGenerator() {
                 ) : (
                   <>
                     <Download className="h-5 w-5 mr-3" />
-                    Gerar Relatório PDF
+                    {selectedPeriods.length === 1 ? 'Gerar Relatório PDF' : `Gerar Relatório PDF (${selectedPeriods.length} períodos)`}
                   </>
                 )}
               </Button>
