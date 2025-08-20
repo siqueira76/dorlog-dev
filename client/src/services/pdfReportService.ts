@@ -416,8 +416,8 @@ export class PDFReportService {
     this.addSeparator();
   }
 
-  private generatePainEvolution(reportData: ReportData) {
-    const painData: Array<{ date: string; pain: number }> = [];
+  private generatePainEvolutionCard(reportData: ReportData) {
+    const painData: Array<{ date: string; pain: number; dateStr: string }> = [];
     
     reportData.dailyReports.forEach(report => {
       const nightQuizzes = report.quizzes.filter(q => q.tipo === 'noturno');
@@ -426,37 +426,159 @@ export class PDFReportService {
           const painLevel = parseInt(quiz.respostas['1'], 10);
           if (!isNaN(painLevel)) {
             painData.push({
-              date: format(report.date, 'dd/MM', { locale: ptBR }),
-              pain: painLevel
+              date: format(report.date, 'yyyy-MM-dd'),
+              pain: painLevel,
+              dateStr: format(report.date, 'dd/MM', { locale: ptBR })
             });
           }
         }
       });
     });
 
-    if (painData.length === 0) return;
+    // Always show the card, even with no data
+    this.addTitle('📈 Evolução da Dor', 16);
     
-    this.addTitle('📈 Evolução da Dor', 14);
+    // Card description
+    this.addText('Evolução da intensidade da dor nos últimos 30 dias', 11, 0, [107, 114, 128]);
     
-    // Calculate statistics
-    const avgPain = painData.reduce((sum, d) => sum + d.pain, 0) / painData.length;
-    const maxPain = Math.max(...painData.map(d => d.pain));
-    const minPain = Math.min(...painData.map(d => d.pain));
+    this.currentY += 5;
     
-    this.addText(`Intensidade média da dor: ${avgPain.toFixed(1)}/10`);
-    this.addText(`Pico máximo de dor: ${maxPain}/10`);
-    this.addText(`Menor nível registrado: ${minPain}/10`);
-    this.addText(`Total de registros: ${painData.length}`);
-    
-    this.currentY += 10;
-    
-    // Simple text-based chart representation
-    this.addSubtitle('Últimos Registros:', 11);
-    painData.slice(-10).forEach(entry => {
-      const barLength = Math.round((entry.pain / 10) * 20);
-      const bar = '█'.repeat(barLength) + '░'.repeat(20 - barLength);
-      this.addText(`${entry.date}: ${bar} (${entry.pain}/10)`, 9, 5);
-    });
+    if (painData.length === 0) {
+      // Empty state card
+      const emptyCardHeight = 80;
+      this.doc.setFillColor(249, 250, 251); // Gray-50
+      this.doc.setDrawColor(229, 231, 235); // Gray-200
+      this.doc.roundedRect(this.margin, this.currentY, this.pageWidth - 2 * this.margin, emptyCardHeight, 5, 5, 'FD');
+      
+      // Empty state icon and text
+      this.doc.setTextColor(156, 163, 175); // Gray-400
+      this.doc.setFontSize(12);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text('📈 Sem dados disponíveis', this.pageWidth / 2 - 35, this.currentY + 30);
+      this.doc.setFontSize(10);
+      this.doc.text('Complete alguns diários noturnos para ver sua evolução', this.pageWidth / 2 - 65, this.currentY + 45);
+      
+      this.currentY += emptyCardHeight + 15;
+    } else {
+      // Sort data by date
+      painData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      // Calculate statistics
+      const avgPain = painData.reduce((sum, d) => sum + d.pain, 0) / painData.length;
+      const maxPain = Math.max(...painData.map(d => d.pain));
+      const minPain = Math.min(...painData.map(d => d.pain));
+      
+      // Header info badge
+      const badgeText = `${painData.length} registros nos últimos 30 dias`;
+      const badgeWidth = this.doc.getTextWidth(badgeText) + 20;
+      const badgeX = (this.pageWidth - badgeWidth) / 2;
+      
+      this.doc.setFillColor(248, 250, 252); // Gray-50
+      this.doc.setDrawColor(226, 232, 240); // Gray-200
+      this.doc.roundedRect(badgeX, this.currentY, badgeWidth, 12, 6, 6, 'FD');
+      
+      this.doc.setTextColor(71, 85, 105); // Gray-600
+      this.doc.setFontSize(9);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text(badgeText, badgeX + 10, this.currentY + 7);
+      
+      this.currentY += 20;
+      
+      // Chart area background
+      const chartHeight = 120;
+      const chartWidth = this.pageWidth - 2 * this.margin;
+      
+      this.doc.setFillColor(255, 255, 255);
+      this.doc.setDrawColor(226, 232, 240); // Gray-200
+      this.doc.roundedRect(this.margin, this.currentY, chartWidth, chartHeight, 3, 3, 'FD');
+      
+      // Chart grid lines
+      this.doc.setDrawColor(226, 232, 240, 0.3);
+      this.doc.setLineWidth(0.5);
+      
+      // Horizontal grid lines (pain levels 0-10)
+      for (let i = 0; i <= 10; i += 2) {
+        const y = this.currentY + chartHeight - (i / 10 * (chartHeight - 20)) - 10;
+        this.doc.line(this.margin + 30, y, this.margin + chartWidth - 20, y);
+        
+        // Y-axis labels
+        this.doc.setTextColor(100, 116, 139); // Gray-500
+        this.doc.setFontSize(8);
+        this.doc.text(i.toString(), this.margin + 25, y + 2);
+      }
+      
+      // Draw data points and lines
+      const plotWidth = chartWidth - 50;
+      const plotHeight = chartHeight - 30;
+      const pointSpacing = plotWidth / Math.max(painData.length - 1, 1);
+      
+      this.doc.setDrawColor(59, 130, 246); // Blue-600
+      this.doc.setLineWidth(2);
+      
+      // Draw connecting lines
+      for (let i = 0; i < painData.length - 1; i++) {
+        const x1 = this.margin + 30 + (i * pointSpacing);
+        const y1 = this.currentY + chartHeight - (painData[i].pain / 10 * plotHeight) - 15;
+        const x2 = this.margin + 30 + ((i + 1) * pointSpacing);
+        const y2 = this.currentY + chartHeight - (painData[i + 1].pain / 10 * plotHeight) - 15;
+        
+        this.doc.line(x1, y1, x2, y2);
+      }
+      
+      // Draw data points
+      this.doc.setFillColor(59, 130, 246); // Blue-600
+      painData.forEach((point, index) => {
+        const x = this.margin + 30 + (index * pointSpacing);
+        const y = this.currentY + chartHeight - (point.pain / 10 * plotHeight) - 15;
+        
+        // Outer circle (white border)
+        this.doc.setFillColor(255, 255, 255);
+        this.doc.circle(x, y, 4, 'F');
+        
+        // Inner circle (blue fill)
+        this.doc.setFillColor(59, 130, 246);
+        this.doc.circle(x, y, 3, 'F');
+        
+        // Date labels (only for some points to avoid crowding)
+        if (painData.length <= 10 || index % Math.ceil(painData.length / 6) === 0 || index === painData.length - 1) {
+          this.doc.setTextColor(100, 116, 139);
+          this.doc.setFontSize(7);
+          this.doc.setFont('helvetica', 'normal');
+          const dateWidth = this.doc.getTextWidth(point.dateStr);
+          this.doc.text(point.dateStr, x - dateWidth/2, this.currentY + chartHeight + 5);
+        }
+      });
+      
+      this.currentY += chartHeight + 15;
+      
+      // Chart legend and statistics
+      const statsCardHeight = 30;
+      this.doc.setFillColor(248, 250, 252); // Gray-50
+      this.doc.setDrawColor(226, 232, 240); // Gray-200
+      this.doc.roundedRect(this.margin, this.currentY, chartWidth, statsCardHeight, 3, 3, 'FD');
+      
+      // Legend
+      this.doc.setFillColor(59, 130, 246);
+      this.doc.rect(this.margin + 10, this.currentY + 10, 12, 2, 'F');
+      this.doc.setTextColor(71, 85, 105);
+      this.doc.setFontSize(9);
+      this.doc.text('Intensidade da dor', this.margin + 28, this.currentY + 12);
+      
+      // Statistics
+      const avgText = `Média: ${avgPain.toFixed(1)}/10`;
+      const maxText = `Máx: ${maxPain}/10`;
+      const minText = `Mín: ${minPain}/10`;
+      
+      this.doc.setTextColor(59, 130, 246); // Blue-600
+      this.doc.setFont('helvetica', 'bold');
+      
+      const statsStartX = this.margin + 120;
+      this.doc.text(avgText, statsStartX, this.currentY + 12);
+      this.doc.text(maxText, statsStartX + 60, this.currentY + 12);
+      this.doc.text(minText, statsStartX + 100, this.currentY + 12);
+      
+      this.currentY += statsCardHeight + 10;
+    }
     
     this.addSeparator();
   }
@@ -580,10 +702,10 @@ export class PDFReportService {
     });
 
     this.generateHeader(reportData);
+    this.generatePainEvolutionCard(reportData);
     this.generateSummary(reportData);
     this.generateDoctorsSection(reportData);
     this.generateMedicationsSection(reportData);
-    this.generatePainEvolution(reportData);
     this.generatePainPoints(reportData);
     this.generateCrisisEpisodes(reportData);
     this.generateFooter();
