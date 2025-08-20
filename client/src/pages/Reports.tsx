@@ -346,7 +346,7 @@ export default function Reports() {
       </div>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card className="shadow-sm border border-border">
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center mb-2">
@@ -381,25 +381,6 @@ export default function Reports() {
             <p className="text-sm text-muted-foreground">Adesão ao Diário</p>
             <p className="text-xs text-muted-foreground leading-tight">
               {isLoadingDiary ? 'Verificando...' : (diaryAdherence?.message || 'Carregando...')}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-sm border border-border">
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center mb-2">
-              <MapPin className="h-5 w-5 mr-2 text-orange-500" />
-            </div>
-            <div className="text-2xl font-bold mb-1 text-orange-600" data-testid="text-pain-points">
-              {isLoadingPainPoints ? '...' : (painPoints?.length || 0)}
-            </div>
-            <p className="text-sm text-muted-foreground">Pontos de Dor</p>
-            <p className="text-xs text-muted-foreground leading-tight">
-              {isLoadingPainPoints ? 'Carregando...' : 
-                painPoints && painPoints.length > 0 ? 
-                  `${painPoints[0].point} (${painPoints[0].count}x)` : 
-                  'Nenhum ponto registrado'
-              }
             </p>
           </CardContent>
         </Card>
