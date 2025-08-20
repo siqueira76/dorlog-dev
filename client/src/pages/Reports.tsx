@@ -1,6 +1,7 @@
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle, MapPin } from 'lucide-react';
+import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle, MapPin, BookOpen } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -10,7 +11,7 @@ import { db } from '@/lib/firebase';
 export default function Reports() {
   const { currentUser } = useAuth();
 
-  // Função para contar episódios de crise dos últimos 30 dias
+  // Função para buscar episódios de crise
   const fetchCrisisEpisodes = async (): Promise<number> => {
     if (!currentUser?.email) {
       return 0;
@@ -26,50 +27,42 @@ export default function Reports() {
       
       console.log('📅 Filtro de data - últimos 30 dias desde:', thirtyDaysAgo.toISOString());
       
-      // Buscar documentos por email apenas (evitando índice composto)
-      // Os documentos têm ID no formato: {email}_{YYYY-MM-DD}
       const reportDiarioRef = collection(db, 'report_diario');
-      
-      // Estratégia 1: Buscar por documentos com prefixo do email
-      // Como os IDs são {email}_{date}, vamos buscar todos do usuário
       const q = query(reportDiarioRef);
       
       const querySnapshot = await getDocs(q);
+      console.log('📄 Total de documentos encontrados:', querySnapshot.docs.length);
+      
       let crisisCount = 0;
       let documentsChecked = 0;
       
-      console.log('📄 Total de documentos encontrados:', querySnapshot.size);
-      
-      // Filtrar por email e data no cliente
       querySnapshot.forEach((doc) => {
         const docId = doc.id;
         const data = doc.data();
         
         // Verificar se o documento pertence ao usuário atual
         if (docId.startsWith(`${currentUser.email}_`) || data.usuarioId === currentUser.email || data.email === currentUser.email) {
-          documentsChecked++;
           
           // Verificar se o documento está dentro dos últimos 30 dias
           const docData = data.data;
-          if (docData && docData >= thirtyDaysAgoTimestamp) {
-            console.log('📋 Documento válido encontrado:', docId, 'Data:', docData.toDate());
+          if (docData && typeof docData.toDate === 'function' && docData >= thirtyDaysAgoTimestamp) {
+            documentsChecked++;
+            console.log('📋 Documento válido encontrado:', docId, 'Data:', docData.toDate().toISOString());
             
+            // Contar quizzes do tipo 'emergencial'
             if (data.quizzes && Array.isArray(data.quizzes)) {
-              const emergencialQuizzes = data.quizzes.filter((quiz: any) => 
-                quiz.tipo === 'emergencial'
-              );
-              console.log(`🚨 ${emergencialQuizzes.length} quiz(zes) emergencial(is) encontrado(s) em ${docId}`);
-              crisisCount += emergencialQuizzes.length;
+              const emergencyQuizzes = data.quizzes.filter((quiz: any) => quiz.tipo === 'emergencial');
+              console.log(`🚨 ${emergencyQuizzes.length} quiz(zes) emergencial(is) encontrado(s) em ${docId}`);
+              crisisCount += emergencyQuizzes.length;
             }
           }
         }
       });
       
       console.log(`✅ Busca concluída. Documentos verificados: ${documentsChecked}, Crises encontradas: ${crisisCount}`);
-      
       return crisisCount;
     } catch (error) {
-      console.error('Erro ao contar episódios de crise:', error);
+      console.error('Erro ao buscar episódios de crise:', error);
       return 0;
     }
   };
@@ -158,14 +151,6 @@ export default function Reports() {
     }
   };
 
-  // Query para buscar episódios de crise
-  const { data: crisisEpisodes, isLoading: isLoadingCrisis } = useQuery({
-    queryKey: ['crisis-episodes', currentUser?.email],
-    queryFn: fetchCrisisEpisodes,
-    enabled: !!currentUser?.email,
-    staleTime: 5 * 60 * 1000, // 5 minutos
-  });
-
   // Função para buscar pontos de dor (resposta 2 dos quizzes noturnos)
   const fetchPainPoints = async (): Promise<Array<{ point: string; count: number }>> => {
     if (!currentUser?.email) {
@@ -242,14 +227,6 @@ export default function Reports() {
     }
   };
 
-  // Query para buscar pontos de dor
-  const { data: painPoints, isLoading: isLoadingPainPoints } = useQuery({
-    queryKey: ['pain-points', currentUser?.email],
-    queryFn: fetchPainPoints,
-    enabled: !!currentUser?.email,
-    staleTime: 5 * 60 * 1000, // 5 minutos
-  });
-
   // Função para buscar dados de evolução da dor (quizzes noturnos)
   const fetchPainEvolution = async (): Promise<Array<{ date: string; pain: number; dateStr: string }>> => {
     if (!currentUser?.email) {
@@ -280,7 +257,6 @@ export default function Reports() {
           // Verificar se o documento está dentro dos últimos 30 dias
           const docData = data.data;
           if (docData && typeof docData.toDate === 'function' && docData >= thirtyDaysAgoTimestamp) {
-            const entryDate = docData.toDate();
             
             // Procurar por quizzes do tipo 'noturno'
             if (data.quizzes && Array.isArray(data.quizzes)) {
@@ -289,12 +265,16 @@ export default function Reports() {
               nightQuizzes.forEach((quiz: any) => {
                 // Obter resposta da pergunta 1 (intensidade da dor)
                 if (quiz.respostas && quiz.respostas['1'] !== undefined) {
-                  const painLevel = Number(quiz.respostas['1']);
-                  if (!isNaN(painLevel)) {
+                  const painIntensity = parseInt(quiz.respostas['1'], 10);
+                  if (!isNaN(painIntensity)) {
+                    const entryDate = docData.toDate();
+                    const dateStr = entryDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                    const isoDate = entryDate.toISOString().split('T')[0];
+                    
                     painData.push({
-                      date: entryDate.toISOString().split('T')[0], // YYYY-MM-DD
-                      dateStr: entryDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                      pain: painLevel
+                      date: isoDate,
+                      pain: painIntensity,
+                      dateStr: dateStr
                     });
                   }
                 }
@@ -304,21 +284,52 @@ export default function Reports() {
         }
       });
       
-      // Ordenar por data
-      painData.sort((a, b) => a.date.localeCompare(b.date));
+      // Ordenar por data e remover duplicatas (manter o último registro do dia)
+      const uniquePainData = painData
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .reduce((acc, current) => {
+          const existingIndex = acc.findIndex(item => item.date === current.date);
+          if (existingIndex >= 0) {
+            acc[existingIndex] = current; // Substituir pelo mais recente
+          } else {
+            acc.push(current);
+          }
+          return acc;
+        }, [] as Array<{ date: string; pain: number; dateStr: string }>);
       
-      console.log(`📈 Dados de evolução da dor encontrados: ${painData.length} registros`);
-      console.log('📊 Amostra dos dados:', painData.slice(0, 3));
+      console.log(`📈 Dados de evolução da dor encontrados: ${uniquePainData.length} registros`);
+      console.log('📊 Amostra dos dados:', uniquePainData.slice(0, 3));
       
-      return painData;
+      return uniquePainData;
     } catch (error) {
       console.error('Erro ao buscar evolução da dor:', error);
       return [];
     }
   };
 
-  // Query para buscar evolução da dor
-  const { data: painEvolution, isLoading: isLoadingPain } = useQuery({
+  // Queries para buscar dados
+  const { data: crisisEpisodes, isLoading: isLoadingCrisis } = useQuery({
+    queryKey: ['crisis-episodes', currentUser?.email],
+    queryFn: fetchCrisisEpisodes,
+    enabled: !!currentUser?.email,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+
+  const { data: diaryAdherence, isLoading: isLoadingDiary } = useQuery({
+    queryKey: ['diary-adherence', currentUser?.email],
+    queryFn: fetchDiaryAdherence,
+    enabled: !!currentUser?.email,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+
+  const { data: painPoints, isLoading: isLoadingPainPoints } = useQuery({
+    queryKey: ['pain-points', currentUser?.email],
+    queryFn: fetchPainPoints,
+    enabled: !!currentUser?.email,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+
+  const { data: painEvolution, isLoading: isLoadingEvolution } = useQuery({
     queryKey: ['pain-evolution', currentUser?.email],
     queryFn: fetchPainEvolution,
     enabled: !!currentUser?.email,
@@ -326,39 +337,51 @@ export default function Reports() {
   });
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6">
-      
-      {/* Header Section */}
+    <div className="p-4 pb-20 max-w-4xl mx-auto">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-foreground">Relatórios</h2>
-          <Button
-            size="sm"
-            variant="outline"
-            className="rounded-xl"
-            data-testid="button-export-report"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
-          </Button>
-        </div>
-        <p className="text-muted-foreground text-sm">
-          Acompanhe sua evolução e compartilhe com seus médicos
+        <h1 className="text-2xl font-bold text-foreground mb-2">Relatórios</h1>
+        <p className="text-muted-foreground">
+          Acompanhe sua evolução e padrões de saúde
         </p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      {/* Cards de resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card className="shadow-sm border border-border">
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center mb-2">
-              <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+              <AlertTriangle className="h-5 w-5 mr-2 text-red-500" />
             </div>
-            <div className="text-2xl font-bold text-red-600 mb-1" data-testid="text-crisis-episodes">
+            <div className="text-2xl font-bold mb-1 text-red-600" data-testid="text-crisis-episodes">
               {isLoadingCrisis ? '...' : (crisisEpisodes || 0)}
             </div>
             <p className="text-sm text-muted-foreground">Episódios de Crise</p>
             <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="shadow-sm border border-border">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center mb-2">
+              <BookOpen className={`h-5 w-5 mr-2 ${
+                diaryAdherence?.status === 'good' ? 'text-green-500' :
+                diaryAdherence?.status === 'warning' ? 'text-yellow-500' :
+                diaryAdherence?.status === 'danger' ? 'text-red-500' :
+                'text-gray-400'
+              }`} />
+            </div>
+            <div className={`text-2xl font-bold mb-1 ${
+              diaryAdherence?.status === 'good' ? 'text-green-600' :
+              diaryAdherence?.status === 'warning' ? 'text-yellow-600' :
+              diaryAdherence?.status === 'danger' ? 'text-red-600' :
+              'text-gray-400'
+            }`} data-testid="text-diary-adherence">
+              {isLoadingDiary ? '...' : (diaryAdherence?.daysSinceLastEntry || 0)}
+            </div>
+            <p className="text-sm text-muted-foreground">Adesão ao Diário</p>
+            <p className="text-xs text-muted-foreground leading-tight">
+              {isLoadingDiary ? 'Verificando...' : (diaryAdherence?.message || 'Carregando...')}
+            </p>
           </CardContent>
         </Card>
         
@@ -382,20 +405,21 @@ export default function Reports() {
         </Card>
       </div>
 
-      {/* Report Categories */}
-      <div className="space-y-4">
+      {/* Gráficos */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Evolução da Dor */}
         <Card className="shadow-sm border border-border">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-lg">
-              <TrendingUp className="h-5 w-5 mr-2 text-primary" />
+              <TrendingUp className="h-5 w-5 mr-2 text-blue-500" />
               Evolução da Dor
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Acompanhe a intensidade da sua dor baseada nos diários noturnos (últimos 30 dias)
+              Evolução da intensidade da dor nos últimos 30 dias
             </p>
-            {isLoadingPain ? (
+            {isLoadingEvolution ? (
               <div className="bg-muted rounded-xl p-6 text-center">
                 <TrendingUp className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50 animate-pulse" />
                 <p className="text-sm text-muted-foreground">
@@ -404,7 +428,7 @@ export default function Reports() {
               </div>
             ) : !painEvolution || painEvolution.length === 0 ? (
               <div className="bg-muted rounded-xl p-6 text-center">
-                <BarChart3 className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
+                <TrendingUp className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
                 <p className="text-sm text-muted-foreground">
                   Complete alguns diários noturnos para ver sua evolução
                 </p>
@@ -424,21 +448,10 @@ export default function Reports() {
                     margin={{
                       top: 10,
                       right: 30,
-                      left: 30,
-                      bottom: 15,
+                      left: 20,
+                      bottom: 20,
                     }}
                   >
-                    {/* Gradientes e definições */}
-                    <defs>
-                      <linearGradient id="painGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02}/>
-                      </linearGradient>
-                      <filter id="dropshadow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#3b82f6" floodOpacity="0.3"/>
-                      </filter>
-                    </defs>
-                    
                     <CartesianGrid 
                       strokeDasharray="1 3" 
                       stroke="#e2e8f0" 
@@ -460,7 +473,7 @@ export default function Reports() {
                     />
                     
                     <YAxis 
-                      domain={[0, 10]} 
+                      domain={[0, 10]}
                       axisLine={false}
                       tickLine={false}
                       tick={{ 
@@ -469,10 +482,8 @@ export default function Reports() {
                         fontWeight: 500
                       }}
                       dx={-10}
-                      tickCount={6}
-                      tickFormatter={(value) => `${value}`}
                       label={{ 
-                        value: 'Intensidade', 
+                        value: 'Dor (0-10)', 
                         angle: -90, 
                         position: 'insideLeft',
                         style: { 
@@ -503,41 +514,27 @@ export default function Reports() {
                         <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '14px' }}>
                           {value}/10
                         </span>, 
-                        'Intensidade'
+                        'Dor'
                       ]}
-                      labelFormatter={(label) => label}
-                      cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '2 2', strokeOpacity: 0.5 }}
+                      labelFormatter={(label) => `Data: ${label}`}
                     />
                     
-                    
-                    {/* Área de preenchimento sutil */}
-                    <defs>
-                      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    
-                    {/* Linha principal com visual moderno */}
                     <Line 
                       type="monotone" 
                       dataKey="pain" 
-                      stroke="#3b82f6" 
-                      strokeWidth={2.5}
-                      connectNulls={false}
-                      dot={{ 
-                        fill: '#3b82f6', 
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      dot={{
+                        fill: '#3b82f6',
+                        strokeWidth: 2,
                         stroke: '#ffffff',
-                        strokeWidth: 2, 
-                        r: 4,
-                        filter: 'url(#dropshadow)'
+                        r: 5
                       }}
-                      activeDot={{ 
-                        r: 6, 
-                        stroke: '#3b82f6', 
-                        strokeWidth: 2, 
-                        fill: '#ffffff',
-                        filter: 'url(#dropshadow)'
+                      activeDot={{
+                        r: 6,
+                        stroke: '#3b82f6',
+                        strokeWidth: 2,
+                        fill: '#ffffff'
                       }}
                     />
                   </LineChart>
@@ -564,6 +561,7 @@ export default function Reports() {
           </CardContent>
         </Card>
 
+        {/* Pontos de Dor */}
         <Card className="shadow-sm border border-border">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-lg">
@@ -682,6 +680,7 @@ export default function Reports() {
           </CardContent>
         </Card>
 
+        {/* Resumo Mensal */}
         <Card className="shadow-sm border border-border">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-lg">
