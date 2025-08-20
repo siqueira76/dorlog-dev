@@ -237,22 +237,77 @@ export default function MonthlyReportGenerator() {
       return;
     }
 
+    setIsGenerating(true);
+    
     try {
-      const periodsText = getSelectedPeriodsText();
-      let reportUrl = generatedPdfUrl;
+      const periods = getSelectedPeriods();
+      console.log('🔄 Gerando relatório HTML para compartilhamento WhatsApp:', periods);
       
-      // Generate report if not already generated
-      if (!reportUrl) {
-        setIsGenerating(true);
-        // Trigger the Firebase report generation
-        await handleGeneratePDF();
-        reportUrl = generatedPdfUrl;
-        setIsGenerating(false);
+      // Get the first and last periods to determine the report month
+      const firstPeriod = periods[0];
+      const lastPeriod = periods[periods.length - 1];
+      
+      // Parse dates to create a meaningful report month identifier
+      const firstDate = new Date(firstPeriod.split('_')[0]);
+      const lastDate = new Date(lastPeriod.split('_')[1]);
+      
+      let reportMonth;
+      if (periods.length === 1) {
+        reportMonth = format(firstDate, 'MMMM_yyyy', { locale: ptBR });
+      } else {
+        const startMonth = format(firstDate, 'MMM_yyyy', { locale: ptBR });
+        const endMonth = format(lastDate, 'MMM_yyyy', { locale: ptBR });
+        reportMonth = `${startMonth}_ate_${endMonth}`;
       }
+      
+      // Sanitize report month for filename
+      reportMonth = reportMonth
+        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .replace(/_{2,}/g, '_')
+        .replace(/^_|_$/g, '');
+      
+      // Prepare report data for the API
+      const reportData = {
+        periods: periods,
+        selectionMode: selectionMode,
+        periodsText: getSelectedPeriodsText(),
+        totalMonths: periods.length,
+        generatedAt: new Date().toISOString(),
+        userEmail: currentUser.email
+      };
+      
+      // Generate the Firebase report
+      const response = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.email,
+          reportMonth: reportMonth,
+          reportData: reportData
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erro desconhecido na geração do relatório');
+      }
+      
+      const periodsText = getSelectedPeriodsText();
+      const reportUrl = result.reportUrl;
       
       const message = reportUrl 
         ? `🏥 *DorLog - Relatório de Saúde*\n\n📅 Período: ${periodsText}\n👤 Usuário: ${currentUser.email}\n\n📊 Acesse o relatório completo:\n${reportUrl}\n\n_Relatório gerado automaticamente pelo DorLog_`
         : `🏥 *DorLog - Relatório de Saúde*\n\n📅 Período: ${periodsText}\n👤 Usuário: ${currentUser.email}\n📊 Relatório completo com dados de saúde, medicamentos e evolução da dor.\n\n_Sistema de relatórios DorLog configurado_`;
+      
+      // Store the generated report URL
+      setGeneratedPdfUrl(reportUrl);
       
       // Try native sharing first (works better on mobile)
       if (navigator.share) {
@@ -274,22 +329,24 @@ export default function MonthlyReportGenerator() {
         }
       }
       
-      // Fallback to WhatsApp web URL
-      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+      // Open WhatsApp with a new conversation (empty phone parameter)
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
       
       toast({
-        title: "WhatsApp Web aberto",
-        description: reportUrl ? "Mensagem com link do relatório preparada" : "Continue o compartilhamento no WhatsApp",
+        title: "WhatsApp aberto",
+        description: reportUrl ? "Nova conversa iniciada com link do relatório" : "Continue o compartilhamento no WhatsApp",
       });
       
     } catch (error) {
-      console.error('Erro ao compartilhar via WhatsApp:', error);
+      console.error('Erro ao gerar e compartilhar relatório:', error);
       toast({
         title: "Erro",
-        description: "Falha ao preparar compartilhamento via WhatsApp",
+        description: `Falha ao gerar relatório: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         variant: "destructive",
       });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -303,18 +360,73 @@ export default function MonthlyReportGenerator() {
       return;
     }
 
+    setIsGenerating(true);
+    
     try {
-      const periodsText = getSelectedPeriodsText();
-      let reportUrl = generatedPdfUrl;
+      const periods = getSelectedPeriods();
+      console.log('🔄 Gerando relatório HTML para compartilhamento Email:', periods);
       
-      // Generate report if not already generated
-      if (!reportUrl) {
-        setIsGenerating(true);
-        // Trigger the Firebase report generation
-        await handleGeneratePDF();
-        reportUrl = generatedPdfUrl;
-        setIsGenerating(false);
+      // Get the first and last periods to determine the report month
+      const firstPeriod = periods[0];
+      const lastPeriod = periods[periods.length - 1];
+      
+      // Parse dates to create a meaningful report month identifier
+      const firstDate = new Date(firstPeriod.split('_')[0]);
+      const lastDate = new Date(lastPeriod.split('_')[1]);
+      
+      let reportMonth;
+      if (periods.length === 1) {
+        reportMonth = format(firstDate, 'MMMM_yyyy', { locale: ptBR });
+      } else {
+        const startMonth = format(firstDate, 'MMM_yyyy', { locale: ptBR });
+        const endMonth = format(lastDate, 'MMM_yyyy', { locale: ptBR });
+        reportMonth = `${startMonth}_ate_${endMonth}`;
       }
+      
+      // Sanitize report month for filename
+      reportMonth = reportMonth
+        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .replace(/_{2,}/g, '_')
+        .replace(/^_|_$/g, '');
+      
+      // Prepare report data for the API
+      const reportData = {
+        periods: periods,
+        selectionMode: selectionMode,
+        periodsText: getSelectedPeriodsText(),
+        totalMonths: periods.length,
+        generatedAt: new Date().toISOString(),
+        userEmail: currentUser.email
+      };
+      
+      // Generate the Firebase report
+      const response = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.email,
+          reportMonth: reportMonth,
+          reportData: reportData
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erro desconhecido na geração do relatório');
+      }
+      
+      const periodsText = getSelectedPeriodsText();
+      const reportUrl = result.reportUrl;
+      
+      // Store the generated report URL
+      setGeneratedPdfUrl(reportUrl);
       
       const subject = `DorLog - Relatório de Saúde (${periodsText})`;
       const body = reportUrl 
@@ -366,16 +478,18 @@ Sistema DorLog`;
       
       toast({
         title: "Email aberto",
-        description: "Continue no seu cliente de email. O PDF pode ser anexado manualmente.",
+        description: reportUrl ? "Email preparado com link do relatório" : "Continue no seu cliente de email",
       });
       
     } catch (error) {
-      console.error('Erro ao compartilhar via email:', error);
+      console.error('Erro ao gerar e compartilhar relatório via email:', error);
       toast({
         title: "Erro",
-        description: "Falha ao preparar compartilhamento via email",
+        description: `Falha ao gerar relatório: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         variant: "destructive",
       });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -610,45 +724,18 @@ Sistema DorLog`;
           </CardContent>
         </Card>
 
-        {/* Botões de ação - posicionados logo após seleção para melhor visibilidade mobile */}
+        {/* Botões de compartilhamento - agora como única ação */}
         {hasValidSelection() && (
           <div className="space-y-4 mb-6">
-            {/* Botão principal de gerar PDF */}
-            <Card className="shadow-lg border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 backdrop-blur-sm">
-              <CardContent className="p-4 sm:p-6">
-                <Button
-                  onClick={handleGeneratePDF}
-                  disabled={isGenerating}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900 text-white rounded-xl h-14 sm:h-16 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation"
-                  data-testid="button-generate-pdf"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 mr-3 animate-spin" />
-                      <span>Gerando Relatório...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-5 w-5 sm:h-6 sm:w-6 mr-3" />
-                      <span>
-                        {getSelectedPeriods().length === 1 ? 'Gerar Relatório' : `Gerar Relatório (${getSelectedPeriods().length} meses)`}
-                      </span>
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-            
-            {/* Botões de compartilhamento - agora em destaque */}
             <Card className="shadow-lg border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-950 dark:to-emerald-900 backdrop-blur-sm">
               <CardContent className="p-4 sm:p-6">
                 <div className="text-center mb-4">
                   <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2 flex items-center justify-center gap-2">
                     <Share2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                    Compartilhar Relatório
+                    Gerar e Compartilhar Relatório
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Envie diretamente para médicos ou familiares
+                    O relatório será gerado automaticamente e enviado diretamente para médicos ou familiares
                   </p>
                 </div>
                 
@@ -666,7 +753,7 @@ Sistema DorLog`;
                       <Share2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 group-hover:text-green-700" />
                     )}
                     <span className="text-green-700 dark:text-green-300 text-sm sm:text-base font-medium">
-                      {isGenerating ? 'Preparando...' : 'WhatsApp'}
+                      {isGenerating ? 'Gerando...' : 'WhatsApp'}
                     </span>
                   </Button>
                   
@@ -683,7 +770,7 @@ Sistema DorLog`;
                       <Mail className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-600 group-hover:text-blue-700" />
                     )}
                     <span className="text-blue-700 dark:text-blue-300 text-sm sm:text-base font-medium">
-                      {isGenerating ? 'Preparando...' : 'Email'}
+                      {isGenerating ? 'Gerando...' : 'Email'}
                     </span>
                   </Button>
                 </div>
