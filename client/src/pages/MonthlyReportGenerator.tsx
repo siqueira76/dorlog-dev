@@ -332,26 +332,26 @@ DorLog - Gestão Inteligente da Sua Saúde`;
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        {/* Descrição inicial */}
-        <div className="text-center mb-10">
-          <div className="mb-6">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-50 dark:bg-blue-950 rounded-full mb-6">
-              <Calendar className="h-10 w-10 text-blue-600" />
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-2xl">
+        {/* Descrição inicial - compacta para mobile */}
+        <div className="text-center mb-6 sm:mb-10">
+          <div className="mb-4 sm:mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-blue-50 dark:bg-blue-950 rounded-full mb-4 sm:mb-6">
+              <Calendar className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600" />
             </div>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 leading-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 sm:mb-4 leading-tight">
             Relatório Mensal em PDF
           </h2>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-lg mx-auto leading-relaxed">
+          <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-lg mx-auto leading-relaxed">
             Selecione um ou múltiplos períodos e gere um relatório completo das suas atividades de saúde
           </p>
         </div>
 
-        {/* Seleção de períodos - Card principal */}
-        <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm mb-6">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center text-lg">
+        {/* Seleção de períodos - Card principal com destaque mobile */}
+        <Card className="shadow-lg border-2 border-blue-200 dark:border-blue-800 bg-card backdrop-blur-sm mb-4 sm:mb-6">
+          <CardHeader className="pb-3 sm:pb-4">
+            <CardTitle className="flex items-center text-lg sm:text-xl font-semibold">
               <Clock className="h-5 w-5 mr-2 text-blue-500" />
               Selecionar Período
             </CardTitle>
@@ -510,53 +510,63 @@ DorLog - Gestão Inteligente da Sua Saúde`;
           </CardContent>
         </Card>
 
-        {/* Botão principal de gerar PDF */}
+        {/* Botões de ação - posicionados logo após seleção para melhor visibilidade mobile */}
         {hasValidSelection() && (
-          <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm mb-6">
-            <CardContent className="p-6">
-              <Button
-                onClick={handleGeneratePDF}
-                disabled={isGenerating}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900 text-white rounded-xl h-16 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation"
-                data-testid="button-generate-pdf"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="h-6 w-6 mr-3 animate-spin" />
-                    <span className="text-base sm:text-lg">Gerando PDF...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-6 w-6 mr-3" />
-                    <span className="text-base sm:text-lg">
-                      {getSelectedPeriods().length === 1 ? 'Gerar Relatório PDF' : `Gerar PDF (${getSelectedPeriods().length} meses)`}
-                    </span>
-                  </>
-                )}
-              </Button>
-              
-              <Separator className="my-8" />
-              
-              {/* Botões de compartilhamento */}
-              <div className="space-y-4">
-                <p className="text-base text-muted-foreground text-center mb-6">
-                  Ou compartilhe diretamente:
-                </p>
-                <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-4 mb-6">
+            {/* Botão principal de gerar PDF */}
+            <Card className="shadow-lg border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 backdrop-blur-sm">
+              <CardContent className="p-4 sm:p-6">
+                <Button
+                  onClick={handleGeneratePDF}
+                  disabled={isGenerating}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900 text-white rounded-xl h-14 sm:h-16 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation"
+                  data-testid="button-generate-pdf"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 mr-3 animate-spin" />
+                      <span>Gerando PDF...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-5 w-5 sm:h-6 sm:w-6 mr-3" />
+                      <span>
+                        {getSelectedPeriods().length === 1 ? 'Gerar Relatório PDF' : `Gerar PDF (${getSelectedPeriods().length} meses)`}
+                      </span>
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+            
+            {/* Botões de compartilhamento - agora em destaque */}
+            <Card className="shadow-lg border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-950 dark:to-emerald-900 backdrop-blur-sm">
+              <CardContent className="p-4 sm:p-6">
+                <div className="text-center mb-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2 flex items-center justify-center gap-2">
+                    <Share2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                    Compartilhar Relatório
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Envie diretamente para médicos ou familiares
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <Button
                     variant="outline"
                     onClick={handleShareWhatsApp}
                     disabled={isGenerating}
-                    className="h-14 rounded-xl border-green-200 hover:bg-green-50 hover:border-green-300 active:bg-green-100 dark:border-green-800 dark:hover:bg-green-950 dark:active:bg-green-900 group transition-all duration-200 touch-manipulation disabled:opacity-50"
+                    className="h-12 sm:h-14 rounded-xl border-green-300 hover:bg-green-100 hover:border-green-400 active:bg-green-200 dark:border-green-700 dark:hover:bg-green-900 dark:active:bg-green-800 group transition-all duration-200 touch-manipulation disabled:opacity-50"
                     data-testid="button-share-whatsapp"
                   >
                     {isGenerating ? (
-                      <Loader2 className="h-5 w-5 mr-3 text-green-600 animate-spin" />
+                      <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 animate-spin" />
                     ) : (
-                      <Share2 className="h-5 w-5 mr-3 text-green-600 group-hover:text-green-700" />
+                      <Share2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 group-hover:text-green-700" />
                     )}
-                    <span className="text-green-700 dark:text-green-300 text-base font-medium">
-                      {isGenerating ? 'Preparando...' : 'Compartilhar no WhatsApp'}
+                    <span className="text-green-700 dark:text-green-300 text-sm sm:text-base font-medium">
+                      {isGenerating ? 'Preparando...' : 'WhatsApp'}
                     </span>
                   </Button>
                   
@@ -564,32 +574,32 @@ DorLog - Gestão Inteligente da Sua Saúde`;
                     variant="outline"
                     onClick={handleShareEmail}
                     disabled={isGenerating}
-                    className="h-14 rounded-xl border-blue-200 hover:bg-blue-50 hover:border-blue-300 active:bg-blue-100 dark:border-blue-800 dark:hover:bg-blue-950 dark:active:bg-blue-900 group transition-all duration-200 touch-manipulation disabled:opacity-50"
+                    className="h-12 sm:h-14 rounded-xl border-blue-300 hover:bg-blue-100 hover:border-blue-400 active:bg-blue-200 dark:border-blue-700 dark:hover:bg-blue-900 dark:active:bg-blue-800 group transition-all duration-200 touch-manipulation disabled:opacity-50"
                     data-testid="button-share-email"
                   >
                     {isGenerating ? (
-                      <Loader2 className="h-5 w-5 mr-3 text-blue-600 animate-spin" />
+                      <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-600 animate-spin" />
                     ) : (
-                      <Mail className="h-5 w-5 mr-3 text-blue-600 group-hover:text-blue-700" />
+                      <Mail className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-600 group-hover:text-blue-700" />
                     )}
-                    <span className="text-blue-700 dark:text-blue-300 text-base font-medium">
-                      {isGenerating ? 'Preparando...' : 'Compartilhar por Email'}
+                    <span className="text-blue-700 dark:text-blue-300 text-sm sm:text-base font-medium">
+                      {isGenerating ? 'Preparando...' : 'Email'}
                     </span>
                   </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
-        {/* Informações sobre o conteúdo do relatório */}
+        {/* Informações sobre o conteúdo do relatório - compacta para mobile */}
         <Card className="shadow-lg border-0 bg-card/30 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <h4 className="text-lg font-semibold text-foreground mb-6 flex items-center">
-              <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+          <CardContent className="p-4 sm:p-6">
+            <h4 className="text-base sm:text-lg font-semibold text-foreground mb-4 sm:mb-6 flex items-center">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-muted-foreground" />
               Conteúdo do Relatório
             </h4>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
               {[
                 "Registros do diário matinal e noturno",
                 "Episódios de crises documentados",
@@ -598,9 +608,9 @@ DorLog - Gestão Inteligente da Sua Saúde`;
                 "Análise dos pontos de dor",
                 "Resumo da adesão ao tratamento"
               ].map((item, index) => (
-                <div key={index} className="flex items-start gap-4 p-4 rounded-xl bg-muted/30 hover:bg-muted/40 transition-colors">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />
-                  <span className="text-base text-muted-foreground leading-relaxed font-medium">
+                <div key={index} className="flex items-start gap-3 p-3 sm:p-4 rounded-xl bg-muted/30 hover:bg-muted/40 transition-colors">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded-full mt-2 sm:mt-1.5 flex-shrink-0" />
+                  <span className="text-sm sm:text-base text-muted-foreground leading-relaxed font-medium">
                     {item}
                   </span>
                 </div>
@@ -610,7 +620,7 @@ DorLog - Gestão Inteligente da Sua Saúde`;
         </Card>
 
         {/* Espaçamento inferior para mobile */}
-        <div className="h-12 sm:h-8" />
+        <div className="h-16 sm:h-8" />
       </div>
     </div>
   );
