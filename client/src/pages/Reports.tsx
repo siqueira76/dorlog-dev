@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle, BookOpen } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle, MapPin } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
@@ -166,10 +166,86 @@ export default function Reports() {
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
 
-  // Query para verificar adesão ao diário
-  const { data: diaryAdherence, isLoading: isLoadingDiary } = useQuery({
-    queryKey: ['diary-adherence', currentUser?.email],
-    queryFn: fetchDiaryAdherence,
+  // Função para buscar pontos de dor (resposta 2 dos quizzes noturnos)
+  const fetchPainPoints = async (): Promise<Array<{ point: string; count: number }>> => {
+    if (!currentUser?.email) {
+      return [];
+    }
+
+    try {
+      console.log('🎯 Buscando pontos de dor para:', currentUser.email);
+      
+      // Calcular data de 30 dias atrás
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const thirtyDaysAgoTimestamp = Timestamp.fromDate(thirtyDaysAgo);
+      
+      const reportDiarioRef = collection(db, 'report_diario');
+      const q = query(reportDiarioRef);
+      
+      const querySnapshot = await getDocs(q);
+      const painPointsCount: { [key: string]: number } = {};
+      
+      // Processar documentos e extrair pontos de dor
+      querySnapshot.forEach((doc) => {
+        const docId = doc.id;
+        const data = doc.data();
+        
+        // Verificar se o documento pertence ao usuário atual
+        if (docId.startsWith(`${currentUser.email}_`) || data.usuarioId === currentUser.email || data.email === currentUser.email) {
+          // Verificar se o documento está dentro dos últimos 30 dias
+          const docData = data.data;
+          if (docData && typeof docData.toDate === 'function' && docData >= thirtyDaysAgoTimestamp) {
+            
+            // Procurar por quizzes do tipo 'noturno'
+            if (data.quizzes && Array.isArray(data.quizzes)) {
+              const nightQuizzes = data.quizzes.filter((quiz: any) => quiz.tipo === 'noturno');
+              
+              nightQuizzes.forEach((quiz: any) => {
+                // Obter resposta da pergunta 2 (pontos de dor)
+                if (quiz.respostas && quiz.respostas['2'] !== undefined) {
+                  const painPoints = quiz.respostas['2'];
+                  
+                  // Se a resposta é um array, processar cada item
+                  if (Array.isArray(painPoints)) {
+                    painPoints.forEach((point: string) => {
+                      if (point && point.trim() !== '') {
+                        const pointName = point.trim();
+                        painPointsCount[pointName] = (painPointsCount[pointName] || 0) + 1;
+                      }
+                    });
+                  } else if (typeof painPoints === 'string' && painPoints.trim() !== '') {
+                    // Se a resposta é uma string única
+                    const pointName = painPoints.trim();
+                    painPointsCount[pointName] = (painPointsCount[pointName] || 0) + 1;
+                  }
+                }
+              });
+            }
+          }
+        }
+      });
+      
+      // Converter para array e ordenar por frequência
+      const painPointsArray = Object.entries(painPointsCount)
+        .map(([point, count]) => ({ point, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8); // Limitar aos 8 pontos mais frequentes
+      
+      console.log(`🎯 Pontos de dor encontrados: ${painPointsArray.length} diferentes`);
+      console.log('📊 Amostra dos dados:', painPointsArray.slice(0, 3));
+      
+      return painPointsArray;
+    } catch (error) {
+      console.error('Erro ao buscar pontos de dor:', error);
+      return [];
+    }
+  };
+
+  // Query para buscar pontos de dor
+  const { data: painPoints, isLoading: isLoadingPainPoints } = useQuery({
+    queryKey: ['pain-points', currentUser?.email],
+    queryFn: fetchPainPoints,
     enabled: !!currentUser?.email,
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
@@ -289,24 +365,18 @@ export default function Reports() {
         <Card className="shadow-sm border border-border">
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center mb-2">
-              <BookOpen className={`h-5 w-5 mr-2 ${
-                diaryAdherence?.status === 'good' ? 'text-green-500' :
-                diaryAdherence?.status === 'warning' ? 'text-yellow-500' :
-                diaryAdherence?.status === 'danger' ? 'text-red-500' :
-                'text-gray-400'
-              }`} />
+              <MapPin className="h-5 w-5 mr-2 text-orange-500" />
             </div>
-            <div className={`text-2xl font-bold mb-1 ${
-              diaryAdherence?.status === 'good' ? 'text-green-600' :
-              diaryAdherence?.status === 'warning' ? 'text-yellow-600' :
-              diaryAdherence?.status === 'danger' ? 'text-red-600' :
-              'text-gray-400'
-            }`} data-testid="text-diary-adherence">
-              {isLoadingDiary ? '...' : (diaryAdherence?.daysSinceLastEntry || 0)}
+            <div className="text-2xl font-bold mb-1 text-orange-600" data-testid="text-pain-points">
+              {isLoadingPainPoints ? '...' : (painPoints?.length || 0)}
             </div>
-            <p className="text-sm text-muted-foreground">Adesão ao Diário</p>
+            <p className="text-sm text-muted-foreground">Pontos de Dor</p>
             <p className="text-xs text-muted-foreground leading-tight">
-              {isLoadingDiary ? 'Verificando...' : (diaryAdherence?.message || 'Carregando...')}
+              {isLoadingPainPoints ? 'Carregando...' : 
+                painPoints && painPoints.length > 0 ? 
+                  `${painPoints[0].point} (${painPoints[0].count}x)` : 
+                  'Nenhum ponto registrado'
+              }
             </p>
           </CardContent>
         </Card>
@@ -497,20 +567,118 @@ export default function Reports() {
         <Card className="shadow-sm border border-border">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-lg">
-              <Calendar className="h-5 w-5 mr-2 text-secondary" />
-              Adesão ao Tratamento
+              <MapPin className="h-5 w-5 mr-2 text-orange-500" />
+              Pontos de Dor
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Monitore como você está seguindo o tratamento prescrito
+              Frequência dos pontos de dor relatados nos últimos 30 dias
             </p>
-            <div className="bg-muted rounded-xl p-6 text-center">
-              <Calendar className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">
-                Comece registrando medicamentos para ver sua adesão
-              </p>
-            </div>
+            {isLoadingPainPoints ? (
+              <div className="bg-muted rounded-xl p-6 text-center">
+                <MapPin className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50 animate-pulse" />
+                <p className="text-sm text-muted-foreground">
+                  Carregando dados...
+                </p>
+              </div>
+            ) : !painPoints || painPoints.length === 0 ? (
+              <div className="bg-muted rounded-xl p-6 text-center">
+                <MapPin className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">
+                  Complete alguns diários noturnos para ver os pontos de dor
+                </p>
+              </div>
+            ) : (
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={painPoints}
+                    margin={{
+                      top: 10,
+                      right: 30,
+                      left: 20,
+                      bottom: 60,
+                    }}
+                  >
+                    <CartesianGrid 
+                      strokeDasharray="1 3" 
+                      stroke="#e2e8f0" 
+                      strokeOpacity={0.3}
+                      horizontal={true}
+                      vertical={false}
+                    />
+                    
+                    <XAxis 
+                      dataKey="point" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ 
+                        fontSize: 10, 
+                        fill: '#64748b',
+                        fontWeight: 500
+                      }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                      interval={0}
+                    />
+                    
+                    <YAxis 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ 
+                        fontSize: 11, 
+                        fill: '#64748b',
+                        fontWeight: 500
+                      }}
+                      dx={-10}
+                      label={{ 
+                        value: 'Frequência', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        style: { 
+                          textAnchor: 'middle', 
+                          fontSize: '10px', 
+                          fill: '#64748b',
+                          fontWeight: 500
+                        }
+                      }}
+                    />
+                    
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        padding: '8px 12px',
+                        backdropFilter: 'blur(8px)'
+                      }}
+                      labelStyle={{ 
+                        color: '#1e293b',
+                        fontWeight: 600,
+                        fontSize: '12px',
+                        marginBottom: '2px'
+                      }}
+                      formatter={(value: number) => [
+                        <span style={{ color: '#f97316', fontWeight: 700, fontSize: '14px' }}>
+                          {value}x
+                        </span>, 
+                        'Relatado'
+                      ]}
+                      labelFormatter={(label) => label}
+                    />
+                    
+                    <Bar 
+                      dataKey="count" 
+                      fill="#f97316"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
 
