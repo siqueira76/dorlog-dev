@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DorLog - Relatório Mensal Janeiro_2025 - teste@dorlog.com.br</title>
+    <link href="./assets/css/report.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        .report-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #667eea;
+        }
+        .report-card h2 {
+            color: #667eea;
+            margin-top: 0;
+            font-size: 1.5em;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .watermark {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            opacity: 0.3;
+            font-size: 0.8em;
+            color: #999;
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .header h1 { font-size: 2em; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>DorLog</h1>
+        <p>Relatório Mensal de Saúde - Janeiro_2025</p>
+        <p>Usuário: teste@dorlog.com.br</p>
+    </div>
+
+    <div class="report-card">
+        <h2>📊 Resumo Executivo</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-value">25</span>
+                <span class="stat-label">Dias com Registro</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">2</span>
+                <span class="stat-label">Episódios de Crise</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">3.8</span>
+                <span class="stat-label">Dor Média (0-10)</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">88%</span>
+                <span class="stat-label">Adesão Medicamentosa</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="report-card">
+        <h2>💊 Medicamentos Prescritos</h2>
+        <p>Total de medicamentos em uso: <strong>3</strong></p>
+        <p>• <strong>Paracetamol</strong> - 500mg (3x ao dia)</p><p>• <strong>Ibuprofeno</strong> - 400mg (2x ao dia)</p><p>• <strong>Tramadol</strong> - 50mg (1x ao dia)</p>
+    </div>
+
+    <div class="report-card">
+        <h2>👨‍⚕️ Equipe Médica</h2>
+        <p>Profissionais acompanhando o caso: <strong>2</strong></p>
+        <p>• <strong>Dr(a). Dra. Ana Silva</strong> - Reumatologia (CRM: 12345-SP)</p><p>• <strong>Dr(a). Dr. Carlos Santos</strong> - Clínica Geral (CRM: 67890-SP)</p>
+    </div>
+
+    <div class="report-card">
+        <h2>📈 Observações do Período</h2>
+        <p>Período com boa adesão ao tratamento. Paciente relata melhora significativa da dor matinal. Recomenda-se continuidade do tratamento atual e acompanhamento quinzenal.</p>
+    </div>
+
+    <div class="footer">
+        <p>Relatório gerado automaticamente em 20 de agosto de 2025</p>
+        <p><strong>DorLog</strong> - Gestão Inteligente da Sua Saúde</p>
+        <p>Este documento contém informações de saúde confidenciais. Mantenha em local seguro.</p>
+    </div>
+
+    <div class="watermark">
+        DorLog v1.0
+    </div>
+
+    <script src="./assets/js/report.js"></script>
+</body>
+</html>
