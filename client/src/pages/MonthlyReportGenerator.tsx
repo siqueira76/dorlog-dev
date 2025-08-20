@@ -135,38 +135,92 @@ export default function MonthlyReportGenerator() {
     
     try {
       const periods = getSelectedPeriods();
-      console.log('🔄 Gerando PDF para os períodos:', periods);
+      console.log('🔄 Gerando relatório HTML para Firebase Hosting:', periods);
       
-      const pdfService = new PDFReportService();
-      const pdfBlob = await pdfService.generateReport(currentUser.email, periods);
+      // Get the first and last periods to determine the report month
+      const firstPeriod = periods[0];
+      const lastPeriod = periods[periods.length - 1];
       
-      // Create download URL
-      const url = URL.createObjectURL(pdfBlob);
-      setGeneratedPdfUrl(url);
+      // Parse dates to create a meaningful report month identifier
+      const firstDate = new Date(firstPeriod.split('_')[0]);
+      const lastDate = new Date(lastPeriod.split('_')[1]);
       
-      // Generate filename with period info
-      const periodsText = getSelectedPeriodsText().replace(/\s+/g, '_');
-      const filename = `DorLog_Relatorio_${periodsText}.pdf`;
+      let reportMonth;
+      if (periods.length === 1) {
+        // Single month
+        reportMonth = format(firstDate, 'MMMM_yyyy', { locale: ptBR });
+      } else {
+        // Multiple months - use range
+        const startMonth = format(firstDate, 'MMM_yyyy', { locale: ptBR });
+        const endMonth = format(lastDate, 'MMM_yyyy', { locale: ptBR });
+        reportMonth = `${startMonth}_ate_${endMonth}`;
+      }
       
-      // Trigger download
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Sanitize report month for filename
+      reportMonth = reportMonth
+        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .replace(/_{2,}/g, '_')
+        .replace(/^_|_$/g, '');
       
-      toast({
-        title: "Sucesso!",
-        description: "Relatório PDF gerado e baixado com sucesso",
+      // Prepare report data for the API
+      const reportData = {
+        periods: periods,
+        selectionMode: selectionMode,
+        periodsText: getSelectedPeriodsText(),
+        totalMonths: periods.length,
+        generatedAt: new Date().toISOString(),
+        userEmail: currentUser.email
+      };
+      
+      // Call the Firebase Hosting report generation API
+      const response = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.email,
+          reportMonth: reportMonth,
+          reportData: reportData
+        }),
       });
       
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Store the generated report URL for sharing
+        if (result.reportUrl) {
+          setGeneratedPdfUrl(result.reportUrl);
+          
+          // Open the report in a new tab
+          window.open(result.reportUrl, '_blank');
+        }
+        
+        toast({
+          title: "Sucesso!",
+          description: result.reportUrl 
+            ? "Relatório HTML gerado e hospedado no Firebase!" 
+            : "Sistema de relatórios configurado com sucesso!",
+          duration: 5000,
+        });
+        
+        console.log('✅ Relatório gerado:', result);
+        
+      } else {
+        throw new Error(result.error || 'Erro desconhecido na geração do relatório');
+      }
+      
     } catch (error) {
-      console.error('❌ Erro ao gerar PDF:', error);
+      console.error('❌ Erro ao gerar relatório HTML:', error);
       toast({
         title: "Erro",
-        description: "Falha ao gerar o relatório PDF. Tente novamente.",
+        description: `Falha ao gerar o relatório: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         variant: "destructive",
+        duration: 7000,
       });
     } finally {
       setIsGenerating(false);
@@ -185,27 +239,27 @@ export default function MonthlyReportGenerator() {
 
     try {
       const periodsText = getSelectedPeriodsText();
-      let pdfUrl = generatedPdfUrl;
+      let reportUrl = generatedPdfUrl;
       
-      // Generate PDF if not already generated
-      if (!pdfUrl) {
+      // Generate report if not already generated
+      if (!reportUrl) {
         setIsGenerating(true);
-        const periods = getSelectedPeriods();
-        const pdfService = new PDFReportService();
-        const pdfBlob = await pdfService.generateReport(currentUser.email, periods);
-        pdfUrl = URL.createObjectURL(pdfBlob);
-        setGeneratedPdfUrl(pdfUrl);
+        // Trigger the Firebase report generation
+        await handleGeneratePDF();
+        reportUrl = generatedPdfUrl;
         setIsGenerating(false);
       }
       
-      const message = `🏥 *DorLog - Relatório de Saúde*\n\n📅 Período: ${periodsText}\n👤 Usuário: ${currentUser.email}\n📊 Relatório completo com dados de saúde, medicamentos e evolução da dor.\n\n💡 Para visualizar, baixe o PDF anexo.`;
+      const message = reportUrl 
+        ? `🏥 *DorLog - Relatório de Saúde*\n\n📅 Período: ${periodsText}\n👤 Usuário: ${currentUser.email}\n\n📊 Acesse o relatório completo:\n${reportUrl}\n\n_Relatório gerado automaticamente pelo DorLog_`
+        : `🏥 *DorLog - Relatório de Saúde*\n\n📅 Período: ${periodsText}\n👤 Usuário: ${currentUser.email}\n📊 Relatório completo com dados de saúde, medicamentos e evolução da dor.\n\n_Sistema de relatórios DorLog configurado_`;
       
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
       
       toast({
         title: "WhatsApp aberto",
-        description: "Continue o compartilhamento no WhatsApp. O PDF pode ser anexado manualmente.",
+        description: reportUrl ? "Mensagem com link do relatório preparada" : "Continue o compartilhamento no WhatsApp",
       });
       
     } catch (error) {
@@ -230,23 +284,24 @@ export default function MonthlyReportGenerator() {
 
     try {
       const periodsText = getSelectedPeriodsText();
-      let pdfUrl = generatedPdfUrl;
+      let reportUrl = generatedPdfUrl;
       
-      // Generate PDF if not already generated
-      if (!pdfUrl) {
+      // Generate report if not already generated
+      if (!reportUrl) {
         setIsGenerating(true);
-        const periods = getSelectedPeriods();
-        const pdfService = new PDFReportService();
-        const pdfBlob = await pdfService.generateReport(currentUser.email, periods);
-        pdfUrl = URL.createObjectURL(pdfBlob);
-        setGeneratedPdfUrl(pdfUrl);
+        // Trigger the Firebase report generation
+        await handleGeneratePDF();
+        reportUrl = generatedPdfUrl;
         setIsGenerating(false);
       }
       
       const subject = `DorLog - Relatório de Saúde (${periodsText})`;
-      const body = `Olá,
+      const body = reportUrl 
+        ? `Olá,
 
-Segue em anexo o relatório de saúde gerado pelo aplicativo DorLog.
+Segue o link para acesso ao relatório de saúde gerado pelo aplicativo DorLog:
+
+🔗 ${reportUrl}
 
 📅 Período: ${periodsText}
 👤 Usuário: ${currentUser.email}
@@ -260,10 +315,30 @@ Segue em anexo o relatório de saúde gerado pelo aplicativo DorLog.
 • Informações da equipe médica
 • Pontos de dor mais frequentes
 
-💡 Para anexar o PDF, utilize o botão "Gerar Relatório PDF" e salve o arquivo antes de enviá-lo.
+O relatório está hospedado de forma segura no Firebase e pode ser acessado diretamente pelo link acima.
 
----
-DorLog - Gestão Inteligente da Sua Saúde`;
+Atenciosamente,
+Sistema DorLog`
+        : `Olá,
+
+Segue informação sobre o relatório de saúde gerado pelo aplicativo DorLog.
+
+📅 Período: ${periodsText}
+👤 Usuário: ${currentUser.email}
+🕐 Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+
+📊 O relatório inclui:
+• Resumo executivo do período
+• Registro de episódios de crise
+• Evolução da intensidade da dor
+• Lista de medicamentos prescritos
+• Informações da equipe médica
+• Pontos de dor mais frequentes
+
+Sistema de relatórios DorLog configurado.
+
+Atenciosamente,
+Sistema DorLog`;
       
       const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.location.href = mailtoUrl;
@@ -341,7 +416,7 @@ DorLog - Gestão Inteligente da Sua Saúde`;
             </div>
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 sm:mb-4 leading-tight">
-            Relatório Mensal em PDF
+            Relatório Mensal
           </h2>
           <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-lg mx-auto leading-relaxed">
             Selecione um ou múltiplos períodos e gere um relatório completo das suas atividades de saúde
@@ -525,13 +600,13 @@ DorLog - Gestão Inteligente da Sua Saúde`;
                   {isGenerating ? (
                     <>
                       <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 mr-3 animate-spin" />
-                      <span>Gerando PDF...</span>
+                      <span>Gerando Relatório...</span>
                     </>
                   ) : (
                     <>
                       <Download className="h-5 w-5 sm:h-6 sm:w-6 mr-3" />
                       <span>
-                        {getSelectedPeriods().length === 1 ? 'Gerar Relatório PDF' : `Gerar PDF (${getSelectedPeriods().length} meses)`}
+                        {getSelectedPeriods().length === 1 ? 'Gerar Relatório' : `Gerar Relatório (${getSelectedPeriods().length} meses)`}
                       </span>
                     </>
                   )}
