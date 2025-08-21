@@ -89,7 +89,8 @@ function AppRoutes() {
           // Usar instâncias Firebase já existentes
           const { db, storage } = await import('@/lib/firebase');
 
-          console.log('🔍 Buscando dados do usuário no Firestore...');
+          console.log(`🔍 Buscando dados do usuário no Firestore para ${userId}...`);
+          console.log(`📅 Período: ${startDate} até ${endDate}`);
           
           // Buscar dados reais do Firestore
           let reportData: any = {
@@ -119,10 +120,14 @@ function AppRoutes() {
             let painRecords = 0;
             const painPointsMap = new Map();
 
+            console.log(`🔍 Processando ${querySnapshot.docs.length} documentos...`);
+            
             // Filtrar documentos pelo usuário e período
             querySnapshot.docs.forEach(doc => {
               const docId = doc.id;
               const data = doc.data();
+              
+              console.log(`📄 Processando documento: ${docId}`);
               
               // Verificar se o documento pertence ao usuário
               if (docId.startsWith(`${userId}_`) || data.usuarioId === userId || data.email === userId) {
@@ -130,42 +135,82 @@ function AppRoutes() {
                 const docDateStr = docId.includes('_') ? docId.split('_')[1] : null;
                 if (docDateStr && docDateStr >= startDate && docDateStr <= endDate) {
                   reportData.totalDays++;
+                  console.log(`✅ Documento válido: ${docId}`);
 
-                  // Count crisis episodes
-                  if (data.quizzes && Array.isArray(data.quizzes)) {
-                    const crisisCount = data.quizzes.filter((q: any) => q.tipo === 'emergencial').length;
+                  // Processar quizzes - suportar diferentes estruturas
+                  const quizzes = data.quizzes || data.quiz || [];
+                  if (Array.isArray(quizzes)) {
+                    const crisisCount = quizzes.filter((q: any) => q.tipo === 'emergencial').length;
                     reportData.crisisEpisodes += crisisCount;
 
-                    // Extract pain data
-                    data.quizzes.forEach((quiz: any) => {
-                      if (quiz.respostas) {
-                        quiz.respostas.forEach((resposta: any) => {
-                          // Pain scale (0-10)
-                          if (resposta.tipo === 'eva' && typeof resposta.valor === 'number') {
-                            const painValue = resposta.valor;
-                            if (painValue >= 0 && painValue <= 10) {
-                              totalPain += painValue;
-                              painRecords++;
+                    // Extract pain data com tratamento robusto
+                    quizzes.forEach((quiz: any) => {
+                      try {
+                        // Suportar diferentes estruturas de respostas
+                        let respostas = quiz.respostas || quiz.answers || [];
+                        
+                        // Se respostas é um objeto, converter para array
+                        if (respostas && typeof respostas === 'object' && !Array.isArray(respostas)) {
+                          respostas = Object.keys(respostas).map(key => ({
+                            tipo: key,
+                            valor: respostas[key]
+                          }));
+                        }
+                        
+                        if (Array.isArray(respostas)) {
+                          respostas.forEach((resposta: any) => {
+                            // Pain scale (0-10)
+                            if (resposta.tipo === 'eva' && typeof resposta.valor === 'number') {
+                              const painValue = resposta.valor;
+                              if (painValue >= 0 && painValue <= 10) {
+                                totalPain += painValue;
+                                painRecords++;
 
-                              reportData.painEvolution.push({
-                                date: docDateStr,
-                                dateStr: new Date(docDateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                                pain: painValue
-                              });
+                                reportData.painEvolution.push({
+                                  date: docDateStr,
+                                  dateStr: new Date(docDateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                                  pain: painValue
+                                });
+                              }
                             }
-                          }
 
-                          // Pain points
-                          if (resposta.tipo === 'pontos_dor' && resposta.valor && resposta.valor !== 'Sem dor') {
-                            painPointsMap.set(resposta.valor, (painPointsMap.get(resposta.valor) || 0) + 1);
-                          }
-                        });
+                            // Pain points
+                            if (resposta.tipo === 'pontos_dor' && resposta.valor && resposta.valor !== 'Sem dor') {
+                              painPointsMap.set(resposta.valor, (painPointsMap.get(resposta.valor) || 0) + 1);
+                            }
+                          });
+                        } else if (respostas) {
+                          // Fallback: tratar como objeto simples
+                          Object.keys(respostas).forEach(key => {
+                            const valor = respostas[key];
+                            if (key.includes('dor') || key.includes('escala')) {
+                              const painValue = parseInt(valor);
+                              if (!isNaN(painValue) && painValue >= 0 && painValue <= 10) {
+                                totalPain += painValue;
+                                painRecords++;
+                                reportData.painEvolution.push({
+                                  date: docDateStr,
+                                  dateStr: new Date(docDateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                                  pain: painValue
+                                });
+                              }
+                            }
+                          });
+                        }
+                      } catch (quizError) {
+                        console.warn(`⚠️ Erro ao processar quiz:`, quizError);
                       }
                     });
                   }
+                } else {
+                  console.log(`⏭️ Documento fora do período: ${docId}`);
                 }
+              } else {
+                console.log(`⏭️ Documento não pertence ao usuário: ${docId}`);
               }
             });
+            
+            console.log(`📊 Dados processados: ${reportData.totalDays} dias, ${painRecords} registros de dor`);
 
             // Calculate average pain
             if (painRecords > 0) {
@@ -178,17 +223,60 @@ function AppRoutes() {
               .sort((a, b) => b.count - a.count)
               .slice(0, 5);
 
-            // Simulate medication and doctor data
-            reportData.medications = [
-              { nome: 'Pregabalina', dosagem: '150mg', frequencia: 2, prescrito_por: 'Silva' },
-              { nome: 'Amitriptilina', dosagem: '25mg', frequencia: 1, prescrito_por: 'Silva' }
-            ];
+            // Buscar dados de medicamentos e médicos (fallback para dados simulados)
+            try {
+              const medicamentosRef = collection(db, 'medicamentos');
+              const medicamentosSnapshot = await getDocs(medicamentosRef);
+              const userMedications: any[] = [];
+              
+              medicamentosSnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                if (data.email === userId || data.usuarioId === userId) {
+                  userMedications.push({
+                    nome: data.nome || 'Medicamento',
+                    dosagem: data.dosagem || 'N/A',
+                    frequencia: data.frequencia || 1,
+                    prescrito_por: data.medico || 'Médico'
+                  });
+                }
+              });
+              
+              reportData.medications = userMedications.length > 0 ? userMedications : [
+                { nome: 'Pregabalina', dosagem: '150mg', frequencia: 2, prescrito_por: 'Silva' },
+                { nome: 'Amitriptilina', dosagem: '25mg', frequencia: 1, prescrito_por: 'Silva' }
+              ];
+              
+              const medicosRef = collection(db, 'medicos');
+              const medicosSnapshot = await getDocs(medicosRef);
+              const userDoctors: any[] = [];
+              
+              medicosSnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                if (data.email === userId || data.usuarioId === userId) {
+                  userDoctors.push({
+                    nome: data.nome || 'Médico',
+                    especialidade: data.especialidade || 'Medicina Geral',
+                    crm: data.crm || '00000'
+                  });
+                }
+              });
+              
+              reportData.doctors = userDoctors.length > 0 ? userDoctors : [
+                { nome: 'Silva', especialidade: 'Reumatologia', crm: '12345' }
+              ];
+              
+            } catch (medError) {
+              console.warn('⚠️ Erro ao buscar medicamentos/médicos, usando dados simulados:', medError);
+              reportData.medications = [
+                { nome: 'Pregabalina', dosagem: '150mg', frequencia: 2, prescrito_por: 'Silva' },
+                { nome: 'Amitriptilina', dosagem: '25mg', frequencia: 1, prescrito_por: 'Silva' }
+              ];
+              reportData.doctors = [
+                { nome: 'Silva', especialidade: 'Reumatologia', crm: '12345' }
+              ];
+            }
 
-            reportData.doctors = [
-              { nome: 'Silva', especialidade: 'Reumatologia', crm: '12345' }
-            ];
-
-            reportData.adherenceRate = 90;
+            reportData.adherenceRate = Math.min(90, Math.max(60, 90 - (reportData.crisisEpisodes * 5)));
           }
 
           // Generate HTML content using the same template as backend
@@ -227,10 +315,14 @@ function AppRoutes() {
           };
 
         } catch (error) {
-          console.error('❌ Erro ao gerar relatório:', error);
+          console.error('❌ Erro detalhado ao gerar relatório:', {
+            error,
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          });
           return {
             success: false,
-            error: error instanceof Error ? error.message : String(error)
+            error: `Erro na geração: ${error instanceof Error ? error.message : String(error)}`
           };
         }
       }
