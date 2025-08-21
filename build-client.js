@@ -50,18 +50,32 @@ async function buildClient() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DorLog - Redirecionando...</title>
   <script>
+    // GitHub Pages SPA redirect script for DorLog
     (function() {
       var currentPath = window.location.pathname;
       var basePath = '/dorlog/';
       
+      console.log('🔄 404.html redirect logic:', {
+        currentPath: currentPath,
+        basePath: basePath,
+        origin: window.location.origin
+      });
+      
+      // Store the intended route in sessionStorage so the React app can read it
       var route = currentPath.replace(basePath, '');
       
+      console.log('🔄 Extracted route:', route);
+      
       if (route && route !== '' && route !== 'index.html') {
-        var redirectUrl = window.location.origin + basePath + '#/' + route + window.location.search + window.location.hash;
-        window.location.replace(redirectUrl);
-      } else {
-        window.location.replace(window.location.origin + basePath);
+        // Store the intended path for the React app to read
+        sessionStorage.setItem('dorlog_intended_path', '/' + route);
+        console.log('💾 Saved intended path to sessionStorage:', '/' + route);
       }
+      
+      // Always redirect to the main app
+      var redirectUrl = window.location.origin + basePath;
+      console.log('🚀 Redirecting to:', redirectUrl);
+      window.location.replace(redirectUrl);
     })();
   </script>
 </head>

@@ -19,10 +19,24 @@ function InitialRedirect() {
     );
   }
   
+  // Detectar GitHub Pages para usar base path correto
+  const isGitHubPages = !window.location.hostname.includes('replit') && 
+                        !window.location.hostname.includes('localhost') &&
+                        !window.location.hostname.includes('127.0.0.1');
+  
+  const basePath = isGitHubPages ? '/dorlog' : '';
+  
+  console.log('🔄 InitialRedirect:', { 
+    currentUser: !!currentUser, 
+    isGitHubPages, 
+    basePath,
+    redirecting: currentUser ? 'home' : 'login'
+  });
+  
   if (currentUser) {
-    window.location.href = '/home';
+    window.location.href = `${basePath}/home`;
   } else {
-    window.location.href = '/login';
+    window.location.href = `${basePath}/login`;
   }
   
   return null;
