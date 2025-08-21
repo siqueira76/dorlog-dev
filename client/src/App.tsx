@@ -57,6 +57,15 @@ function App() {
                           !window.location.hostname.includes('localhost') &&
                           !window.location.hostname.includes('127.0.0.1');
     
+    // Handle GitHub Pages SPA routing redirect
+    if (isGitHubPages) {
+      const intendedPath = sessionStorage.getItem('dorlog_intended_path');
+      if (intendedPath) {
+        sessionStorage.removeItem('dorlog_intended_path');
+        window.history.replaceState(null, '', intendedPath);
+      }
+    }
+    
     if (isGitHubPages) {
       console.log('🔧 GitHub Pages detectado - Aplicando patch para APIs');
       
@@ -533,10 +542,14 @@ function App() {
     }
   }, []);
 
+  const isGitHubPages = !window.location.hostname.includes('replit') && 
+                      !window.location.hostname.includes('localhost') &&
+                      !window.location.hostname.includes('127.0.0.1');
+  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
+        <Router base={isGitHubPages ? "/dorlog" : undefined}>
           <Switch>
             {/* Páginas de autenticação sem Layout */}
             <Route path="/login" component={Login} />
