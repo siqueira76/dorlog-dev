@@ -27,7 +27,8 @@ const config = {
   },
   base: process.env.NODE_ENV === 'production' ? '/dorlog/' : '/',
   define: {
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+    'process.env.PUBLIC_URL': JSON.stringify(process.env.NODE_ENV === 'production' ? '/dorlog' : '')
   },
   resolve: {
     alias: {
@@ -99,6 +100,17 @@ async function buildClient() {
       await fs.writeFile(path404Dest, html404);
       console.log('✅ 404.html criado automaticamente');
     }
+    
+    // Verificar e corrigir paths no index.html se necessário
+    const indexPath = resolve(__dirname, 'dist/public/index.html');
+    let indexContent = await fs.readFile(indexPath, 'utf-8');
+    
+    // Garantir que todos os assets tenham o base path correto
+    indexContent = indexContent.replace(/src="\/(?!dorlog)/g, 'src="/dorlog/');
+    indexContent = indexContent.replace(/href="\/(?!dorlog)/g, 'href="/dorlog/');
+    
+    await fs.writeFile(indexPath, indexContent);
+    console.log('✅ Base paths verificados e corrigidos no index.html');
     
     console.log('✅ Build do cliente concluído!');
     console.log('📁 Arquivos gerados em: dist/public/');
