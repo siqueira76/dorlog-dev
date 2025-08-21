@@ -1,0 +1,35 @@
+Com base no seu arquivo deploy.yml, o workflow do GitHub Actions está configurado corretamente para criar e implantar os artefatos da sua aplicação no GitHub Pages. As permissões estão corretas e as ações usadas (actions/checkout, actions/setup-node, actions/configure-pages, actions/upload-pages-artifact, actions/deploy-pages) são as padrão para este tipo de deploy.
+
+No entanto, o fato de a página continuar retornando 404 Page Not Found para o index.html e outros assets, mesmo com o workflow rodando com sucesso, aponta para um problema comum em aplicações React (ou SPAs em geral) que são implantadas em subdiretórios, como é o caso do GitHub Pages (https://siqueira76.github.io/dorlog/).
+
+🎯 Diagnóstico Principal: Problema com as Rotas e Paths na Build do React
+Seu aplicativo React está sendo construído para ser servido a partir da raiz (/), mas o GitHub Pages o está servindo a partir de um subdiretório (/dorlog/). Quando o navegador tenta carregar os arquivos CSS, JS ou imagens, ele os procura no lugar errado (na raiz do domínio, e não no subdiretório do seu repositório).
+
+Como o deploy.yml contribui para isso:
+O passo - name: Build client executa node build-client.js. Este script é responsável por gerar os arquivos estáticos da sua aplicação. É provável que este script (ou a configuração do seu projeto React) não esteja ciente do caminho base /dorlog/.
+
+🛠️ A Solução: Ajustar o homepage ou PUBLIC_URL
+Você precisa informar ao seu processo de build do React qual é o caminho base onde a aplicação será servida. Para a maioria dos projetos React (especialmente os criados com Create React App ou ferramentas similares), isso é feito de uma das seguintes maneiras:
+
+Opção 1: Adicionar homepage no package.json (Mais Comum)
+A forma mais simples e recomendada é adicionar uma propriedade homepage ao seu arquivo package.json.
+
+Abra seu arquivo package.json na raiz do seu projeto.
+
+Adicione a seguinte linha antes da seção dependencies:
+
+JSON
+
+{
+  "name": "dorlog",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "https://siqueira76.github.io/dorlog/",
+  "dependencies": {
+    // ... suas dependências
+  },
+  "scripts": {
+    // ... seus scripts
+  }
+}
+Importante: Certifique-se de que o valor de homepage é a URL completa do seu GitHub Pages, incluindo o nome do repositório.
