@@ -16,9 +16,19 @@ const config = {
   build: {
     outDir: resolve(__dirname, 'dist/public'),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        assetFileNames: '[name].[hash].[ext]',
+        chunkFileNames: '[name].[hash].js',
+        entryFileNames: '[name].[hash].js'
+      }
+    },
     assetsDir: 'assets',
   },
   base: process.env.NODE_ENV === 'production' ? '/dorlog/' : '/',
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'client', 'src'),
