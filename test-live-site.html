@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Live - DorLog GitHub Pages</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .test { margin: 15px 0; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .loading { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        #console { background: #f8f9fa; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .timestamp { color: #6c757d; font-size: 11px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste Live - DorLog GitHub Pages</h1>
+    
+    <div class="test info">
+        <strong>🔗 URL:</strong> <span id="current-url"></span><br>
+        <strong>🕐 Timestamp:</strong> <span id="timestamp"></span>
+    </div>
+    
+    <div class="test loading">
+        <strong>⚡ Status dos Assets:</strong>
+        <div id="asset-status">Testando...</div>
+    </div>
+    
+    <div class="test info">
+        <strong>🔧 Detecção de Ambiente:</strong>
+        <div id="env-detection"></div>
+    </div>
+    
+    <div class="test info">
+        <strong>📱 Teste de Navegação:</strong>
+        <button onclick="testNavigation('/login')">Testar /login</button>
+        <button onclick="testNavigation('/home')">Testar /home</button>
+        <button onclick="testNavigation('/doctors')">Testar /doctors</button>
+        <div id="nav-results"></div>
+    </div>
+    
+    <div class="test info">
+        <strong>🔗 Links Diretos:</strong><br>
+        <a href="/dorlog/" target="_blank">→ Página Principal</a><br>
+        <a href="/dorlog/login" target="_blank">→ Login</a><br>
+        <a href="/dorlog/home" target="_blank">→ Home</a><br>
+        <a href="/dorlog/debug-app.html" target="_blank">→ Debug App</a>
+    </div>
+    
+    <div class="test info">
+        <strong>📊 Console de Teste:</strong>
+        <div id="console"></div>
+    </div>
+
+    <script>
+        // Override console.log para capturar logs
+        const originalLog = console.log;
+        const consoleDiv = document.getElementById('console');
+        
+        function addToConsole(message, type = 'log') {
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.innerHTML = `<span class="timestamp">[${time}]</span> ${message}`;
+            consoleDiv.appendChild(entry);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            originalLog(message);
+        }
+        
+        console.log = function(...args) {
+            addToConsole(args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            addToConsole('❌ ' + args.join(' '), 'error');
+        };
+        
+        // Detectar ambiente
+        function detectEnvironment() {
+            const hostname = window.location.hostname;
+            const pathname = window.location.pathname;
+            const isGitHubPages = hostname.includes('github.io');
+            const basePath = isGitHubPages ? '/dorlog' : '';
+            
+            return { hostname, pathname, isGitHubPages, basePath };
+        }
+        
+        // Testar assets
+        async function testAssets() {
+            const statusDiv = document.getElementById('asset-status');
+            console.log('🧪 Iniciando teste de assets...');
+            
+            const assets = [
+                '/dorlog/assets/index-DgQ5UHTJ.js',
+                '/dorlog/assets/index-BnnahjZf.css'
+            ];
+            
+            let results = '';
+            
+            for (const asset of assets) {
+                try {
+                    const response = await fetch(asset, { method: 'HEAD' });
+                    if (response.ok) {
+                        results += `✅ ${asset} (${response.status})<br>`;
+                        console.log(`✅ Asset OK: ${asset}`);
+                    } else {
+                        results += `❌ ${asset} (${response.status})<br>`;
+                        console.error(`❌ Asset falhou: ${asset} - ${response.status}`);
+                    }
+                } catch (error) {
+                    results += `💥 ${asset} (Erro: ${error.message})<br>`;
+                    console.error(`💥 Erro ao testar ${asset}:`, error);
+                }
+            }
+            
+            statusDiv.innerHTML = results;
+        }
+        
+        // Testar navegação
+        function testNavigation(path) {
+            const env = detectEnvironment();
+            const fullPath = env.basePath + path;
+            const resultsDiv = document.getElementById('nav-results');
+            
+            console.log(`🧭 Testando navegação para: ${fullPath}`);
+            
+            resultsDiv.innerHTML += `
+                <div style="margin: 5px 0; padding: 5px; background: #e9ecef; border-radius: 3px;">
+                    🧭 ${path} → <a href="${fullPath}" target="_blank">${fullPath}</a>
+                </div>
+            `;
+        }
+        
+        // Inicializar testes
+        window.addEventListener('DOMContentLoaded', function() {
+            const env = detectEnvironment();
+            
+            // Atualizar informações básicas
+            document.getElementById('current-url').textContent = window.location.href;
+            document.getElementById('timestamp').textContent = new Date().toLocaleString('pt-BR');
+            
+            // Mostrar detecção de ambiente
+            document.getElementById('env-detection').innerHTML = `
+                <strong>Hostname:</strong> ${env.hostname}<br>
+                <strong>Path:</strong> ${env.pathname}<br>
+                <strong>É GitHub Pages:</strong> ${env.isGitHubPages ? '✅ Sim' : '❌ Não'}<br>
+                <strong>Base Path:</strong> ${env.basePath || '(nenhum)'}
+            `;
+            
+            console.log('🔧 Environment detectado:', env);
+            
+            // Testar assets
+            testAssets();
+            
+            // Log adicional
+            console.log('🚀 Teste live iniciado');
+            console.log('📍 GitHub Pages URL: https://siqueira76.github.io/dorlog/');
+        });
+        
+        // Capturar erros globais
+        window.addEventListener('error', function(e) {
+            console.error('💥 Erro global capturado:', e.message, 'em', e.filename, 'linha', e.lineno);
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('💥 Promise rejeitada:', e.reason);
+        });
+    </script>
+</body>
+</html>
