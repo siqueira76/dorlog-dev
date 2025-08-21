@@ -33,7 +33,7 @@ fi
 
 # Build do projeto
 log_info "Fazendo build do projeto..."
-if ! npm run build:client; then
+if ! NODE_ENV=production VITE_FIREBASE_API_KEY="$VITE_FIREBASE_API_KEY" VITE_FIREBASE_PROJECT_ID="$VITE_FIREBASE_PROJECT_ID" VITE_FIREBASE_APP_ID="$VITE_FIREBASE_APP_ID" node build-client.js; then
     log_error "Erro no build do projeto"
     exit 1
 fi

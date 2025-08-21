@@ -13,6 +13,15 @@ function InitialRedirect() {
   
   useEffect(() => {
     if (!loading) {
+      // Check if there's an intended path from 404 redirect
+      const intendedPath = sessionStorage.getItem('dorlog_intended_path');
+      if (intendedPath) {
+        sessionStorage.removeItem('dorlog_intended_path');
+        console.log('🔄 InitialRedirect: Found intended path:', intendedPath);
+        window.location.href = intendedPath;
+        return;
+      }
+      
       // Detect GitHub Pages for base path
       const isGitHubPages = !window.location.hostname.includes('replit') && 
                             !window.location.hostname.includes('localhost') &&
