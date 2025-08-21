@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * Script de Automação para Geração e Deploy de Relatórios HTML no Firebase Hosting
+ * Script de Automação para Geração e Upload de Relatórios HTML no Firebase Storage
  * 
  * Este script automatiza o processo de:
  * 1. Gerar relatórios HTML para usuários
- * 2. Fazer deploy no Firebase Hosting
- * 3. Limpar arquivos locais após deploy bem-sucedido
+ * 2. Fazer upload direto para Firebase Storage
+ * 3. Compartilhar URL do arquivo no Firebase Storage
+ * 4. Limpar arquivos locais após upload bem-sucedido
  */
 
 const fs = require('fs');
@@ -797,6 +798,71 @@ async function fetchUserDataFromFirestore(userId, periods) {
 }
 
 /**
+ * Função para fazer upload do arquivo para Firebase Storage
+ */
+async function uploadToFirebaseStorage(localFilePath, fileName) {
+  const admin = require('firebase-admin');
+  
+  try {
+    // Initialize Firebase Admin if not already done
+    if (!admin.apps.length) {
+      const serviceAccount = {
+        type: "service_account",
+        project_id: process.env.VITE_FIREBASE_PROJECT_ID || "dorlog-fibro-diario",
+        private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+        private_key: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+        client_email: process.env.FIREBASE_CLIENT_EMAIL,
+        client_id: process.env.FIREBASE_CLIENT_ID,
+        auth_uri: "https://accounts.google.com/o/oauth2/auth",
+        token_uri: "https://oauth2.googleapis.com/token"
+      };
+      
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        storageBucket: `${process.env.VITE_FIREBASE_PROJECT_ID || 'dorlog-fibro-diario'}.appspot.com`
+      });
+    }
+
+    const bucket = admin.storage().bucket();
+    const storageFileName = `reports/${fileName}`;
+    
+    console.log(`📤 Fazendo upload do arquivo: ${localFilePath} → ${storageFileName}`);
+    
+    // Upload do arquivo
+    const [file] = await bucket.upload(localFilePath, {
+      destination: storageFileName,
+      metadata: {
+        contentType: 'text/html',
+        metadata: {
+          firebaseStorageDownloadTokens: require('crypto').randomUUID()
+        }
+      }
+    });
+    
+    // Tornar o arquivo publicamente legível
+    await file.makePublic();
+    
+    // Gerar URL de download público
+    const downloadUrl = `https://storage.googleapis.com/${bucket.name}/${storageFileName}`;
+    
+    console.log(`✅ Upload concluído. Arquivo disponível em: ${downloadUrl}`);
+    
+    return {
+      success: true,
+      downloadUrl,
+      fileName: storageFileName
+    };
+    
+  } catch (error) {
+    console.error(`❌ Erro no upload para Firebase Storage: ${error.message}`);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
  * Função principal para gerar e fazer deploy do relatório
  */
 async function generateAndDeployReport(userId, reportMonth, inputReportData = {}) {
@@ -850,25 +916,19 @@ async function generateAndDeployReport(userId, reportMonth, inputReportData = {}
     fs.writeFileSync(reportFilePath, htmlContent, 'utf8');
     console.log(`✅ Arquivo HTML salvo: ${reportFilePath}`);
     
-    // 5. Fazer deploy no Firebase Hosting
-    console.log(`\n🔥 Iniciando deploy no Firebase Hosting...`);
+    // 5. Fazer upload para Firebase Storage
+    console.log(`\n☁️ Iniciando upload para Firebase Storage...`);
     
-    const deployResult = await executeWithRetry(
-      `npx firebase deploy --only hosting --project ${CONFIG.FIREBASE_PROJECT_ID}`
-    );
+    const uploadResult = await uploadToFirebaseStorage(reportFilePath, reportFileName);
     
-    if (deployResult.success) {
-      console.log(`✅ Deploy concluído com sucesso!`);
+    if (uploadResult.success) {
+      console.log(`✅ Upload concluído com sucesso!`);
       
-      // 6. Gerar URL do relatório
-      const reportUrl = `https://${CONFIG.FIREBASE_PROJECT_ID}.web.app/usuarios/${reportFileName}`;
+      // 6. URL já foi gerada durante o upload
+      const reportUrl = uploadResult.downloadUrl;
       console.log(`🔗 Relatório disponível em: ${reportUrl}`);
       
-      // 7. Aguardar um pouco para garantir que o deploy foi propagado
-      console.log(`⏳ Aguardando propagação do deploy...`);
-      await delay(3000);
-      
-      // 8. Deletar arquivo local após deploy bem-sucedido
+      // 7. Deletar arquivo local após upload bem-sucedido
       try {
         fs.unlinkSync(reportFilePath);
         console.log(`🗑️  Arquivo local removido: ${reportFileName}`);
@@ -876,7 +936,7 @@ async function generateAndDeployReport(userId, reportMonth, inputReportData = {}
         console.warn(`⚠️  Aviso: Não foi possível remover o arquivo local: ${deleteError.message}`);
       }
       
-      // 9. Calcular tempo total
+      // 8. Calcular tempo total
       const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
       
       console.log(`\n🎉 Processo concluído com sucesso!`);
@@ -891,7 +951,7 @@ async function generateAndDeployReport(userId, reportMonth, inputReportData = {}
       };
       
     } else {
-      throw new Error('Deploy não foi concluído com sucesso');
+      throw new Error(uploadResult.error || 'Upload não foi concluído com sucesso');
     }
     
   } catch (error) {
@@ -964,6 +1024,7 @@ async function exemploUso() {
 // Exportar funções para uso em outros módulos
 module.exports = {
   generateAndDeployReport,
+  uploadToFirebaseStorage,
   validateReportData,
   generateReportHTML,
   exemploUso
