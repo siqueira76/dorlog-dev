@@ -311,7 +311,7 @@ O relatório contém informações detalhadas sobre:
 Link para visualizar o relatório: ${result.reportUrl}
 
 Atenciosamente,
-${currentUser.displayName || currentUser.email}
+${currentUser.email}
 
 ---
 Este relatório foi gerado automaticamente pelo aplicativo DorLog.`;

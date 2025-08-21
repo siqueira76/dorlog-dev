@@ -85,24 +85,9 @@ function AppRoutes() {
 
       // Função para gerar relatório e fazer upload para Firebase Storage
       const generateReportWithFirebaseStorage = async (userId: string, periods: string[], periodsText: string) => {
-        const { initializeApp } = await import('firebase/app');
-        const { getStorage, ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-        const { getAuth } = await import('firebase/auth');
-        const { getFirestore, collection, query, where, getDocs } = await import('firebase/firestore');
-
         try {
-          const firebaseConfig = {
-            apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-            authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-            projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-            storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-            messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-            appId: import.meta.env.VITE_FIREBASE_APP_ID
-          };
-
-          const app = initializeApp(firebaseConfig);
-          const storage = getStorage(app);
-          const db = getFirestore(app);
+          // Usar instâncias Firebase já existentes
+          const { db, storage } = await import('@/lib/firebase');
 
           console.log('🔍 Buscando dados do usuário no Firestore...');
           
@@ -125,58 +110,60 @@ function AppRoutes() {
             const startDate = firstPeriod.split('_')[0];
             const endDate = lastPeriod.split('_')[1];
 
-            const reportDiarioQuery = query(
-              collection(db, 'report_diario'),
-              where('__name__', '>=', `${userId}_${startDate}`),
-              where('__name__', '<=', `${userId}_${endDate}`)
-            );
-
-            const querySnapshot = await getDocs(reportDiarioQuery);
+            // Buscar dados de forma mais compatível com client-side
+            const { collection, getDocs, query, where } = await import('firebase/firestore');
+            const reportDiarioRef = collection(db, 'report_diario');
+            const querySnapshot = await getDocs(reportDiarioRef);
             
             let totalPain = 0;
             let painRecords = 0;
             const painPointsMap = new Map();
 
+            // Filtrar documentos pelo usuário e período
             querySnapshot.docs.forEach(doc => {
+              const docId = doc.id;
               const data = doc.data();
-              reportData.totalDays++;
+              
+              // Verificar se o documento pertence ao usuário
+              if (docId.startsWith(`${userId}_`) || data.usuarioId === userId || data.email === userId) {
+                // Verificar se está dentro do período solicitado
+                const docDateStr = docId.includes('_') ? docId.split('_')[1] : null;
+                if (docDateStr && docDateStr >= startDate && docDateStr <= endDate) {
+                  reportData.totalDays++;
 
-              // Count crisis episodes
-              if (data.quiz && Array.isArray(data.quiz)) {
-                const crisisCount = data.quiz.filter((q: any) => q.tipo === 'emergencial').length;
-                reportData.crisisEpisodes += crisisCount;
+                  // Count crisis episodes
+                  if (data.quizzes && Array.isArray(data.quizzes)) {
+                    const crisisCount = data.quizzes.filter((q: any) => q.tipo === 'emergencial').length;
+                    reportData.crisisEpisodes += crisisCount;
 
-                // Extract pain data
-                data.quiz.forEach((quiz: any) => {
-                  if (quiz.respostas) {
-                    Object.keys(quiz.respostas).forEach(key => {
-                      const answer = quiz.respostas[key];
+                    // Extract pain data
+                    data.quizzes.forEach((quiz: any) => {
+                      if (quiz.respostas) {
+                        quiz.respostas.forEach((resposta: any) => {
+                          // Pain scale (0-10)
+                          if (resposta.tipo === 'eva' && typeof resposta.valor === 'number') {
+                            const painValue = resposta.valor;
+                            if (painValue >= 0 && painValue <= 10) {
+                              totalPain += painValue;
+                              painRecords++;
 
-                      // Pain scale (0-10)
-                      if (key.includes('dor') || key.includes('escala')) {
-                        const painValue = parseInt(answer);
-                        if (!isNaN(painValue) && painValue >= 0 && painValue <= 10) {
-                          totalPain += painValue;
-                          painRecords++;
+                              reportData.painEvolution.push({
+                                date: docDateStr,
+                                dateStr: new Date(docDateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                                pain: painValue
+                              });
+                            }
+                          }
 
-                          const docDate = doc.id.split('_')[1];
-                          reportData.painEvolution.push({
-                            date: docDate,
-                            dateStr: new Date(docDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                            pain: painValue
-                          });
-                        }
-                      }
-
-                      // Pain points
-                      if (key.includes('ponto') || key.includes('local')) {
-                        if (answer && answer !== 'Sem dor') {
-                          painPointsMap.set(answer, (painPointsMap.get(answer) || 0) + 1);
-                        }
+                          // Pain points
+                          if (resposta.tipo === 'pontos_dor' && resposta.valor && resposta.valor !== 'Sem dor') {
+                            painPointsMap.set(resposta.valor, (painPointsMap.get(resposta.valor) || 0) + 1);
+                          }
+                        });
                       }
                     });
                   }
-                });
+                }
               }
             });
 
@@ -214,6 +201,7 @@ function AppRoutes() {
           const htmlContent = generateReportHTML(userId, periodsText, reportData, currentDate);
 
           // Create blob and upload to Firebase Storage
+          const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
           const blob = new Blob([htmlContent], { type: 'text/html' });
           const fileName = `report_${userId.replace(/[^a-zA-Z0-9.-]/g, '_')}_${Date.now()}.html`;
           const storageRef = ref(storage, `reports/${fileName}`);
