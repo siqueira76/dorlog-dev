@@ -1,4 +1,4 @@
-import { Menu, Activity, Crown, ExternalLink } from 'lucide-react';
+import { Menu, Activity, Crown, ExternalLink, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -8,7 +8,16 @@ interface HeaderProps {
 }
 
 export default function Header({ title, onMenuClick }: HeaderProps) {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
+  
+  const handleLogout = async () => {
+    try {
+      await logout();
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
+  };
 
   return (
     <header className="bg-gradient-to-r from-background via-background/95 to-background backdrop-blur-xl border-b border-border/60 sticky top-0 z-30 shadow-lg">
@@ -35,8 +44,19 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
           </div>
         </div>
         
-        {/* Status da Assinatura - Design melhorado */}
-        <div className="flex items-center">
+        {/* Status da Assinatura e Logout - Design melhorado */}
+        <div className="flex items-center gap-2">
+          {/* Botão de Logout temporário para debug */}
+          <Button
+            onClick={handleLogout}
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+          
           {currentUser?.isSubscriptionActive !== undefined && (
             currentUser.isSubscriptionActive ? (
               // Usuário Premium - Badge elegante

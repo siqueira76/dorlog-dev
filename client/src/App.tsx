@@ -4,6 +4,29 @@ import { Toaster } from '@/components/ui/toaster';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAuth } from '@/hooks/useAuth';
+
+// Component for initial redirect
+function InitialRedirect() {
+  const { currentUser, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  if (currentUser) {
+    window.location.href = '/home';
+  } else {
+    window.location.href = '/login';
+  }
+  
+  return null;
+}
 
 // Import pages with correct names
 import Login from '@/pages/Login';
@@ -514,23 +537,106 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
-          <Layout>
-            <Switch>
-              <Route path="/login" component={Login} />
-              <Route path="/register" component={Register} />
-              <Route path="/" component={Home} />
-              <Route path="/home" component={Home} />
-              <Route path="/doctors" component={Doctors} />
-              <Route path="/doctors/add" component={AddDoctor} />
-              <Route path="/medications" component={Medications} />
-              <Route path="/medications/add" component={AddMedication} />
-              <Route path="/reports" component={Reports} />
-              <Route path="/reports/monthly-generator" component={MonthlyReportGenerator} />
-              <Route path="/profile" component={Profile} />
-              <Route path="/quiz" component={Quiz} />
-            </Switch>
-            <Toaster />
-          </Layout>
+          <Switch>
+            {/* Páginas de autenticação sem Layout */}
+            <Route path="/login" component={Login} />
+            <Route path="/register" component={Register} />
+            
+            {/* Rota inicial que redireciona baseado na autenticação */}
+            <Route path="/" component={InitialRedirect} />
+            
+            {/* Páginas protegidas com Layout */}
+            <Route path="/home">
+              {() => (
+                <ProtectedRoute>
+                  <Layout>
+                    <Home />
+                  </Layout>
+                </ProtectedRoute>
+              )}
+            </Route>
+            
+            <Route path="/doctors">
+              {() => (
+                <ProtectedRoute>
+                  <Layout>
+                    <Doctors />
+                  </Layout>
+                </ProtectedRoute>
+              )}
+            </Route>
+            
+            <Route path="/doctors/add">
+              {() => (
+                <ProtectedRoute>
+                  <Layout>
+                    <AddDoctor />
+                  </Layout>
+                </ProtectedRoute>
+              )}
+            </Route>
+            
+            <Route path="/medications">
+              {() => (
+                <ProtectedRoute>
+                  <Layout>
+                    <Medications />
+                  </Layout>
+                </ProtectedRoute>
+              )}
+            </Route>
+            
+            <Route path="/medications/add">
+              {() => (
+                <ProtectedRoute>
+                  <Layout>
+                    <AddMedication />
+                  </Layout>
+                </ProtectedRoute>
+              )}
+            </Route>
+            
+            <Route path="/reports">
+              {() => (
+                <ProtectedRoute>
+                  <Layout>
+                    <Reports />
+                  </Layout>
+                </ProtectedRoute>
+              )}
+            </Route>
+            
+            <Route path="/reports/monthly-generator">
+              {() => (
+                <ProtectedRoute>
+                  <Layout>
+                    <MonthlyReportGenerator />
+                  </Layout>
+                </ProtectedRoute>
+              )}
+            </Route>
+            
+            <Route path="/profile">
+              {() => (
+                <ProtectedRoute>
+                  <Layout>
+                    <Profile />
+                  </Layout>
+                </ProtectedRoute>
+              )}
+            </Route>
+            
+            <Route path="/quiz">
+              {() => (
+                <ProtectedRoute>
+                  <Layout>
+                    <Quiz />
+                  </Layout>
+                </ProtectedRoute>
+              )}
+            </Route>
+          </Switch>
+          <Toaster />
         </Router>
       </AuthProvider>
     </QueryClientProvider>
