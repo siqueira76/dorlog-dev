@@ -309,6 +309,13 @@ export default function MonthlyReportGenerator() {
       // Store the generated report URL
       setGeneratedPdfUrl(reportUrl);
       
+      // Check Web Share API availability and try to use it
+      console.log('🔍 Verificando Web Share API:', {
+        hasNavigatorShare: !!navigator.share,
+        hasCanShare: !!navigator.canShare,
+        userAgent: navigator.userAgent
+      });
+
       // Try native Web Share API (shows system share dialog like in the image)
       if (navigator.share) {
         try {
@@ -322,6 +329,7 @@ export default function MonthlyReportGenerator() {
             shareData.url = reportUrl;
           }
           
+          console.log('🚀 Tentando Web Share API com dados:', shareData);
           await navigator.share(shareData);
           
           toast({
@@ -330,13 +338,55 @@ export default function MonthlyReportGenerator() {
           });
           return;
         } catch (error) {
+          console.error('❌ Web Share API falhou:', error);
           if (error instanceof Error && error.name === 'AbortError') {
             // User cancelled, no need to show error
+            console.log('🚫 Usuário cancelou o compartilhamento');
             return;
           }
-          // Continue to clipboard fallback
-          console.log('Web Share API failed, using clipboard fallback');
+          // Continue to WhatsApp direct fallback
+          console.log('🔄 Tentando abrir WhatsApp diretamente');
         }
+      } else {
+        console.log('⚠️ Web Share API não disponível, usando WhatsApp direto');
+      }
+
+      // Try direct WhatsApp integration with app intent (works better on Android)
+      if (reportUrl) {
+        // Try WhatsApp app intent first (Android)
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        if (isAndroid) {
+          try {
+            const whatsappAppUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
+            window.location.href = whatsappAppUrl;
+            
+            // Fallback to web version if app doesn't open
+            setTimeout(() => {
+              const whatsappWebUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+              window.open(whatsappWebUrl, '_blank');
+            }, 2000);
+            
+            toast({
+              title: "WhatsApp aberto",
+              description: "Selecione o contato para enviar o relatório",
+              duration: 3000,
+            });
+            return;
+          } catch (error) {
+            console.log('Erro ao abrir WhatsApp app, tentando versão web');
+          }
+        }
+        
+        // Fallback to WhatsApp Web
+        const whatsappWebUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(whatsappWebUrl, '_blank');
+        
+        toast({
+          title: "WhatsApp Web aberto",
+          description: "Selecione o contato para enviar o relatório",
+          duration: 4000,
+        });
+        return;
       }
       
       // Fallback: copy to clipboard (only when Web Share API is not available)
