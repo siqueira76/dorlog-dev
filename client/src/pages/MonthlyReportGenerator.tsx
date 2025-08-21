@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Download, Share2, FileText, Calendar, Mail, Clock, CheckCircle, Loader2, X, CalendarDays } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { createNavigate } from '@/lib/navigation';
 import { format, subMonths, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,7 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 type SelectionMode = 'single' | 'range';
 
 export default function MonthlyReportGenerator(): JSX.Element {
-  const [, setLocation] = useLocation();
+  const [, routerNavigate] = useLocation();
+  const navigate = createNavigate(routerNavigate);
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('single');
@@ -350,7 +352,7 @@ Este relatório foi gerado automaticamente pelo aplicativo DorLog.`;
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => setLocation('/reports')}
+            onClick={() => navigate('/reports')}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />

@@ -11,32 +11,36 @@ import { useAuth } from '@/hooks/useAuth';
 function InitialRedirect() {
   const { currentUser, loading } = useAuth();
   
+  useEffect(() => {
+    if (!loading) {
+      // Detect GitHub Pages for base path
+      const isGitHubPages = !window.location.hostname.includes('replit') && 
+                            !window.location.hostname.includes('localhost') &&
+                            !window.location.hostname.includes('127.0.0.1');
+      
+      const basePath = isGitHubPages ? '/dorlog' : '';
+      
+      console.log('🔄 InitialRedirect:', { 
+        currentUser: !!currentUser, 
+        isGitHubPages,
+        basePath,
+        redirecting: currentUser ? 'home' : 'login'
+      });
+      
+      if (currentUser) {
+        window.location.href = `${basePath}/home`;
+      } else {
+        window.location.href = `${basePath}/login`;
+      }
+    }
+  }, [currentUser, loading]);
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
-  }
-  
-  // Detectar GitHub Pages para usar base path correto
-  const isGitHubPages = !window.location.hostname.includes('replit') && 
-                        !window.location.hostname.includes('localhost') &&
-                        !window.location.hostname.includes('127.0.0.1');
-  
-  const basePath = isGitHubPages ? '/dorlog' : '';
-  
-  console.log('🔄 InitialRedirect:', { 
-    currentUser: !!currentUser, 
-    isGitHubPages, 
-    basePath,
-    redirecting: currentUser ? 'home' : 'login'
-  });
-  
-  if (currentUser) {
-    window.location.href = `${basePath}/home`;
-  } else {
-    window.location.href = `${basePath}/login`;
   }
   
   return null;
@@ -564,20 +568,21 @@ function App() {
     }
   }, []);
 
-  const isGitHubPages = !window.location.hostname.includes('replit') && 
-                      !window.location.hostname.includes('localhost') &&
-                      !window.location.hostname.includes('127.0.0.1');
+  // Detect GitHub Pages for router configuration
+  const isGitHub = !window.location.hostname.includes('replit') && 
+                   !window.location.hostname.includes('localhost') &&
+                   !window.location.hostname.includes('127.0.0.1');
   
   console.log('🔧 Router configuration:', {
-    isGitHubPages,
-    base: isGitHubPages ? "/dorlog" : undefined,
+    isGitHubPages: isGitHub,
+    base: isGitHub ? "/dorlog" : undefined,
     currentPath: window.location.pathname
   });
   
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router base={isGitHubPages ? "/dorlog" : undefined}>
+        <Router base={isGitHub ? "/dorlog" : undefined}>
           <Switch>
             {/* Páginas de autenticação sem Layout */}
             <Route path="/login" component={Login} />

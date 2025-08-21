@@ -8,9 +8,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { createNavigate } from '@/lib/navigation';
 
 export default function Register() {
-  const [, navigate] = useLocation();
+  const [, routerNavigate] = useLocation();
+  const navigate = createNavigate(routerNavigate);
   const { register, loading } = useAuth();
   const { toast } = useToast();
   
