@@ -57,10 +57,18 @@ function App() {
                           !window.location.hostname.includes('localhost') &&
                           !window.location.hostname.includes('127.0.0.1');
     
+    console.log('🔧 App initialized:', {
+      hostname: window.location.hostname,
+      pathname: window.location.pathname,
+      isGitHubPages,
+      currentUrl: window.location.href
+    });
+    
     // Handle GitHub Pages SPA routing redirect
     if (isGitHubPages) {
       const intendedPath = sessionStorage.getItem('dorlog_intended_path');
       if (intendedPath) {
+        console.log('🔄 Restoring intended path:', intendedPath);
         sessionStorage.removeItem('dorlog_intended_path');
         window.history.replaceState(null, '', intendedPath);
       }
@@ -545,6 +553,12 @@ function App() {
   const isGitHubPages = !window.location.hostname.includes('replit') && 
                       !window.location.hostname.includes('localhost') &&
                       !window.location.hostname.includes('127.0.0.1');
+  
+  console.log('🔧 Router configuration:', {
+    isGitHubPages,
+    base: isGitHubPages ? "/dorlog" : undefined,
+    currentPath: window.location.pathname
+  });
   
   return (
     <QueryClientProvider client={queryClient}>
