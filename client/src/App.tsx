@@ -325,39 +325,68 @@ function App() {
 
           const htmlContent = generateReportHTML(userId, periodsText, reportData, currentDate);
 
-          // Create blob and upload to Firebase Storage with user-specific path
+          // Tentar múltiplas abordagens para upload no Firebase Storage
           const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
           const blob = new Blob([htmlContent], { type: 'text/html' });
           const fileName = `report_${userId.replace(/[^a-zA-Z0-9.-]/g, '_')}_${Date.now()}.html`;
-          
-          // Usar caminho específico do usuário para evitar problemas de permissão
-          const userSpecificPath = `users/${currentUser.uid}/reports/${fileName}`;
-          const storageRef = ref(storage, userSpecificPath);
-
-          console.log(`📤 Fazendo upload para Firebase Storage no caminho: ${userSpecificPath}`);
           
           // Verificar se o usuário tem um token válido
           const idToken = await currentUser.getIdToken(true);
           console.log('🎫 Token de autenticação obtido com sucesso');
           
-          await uploadBytes(storageRef, blob, {
-            contentType: 'text/html',
-            customMetadata: {
-              userId: userId,
-              periodsText: periodsText,
-              generatedAt: new Date().toISOString(),
-              userUid: currentUser.uid
+          // Lista de caminhos para tentar (do mais específico ao mais geral)
+          const pathsToTry = [
+            `users/${currentUser.uid}/reports/${fileName}`,
+            `public-reports/${fileName}`,
+            `reports/${fileName}`,
+            `temp-reports/${fileName}`
+          ];
+          
+          let uploadSuccess = false;
+          let downloadUrl = '';
+          let usedPath = '';
+          
+          for (const path of pathsToTry) {
+            try {
+              console.log(`📤 Tentando upload no caminho: ${path}`);
+              const storageRef = ref(storage, path);
+              
+              await uploadBytes(storageRef, blob, {
+                contentType: 'text/html',
+                customMetadata: {
+                  userId: userId,
+                  periodsText: periodsText,
+                  generatedAt: new Date().toISOString(),
+                  userUid: currentUser.uid,
+                  userEmail: currentUser.email || userId
+                }
+              });
+              
+              downloadUrl = await getDownloadURL(storageRef);
+              uploadSuccess = true;
+              usedPath = path;
+              console.log(`✅ Upload bem-sucedido no caminho: ${path}`);
+              break;
+              
+            } catch (pathError) {
+              console.warn(`⚠️ Falha no caminho ${path}:`, pathError);
+              continue;
             }
-          });
+          }
+          
+          if (!uploadSuccess) {
+            throw new Error('Não foi possível fazer upload em nenhum caminho do Firebase Storage');
+          }
 
-          const downloadUrl = await getDownloadURL(storageRef);
-          console.log('✅ Upload concluído. URL:', downloadUrl);
+          console.log(`✅ Upload concluído no caminho: ${usedPath}`);
+          console.log('📂 URL do relatório:', downloadUrl);
 
           return {
             success: true,
             reportUrl: downloadUrl,
             fileName: fileName,
-            executionTime: 'completed'
+            executionTime: 'completed',
+            storagePath: usedPath
           };
 
         } catch (error) {
