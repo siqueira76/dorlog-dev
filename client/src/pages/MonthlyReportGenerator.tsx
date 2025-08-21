@@ -309,7 +309,7 @@ export default function MonthlyReportGenerator() {
       // Store the generated report URL
       setGeneratedPdfUrl(reportUrl);
       
-      // Try native Web Share API first (works on newer mobile browsers)
+      // Try native Web Share API (shows system share dialog like in the image)
       if (navigator.share) {
         try {
           const shareData: ShareData = {
@@ -325,8 +325,8 @@ export default function MonthlyReportGenerator() {
           await navigator.share(shareData);
           
           toast({
-            title: "Compartilhamento concluído",
-            description: "Relatório enviado com sucesso!",
+            title: "Compartilhamento iniciado",
+            description: "Selecione o WhatsApp para enviar o relatório",
           });
           return;
         } catch (error) {
@@ -334,25 +334,12 @@ export default function MonthlyReportGenerator() {
             // User cancelled, no need to show error
             return;
           }
-          // Continue to WhatsApp Web fallback
-          console.log('Web Share API failed, trying WhatsApp Web');
+          // Continue to clipboard fallback
+          console.log('Web Share API failed, using clipboard fallback');
         }
       }
       
-      // Direct WhatsApp Web integration (works better on mobile)
-      if (reportUrl) {
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
-        
-        toast({
-          title: "WhatsApp Web aberto",
-          description: "Compartilhe o relatório diretamente com seus contatos",
-          duration: 4000,
-        });
-        return;
-      }
-      
-      // Final fallback: copy to clipboard
+      // Fallback: copy to clipboard (only when Web Share API is not available)
       try {
         await navigator.clipboard.writeText(message);
         toast({
