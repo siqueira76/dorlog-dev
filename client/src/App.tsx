@@ -90,9 +90,24 @@ function App() {
       const generateReportWithFirebaseStorage = async (userId: string, periods: string[], periodsText: string) => {
         try {
           // Usar instâncias Firebase já existentes
-          const { db, storage } = await import('@/lib/firebase');
-
+          const { db, storage, auth } = await import('@/lib/firebase');
+          
+          // Verificar se o usuário está autenticado
+          let currentUser = auth.currentUser;
+          
+          // Se não há usuário autenticado, aguardar um pouco e tentar novamente
+          if (!currentUser) {
+            console.log('⏳ Aguardando autenticação...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            currentUser = auth.currentUser;
+          }
+          
+          if (!currentUser) {
+            throw new Error('Usuário não autenticado. Faça login para gerar relatórios.');
+          }
+          
           console.log(`🔍 Buscando dados do usuário no Firestore para ${userId}...`);
+          console.log(`🔑 Usuário autenticado: ${currentUser.uid}`);
           
           // Parse periods to get date range first
           let startDate = '';
@@ -310,19 +325,28 @@ function App() {
 
           const htmlContent = generateReportHTML(userId, periodsText, reportData, currentDate);
 
-          // Create blob and upload to Firebase Storage
+          // Create blob and upload to Firebase Storage with user-specific path
           const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
           const blob = new Blob([htmlContent], { type: 'text/html' });
           const fileName = `report_${userId.replace(/[^a-zA-Z0-9.-]/g, '_')}_${Date.now()}.html`;
-          const storageRef = ref(storage, `reports/${fileName}`);
+          
+          // Usar caminho específico do usuário para evitar problemas de permissão
+          const userSpecificPath = `users/${currentUser.uid}/reports/${fileName}`;
+          const storageRef = ref(storage, userSpecificPath);
 
-          console.log('📤 Fazendo upload para Firebase Storage...');
+          console.log(`📤 Fazendo upload para Firebase Storage no caminho: ${userSpecificPath}`);
+          
+          // Verificar se o usuário tem um token válido
+          const idToken = await currentUser.getIdToken(true);
+          console.log('🎫 Token de autenticação obtido com sucesso');
+          
           await uploadBytes(storageRef, blob, {
             contentType: 'text/html',
             customMetadata: {
               userId: userId,
               periodsText: periodsText,
-              generatedAt: new Date().toISOString()
+              generatedAt: new Date().toISOString(),
+              userUid: currentUser.uid
             }
           });
 
