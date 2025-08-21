@@ -102,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para geração de relatórios HTML
+  // Endpoint para geração de relatórios HTML  
   app.post('/api/generate-report', async (req, res) => {
     try {
       const { userId, reportMonth, reportData } = req.body;
@@ -112,12 +112,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: 'userId e reportMonth são obrigatórios',
           example: {
             userId: 'user@email.com',
-            reportMonth: '2025-01' // ou 'Janeiro_2025'
+            reportMonth: '2025-01',
+            reportData: {
+              periodsText: 'Janeiro 2025',
+              periods: ['2025-01-01_2025-01-31']
+            }
           }
         });
       }
 
       console.log(`📊 Solicitação de geração de relatório para ${userId} - ${reportMonth}`);
+      console.log(`📅 Dados recebidos:`, { 
+        periodsText: reportData?.periodsText,
+        periodCount: reportData?.periods?.length || 0 
+      });
       
       // Generate report directly using child process
       const result = await generateReportForUser(userId, reportMonth, reportData);
@@ -125,13 +133,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (result.success) {
         res.json({
           success: true,
-          message: 'Relatório HTML gerado e hospedado com sucesso',
+          message: 'Relatório HTML gerado com dados reais do Firestore',
           userId,
           reportMonth,
           reportUrl: result.url,
           fileName: result.fileName,
           executionTime: result.executionTime,
-          firebaseUrl: `https://${process.env.VITE_FIREBASE_PROJECT_ID || 'dorlog-fibro-diario'}.web.app`
+          firebaseUrl: `https://${process.env.VITE_FIREBASE_PROJECT_ID || 'dorlog-fibro-diario'}.web.app`,
+          dataSource: 'firestore'
         });
       } else {
         res.status(500).json({
@@ -144,6 +153,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
     } catch (error) {
       console.error('Erro no endpoint generate-report:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Endpoint para geração de relatórios mensais
+  app.post('/api/generate-monthly-report', async (req, res) => {
+    try {
+      const { userId, periods, periodsText } = req.body;
+      
+      if (!userId || !periods || !Array.isArray(periods) || periods.length === 0) {
+        return res.status(400).json({ 
+          error: 'userId e periods (array) são obrigatórios',
+          example: {
+            userId: 'user@email.com',
+            periods: ['2025-01-01_2025-01-31', '2025-02-01_2025-02-28'],
+            periodsText: 'Janeiro até Fevereiro 2025'
+          }
+        });
+      }
+
+      console.log(`📊 Geração de relatório mensal para ${userId}`);
+      console.log(`📅 Períodos: ${periodsText} (${periods.length} período(s))`);
+      
+      // Format report month for filename
+      const reportMonth = periodsText?.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_') || 'relatorio_mensal';
+      
+      // Generate report with period data
+      const reportData = {
+        periods,
+        periodsText,
+        isMonthlyReport: true
+      };
+      
+      const result = await generateReportForUser(userId, reportMonth, reportData);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          message: `Relatório mensal gerado com dados de ${periods.length} período(s)`,
+          userId,
+          periods,
+          periodsText,
+          reportUrl: result.url,
+          fileName: result.fileName,
+          executionTime: result.executionTime,
+          firebaseUrl: `https://${process.env.VITE_FIREBASE_PROJECT_ID || 'dorlog-fibro-diario'}.web.app`,
+          dataSource: 'firestore'
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error || 'Erro na geração do relatório mensal',
+          userId,
+          periods
+        });
+      }
+      
+    } catch (error) {
+      console.error('Erro no endpoint generate-monthly-report:', error);
       res.status(500).json({ 
         success: false,
         error: 'Erro interno do servidor',

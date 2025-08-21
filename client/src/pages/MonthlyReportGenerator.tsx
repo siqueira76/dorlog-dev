@@ -172,16 +172,16 @@ export default function MonthlyReportGenerator() {
         userEmail: currentUser.email
       };
       
-      // Call the Firebase Hosting report generation API
-      const response = await fetch('/api/generate-report', {
+      // Call the Firebase Hosting monthly report generation API
+      const response = await fetch('/api/generate-monthly-report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           userId: currentUser.email,
-          reportMonth: reportMonth,
-          reportData: reportData
+          periods: periods,
+          periodsText: getSelectedPeriodsText()
         }),
       });
       
@@ -276,16 +276,16 @@ export default function MonthlyReportGenerator() {
         userEmail: currentUser.email
       };
       
-      // Generate the Firebase report
-      const response = await fetch('/api/generate-report', {
+      // Generate the Firebase report for WhatsApp sharing
+      const response = await fetch('/api/generate-monthly-report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           userId: currentUser.email,
-          reportMonth: reportMonth,
-          reportData: reportData
+          periods: periods,
+          periodsText: getSelectedPeriodsText()
         }),
       });
       
@@ -448,49 +448,16 @@ export default function MonthlyReportGenerator() {
       const periods = getSelectedPeriods();
       console.log('🔄 Gerando relatório HTML para compartilhamento Email:', periods);
       
-      // Get the first and last periods to determine the report month
-      const firstPeriod = periods[0];
-      const lastPeriod = periods[periods.length - 1];
-      
-      // Parse dates to create a meaningful report month identifier
-      const firstDate = new Date(firstPeriod.split('_')[0]);
-      const lastDate = new Date(lastPeriod.split('_')[1]);
-      
-      let reportMonth;
-      if (periods.length === 1) {
-        reportMonth = format(firstDate, 'MMMM_yyyy', { locale: ptBR });
-      } else {
-        const startMonth = format(firstDate, 'MMM_yyyy', { locale: ptBR });
-        const endMonth = format(lastDate, 'MMM_yyyy', { locale: ptBR });
-        reportMonth = `${startMonth}_ate_${endMonth}`;
-      }
-      
-      // Sanitize report month for filename
-      reportMonth = reportMonth
-        .replace(/[^a-zA-Z0-9._-]/g, '_')
-        .replace(/_{2,}/g, '_')
-        .replace(/^_|_$/g, '');
-      
-      // Prepare report data for the API
-      const reportData = {
-        periods: periods,
-        selectionMode: selectionMode,
-        periodsText: getSelectedPeriodsText(),
-        totalMonths: periods.length,
-        generatedAt: new Date().toISOString(),
-        userEmail: currentUser.email
-      };
-      
-      // Generate the Firebase report
-      const response = await fetch('/api/generate-report', {
+      // Generate the Firebase report for email sharing
+      const response = await fetch('/api/generate-monthly-report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           userId: currentUser.email,
-          reportMonth: reportMonth,
-          reportData: reportData
+          periods: periods,
+          periodsText: getSelectedPeriodsText()
         }),
       });
       
