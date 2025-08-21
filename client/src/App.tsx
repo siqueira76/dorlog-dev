@@ -28,14 +28,21 @@ function InitialRedirect() {
         return;
       }
       
-      // Only redirect if we're truly at root, avoid redirect loops
+      // Detectar se estamos na raiz e fazer redirecionamento baseado no ambiente
       const currentPath = window.location.pathname;
-      const isAtRoot = currentPath === '/' || currentPath === '/dorlog/' || currentPath === '/dorlog';
+      const isGitHubPages = window.location.hostname.includes('github.io');
+      const basename = isGitHubPages ? '/dorlog' : '';
+      
+      // Verificar se estamos na raiz considerando o basename
+      const isAtRoot = currentPath === '/' || 
+                       currentPath === basename || 
+                       currentPath === basename + '/';
       
       if (isAtRoot) {
         const targetPath = currentUser ? '/home' : '/login';
-        console.log('🔄 Redirecting from root to:', targetPath);
-        window.history.replaceState(null, '', targetPath);
+        const fullPath = basename + targetPath;
+        console.log('🔄 Redirecting from root to:', { targetPath, fullPath, basename });
+        window.history.replaceState(null, '', fullPath);
       }
     }
   }, [currentUser, loading]);
@@ -75,18 +82,24 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  // Detectar ambiente e configurar basename
+  const isGitHubPages = window.location.hostname.includes('github.io');
+  const basename = isGitHubPages ? '/dorlog' : '';
+
   useEffect(() => {
     console.log('🔧 App initialized:', {
       hostname: window.location.hostname,
       pathname: window.location.pathname,
-      currentUrl: window.location.href
+      currentUrl: window.location.href,
+      isGitHubPages,
+      basename
     });
-  }, []);
+  }, [isGitHubPages, basename]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
+        <Router base={basename}>
           <Switch>
             <Route path="/" component={InitialRedirect} />
             <Route path="/login" component={Login} />

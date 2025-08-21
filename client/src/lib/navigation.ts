@@ -48,12 +48,12 @@ export function getFullPath(path: string): string {
  */
 export function createNavigate(routerNavigate: (path: string) => void) {
   return (path: string) => {
-    // For wouter navigation, we don't need the base path since the Router handles it
-    // But we still log for debugging
+    // Com basename configurado no Router, wouter já trata o path base automaticamente
     console.log('🧭 Router Navigation:', {
       requestedPath: path,
       isGitHubPages: isGitHubPages(),
-      basePath: getBasePath()
+      basePath: getBasePath(),
+      note: 'Router handles basename automatically'
     });
     
     routerNavigate(path);

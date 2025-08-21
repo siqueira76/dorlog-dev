@@ -13,7 +13,10 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
   const handleLogout = async () => {
     try {
       await logout();
-      window.location.href = '/login';
+      // Detectar ambiente para redirecionamento correto
+      const isGitHubPages = window.location.hostname.includes('github.io');
+      const loginPath = isGitHubPages ? '/dorlog/login' : '/login';
+      window.location.href = loginPath;
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     }
