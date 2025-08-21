@@ -1,20 +1,19 @@
 /**
- * Report Hosting Service
- * Serviço para integração com o sistema de relatórios HTML Firebase Hosting
+ * Report Storage Service
+ * Serviço para integração com o sistema de relatórios HTML Firebase Storage
  */
 
 const { spawn } = require('child_process');
 const path = require('path');
 
-class ReportHostingService {
+class ReportStorageService {
   constructor() {
-    this.baseUrl = process.env.VITE_FIREBASE_PROJECT_ID 
-      ? `https://${process.env.VITE_FIREBASE_PROJECT_ID}.web.app` 
-      : 'https://dorlog-fibro-diario.web.app';
+    this.projectId = process.env.VITE_FIREBASE_PROJECT_ID || 'dorlog-fibro-diario';
+    this.storageBaseUrl = `https://storage.googleapis.com/${this.projectId}.appspot.com`;
   }
 
   /**
-   * Gerar relatório HTML e fazer deploy
+   * Gerar relatório HTML e fazer upload para Firebase Storage
    */
   async generateReportForUser(userId, reportMonth, reportData) {
     return new Promise((resolve, reject) => {
@@ -48,13 +47,19 @@ class ReportHostingService {
 
         child.on('close', (code) => {
           if (code === 0) {
-            // Parse output for success information
-            const reportUrl = `${this.baseUrl}/usuarios/report_${userId.replace('@', '_').replace('.', '_')}_${reportMonth}.html`;
+            // Parse output for Firebase Storage URL from script output
+            const urlMatch = output.match(/🔗 Relatório disponível em: (https:\/\/storage\.googleapis\.com[^\s]+)/);
+            const reportUrl = urlMatch 
+              ? urlMatch[1] 
+              : `${this.storageBaseUrl}/reports/report_${userId.replace('@', '_').replace('.', '_')}_${reportMonth}.html`;
+            
+            const fileNameMatch = reportUrl.match(/\/([^\/]+\.html)$/);
+            const fileName = fileNameMatch ? fileNameMatch[1] : `report_${userId.replace('@', '_').replace('.', '_')}_${reportMonth}.html`;
             
             resolve({
               success: true,
               url: reportUrl,
-              fileName: `report_${userId.replace('@', '_').replace('.', '_')}_${reportMonth}.html`,
+              fileName: fileName,
               executionTime: 'completed'
             });
           } else {
@@ -247,18 +252,18 @@ class ReportHostingService {
   }
 
   /**
-   * Obter URL base dos relatórios
+   * Obter URL base dos relatórios no Firebase Storage
    */
   getReportsBaseUrl() {
-    return this.baseUrl;
+    return this.storageBaseUrl;
   }
 
   /**
-   * Construir URL de relatório específico
+   * Construir URL de relatório específico no Firebase Storage
    */
   buildReportUrl(fileName) {
-    return `${this.baseUrl}/usuarios/${fileName}`;
+    return `${this.storageBaseUrl}/reports/${fileName}`;
   }
 }
 
-module.exports = ReportHostingService;
+module.exports = ReportStorageService;

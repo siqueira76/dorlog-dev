@@ -145,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           reportUrl: result.url,
           fileName: result.fileName,
           executionTime: result.executionTime,
-          firebaseUrl: `https://${process.env.VITE_FIREBASE_PROJECT_ID || 'dorlog-fibro-diario'}.web.app`,
+          storageUrl: `https://storage.googleapis.com/${process.env.VITE_FIREBASE_PROJECT_ID || 'dorlog-fibro-diario'}.appspot.com`,
           dataSource: 'firestore'
         });
       } else {
@@ -210,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           reportUrl: result.url,
           fileName: result.fileName,
           executionTime: result.executionTime,
-          firebaseUrl: `https://${process.env.VITE_FIREBASE_PROJECT_ID || 'dorlog-fibro-diario'}.web.app`,
+          storageUrl: `https://storage.googleapis.com/${process.env.VITE_FIREBASE_PROJECT_ID || 'dorlog-fibro-diario'}.appspot.com`,
           dataSource: 'firestore'
         });
       } else {
