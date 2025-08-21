@@ -309,19 +309,19 @@ export default function MonthlyReportGenerator() {
       // Store the generated report URL
       setGeneratedPdfUrl(reportUrl);
       
-      // Use native Web Share API (shows the system share dialog like in the image)
-      if (navigator.share && navigator.canShare) {
-        const shareData: ShareData = {
-          title: 'DorLog - Relatório de Saúde',
-          text: message
-        };
-        
-        // Check if we can share with URL
-        if (reportUrl && navigator.canShare({ ...shareData, url: reportUrl })) {
-          shareData.url = reportUrl;
-        }
-        
+      // Try native Web Share API first (works on newer mobile browsers)
+      if (navigator.share) {
         try {
+          const shareData: ShareData = {
+            title: 'DorLog - Relatório de Saúde',
+            text: message
+          };
+          
+          // Add URL if supported
+          if (reportUrl) {
+            shareData.url = reportUrl;
+          }
+          
           await navigator.share(shareData);
           
           toast({
@@ -330,22 +330,35 @@ export default function MonthlyReportGenerator() {
           });
           return;
         } catch (error) {
-          if (error instanceof Error && error.name !== 'AbortError') {
-            console.error('Erro no compartilhamento nativo:', error);
-          } else {
+          if (error instanceof Error && error.name === 'AbortError') {
             // User cancelled, no need to show error
             return;
           }
+          // Continue to WhatsApp Web fallback
+          console.log('Web Share API failed, trying WhatsApp Web');
         }
       }
       
-      // Fallback for devices without Web Share API
+      // Direct WhatsApp Web integration (works better on mobile)
+      if (reportUrl) {
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+        
+        toast({
+          title: "WhatsApp Web aberto",
+          description: "Compartilhe o relatório diretamente com seus contatos",
+          duration: 4000,
+        });
+        return;
+      }
+      
+      // Final fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(message);
         toast({
           title: "Link copiado!",
-          description: "O link do relatório foi copiado. Cole no WhatsApp ou outro app.",
-          duration: 5000,
+          description: "O link do relatório foi copiado. Abra o WhatsApp e cole na conversa.",
+          duration: 6000,
         });
       } catch (clipboardError) {
         // Manual selection fallback
@@ -362,13 +375,7 @@ export default function MonthlyReportGenerator() {
           document.execCommand('copy');
           toast({
             title: "Texto copiado",
-            description: "Cole no WhatsApp ou outro app para compartilhar.",
-            duration: 5000,
-          });
-        } catch (err) {
-          toast({
-            title: "Compartilhamento manual",
-            description: "Copie manualmente o texto que apareceu na tela.",
+            description: "Abra o WhatsApp e cole o texto copiado na conversa desejada.",
             duration: 7000,
           });
         } finally {
