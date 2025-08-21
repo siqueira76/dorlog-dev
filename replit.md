@@ -45,10 +45,11 @@ Preferred communication style: Simple, everyday language.
 # External Dependencies
 
 ## Firebase Services
-- **Firebase Auth**: User authentication.
+- **Firebase Auth**: User authentication with email/password and Google OAuth.
 - **Firestore**: Database for user data and real-time updates.
 - **Firebase Storage**: Configured for future file upload capabilities.
 - **Google Auth Provider**: For Google sign-in integration.
+- **Firebase Configuration**: Now properly configured with environment variables (VITE_FIREBASE_API_KEY, VITE_FIREBASE_APP_ID, VITE_FIREBASE_PROJECT_ID).
 
 ## Database & ORM
 - **Neon Database**: Serverless PostgreSQL hosting.
