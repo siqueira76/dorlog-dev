@@ -103,7 +103,7 @@ export default function Reports() {
       });
 
       console.log(`📊 Documentos do usuário encontrados: ${userDocuments}`);
-      console.log('📅 Último registro encontrado:', lastEntryDate ? lastEntryDate.toISOString() : null);
+      console.log('📅 Último registro encontrado:', lastEntryDate?.toISOString() ?? null);
 
       // Se não há registros
       if (!lastEntryDate || userDocuments === 0) {
@@ -117,7 +117,7 @@ export default function Reports() {
       const today = new Date();
       const todayStr = today.toDateString();
       const yesterdayStr = new Date(today.getTime() - 24 * 60 * 60 * 1000).toDateString();
-      const lastEntryStr = lastEntryDate ? lastEntryDate.toDateString() : '';
+      const lastEntryStr = lastEntryDate?.toDateString() ?? '';
 
       // Se o último registro é hoje
       if (lastEntryStr === todayStr) {
@@ -344,7 +344,7 @@ export default function Reports() {
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-2xl font-bold text-foreground">Relatórios</h1>
           <Button
-            onClick={() => setLocation('/reports/monthly-generator')}
+            onClick={() => setLocation('/reports/monthly')}
             className="bg-blue-600 hover:bg-blue-700 text-white h-10 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
             data-testid="button-generate-pdf-report"
           >
@@ -690,7 +690,7 @@ export default function Reports() {
               variant="outline"
               className="w-full rounded-xl"
               data-testid="button-generate-monthly-report"
-              onClick={() => setLocation('/reports/monthly-generator')}
+              onClick={() => setLocation('/reports/monthly')}
             >
               Gerar Relatório Mensal
             </Button>
