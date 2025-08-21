@@ -39,13 +39,19 @@ async function generateReportForUser(userId: string, reportMonth: string, report
         const baseUrl = `https://${process.env.VITE_FIREBASE_PROJECT_ID || 'dorlog-fibro-diario'}.web.app`;
         
         if (code === 0) {
-          // Parse output for success information
-          const reportUrl = `${baseUrl}/usuarios/report_${userId.replace('@', '_').replace('.', '_')}_${reportMonth}.html`;
+          // Parse output for success information - extract actual URL from script output
+          const urlMatch = output.match(/🔗 Relatório disponível em: (https:\/\/[^\s]+)/);
+          const reportUrl = urlMatch 
+            ? urlMatch[1] 
+            : `${baseUrl}/usuarios/report_${userId.replace('@', '_').replace('.', '_')}_${reportMonth}.html`;
+          
+          const fileNameMatch = reportUrl.match(/\/([^\/]+\.html)$/);
+          const fileName = fileNameMatch ? fileNameMatch[1] : `report_${userId.replace('@', '_').replace('.', '_')}_${reportMonth}.html`;
           
           resolve({
             success: true,
             url: reportUrl,
-            fileName: `report_${userId.replace('@', '_').replace('.', '_')}_${reportMonth}.html`,
+            fileName: fileName,
             executionTime: 'completed'
           });
         } else {
@@ -180,8 +186,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`📊 Geração de relatório mensal para ${userId}`);
       console.log(`📅 Períodos: ${periodsText} (${periods.length} período(s))`);
       
-      // Format report month for filename
-      const reportMonth = periodsText?.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_') || 'relatorio_mensal';
+      // Format report month for filename with timestamp to ensure uniqueness  
+      const timestamp = Date.now();
+      const baseName = periodsText?.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_') || 'relatorio_mensal';
+      const reportMonth = `${baseName}_${timestamp}`;
       
       // Generate report with period data
       const reportData = {
