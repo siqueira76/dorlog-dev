@@ -11,7 +11,7 @@ import { AlertCircle, CheckCircle, Play, TestTube } from 'lucide-react';
  * This shows how to use the new approach without affecting existing functionality
  */
 export const UnifiedReportDemo: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, firebaseUser } = useAuth();
   const { isActive, isReady, activate, testReport, status } = useUnifiedReports();
   
   const handleActivate = async () => {
@@ -24,14 +24,14 @@ export const UnifiedReportDemo: React.FC = () => {
   };
   
   const handleTestReport = async () => {
-    if (!currentUser?.email) return;
+    if (!firebaseUser?.uid) return;
     
     // Example periods for testing
     const testPeriods = ['2025-08-15_2025-08-22'];
     const testPeriodsText = '15/08/2025 - 22/08/2025';
     
     try {
-      const result = await testReport(currentUser.email, testPeriods, testPeriodsText);
+      const result = await testReport(firebaseUser.uid, testPeriods, testPeriodsText);
       console.log('🎉 Relatório teste gerado:', result);
       
       if (result.success && result.reportUrl) {
@@ -112,7 +112,7 @@ export const UnifiedReportDemo: React.FC = () => {
             </Button>
           )}
           
-          {isActive && currentUser?.email && (
+          {isActive && firebaseUser?.uid && (
             <Button 
               onClick={handleTestReport}
               variant="outline"

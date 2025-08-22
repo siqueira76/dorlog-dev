@@ -18,7 +18,7 @@ type SelectionMode = 'single' | 'range';
 export default function MonthlyReportGenerator(): JSX.Element {
   const [, routerNavigate] = useLocation();
   const navigate = createNavigate(routerNavigate);
-  const { currentUser } = useAuth();
+  const { currentUser, firebaseUser } = useAuth();
   const { toast } = useToast();
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('single');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('');
@@ -142,7 +142,7 @@ export default function MonthlyReportGenerator(): JSX.Element {
   };
 
   const handleShareWhatsApp = async () => {
-    if (!hasValidSelection() || !currentUser?.email) {
+    if (!hasValidSelection() || !firebaseUser?.uid) {
       toast({
         title: "Erro",
         description: "Usuário não autenticado ou período não selecionado",
@@ -164,7 +164,7 @@ export default function MonthlyReportGenerator(): JSX.Element {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: currentUser.email,
+          userId: firebaseUser.uid,
           periods: periods,
           periodsText: getSelectedPeriodsText()
         }),
@@ -300,7 +300,7 @@ _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
   };
 
   const handleShareEmail = async () => {
-    if (!hasValidSelection() || !currentUser?.email) {
+    if (!hasValidSelection() || !firebaseUser?.uid) {
       toast({
         title: "Erro",
         description: "Usuário não autenticado ou período não selecionado",
@@ -322,7 +322,7 @@ _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: currentUser.email,
+          userId: firebaseUser.uid,
           periods: periods,
           periodsText: getSelectedPeriodsText()
         }),
@@ -352,7 +352,7 @@ O relatório contém informações detalhadas sobre:
 Link para visualizar o relatório: ${result.reportUrl}
 
 Atenciosamente,
-${currentUser.email}
+${currentUser?.email || firebaseUser?.email || 'Usuário DorLog'}
 
 ---
 Este relatório foi gerado automaticamente pelo aplicativo DorLog.`;
