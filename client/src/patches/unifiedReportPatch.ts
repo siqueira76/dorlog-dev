@@ -35,12 +35,8 @@ export const patchApiCallsUnified = () => {
         const result = await UnifiedReportService.generateReport(options);
         
         if (result.success) {
-          // Open report in new tab
-          if (result.reportUrl) {
-            window.open(result.reportUrl, '_blank');
-          }
-          
           // Return success response (compatible with existing code)
+          // Note: Report URL will be handled by the sharing logic
           return new Response(JSON.stringify({
             success: true,
             reportUrl: result.reportUrl,
