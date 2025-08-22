@@ -10,10 +10,10 @@ const isGitHubPages = !window.location.hostname.includes('replit') &&
 if (isGitHubPages) {
   console.log('🔧 GitHub Pages detected - Applying patches');
   
-  // Import and apply GitHub Pages fix
-  import('./patches/githubPagesFix').then(({ patchApiCalls }) => {
-    patchApiCalls();
-    console.log('✅ GitHub Pages API patches applied');
+  // Import and apply unified report system
+  import('./patches/unifiedReportActivator').then(({ activateUnifiedReports }) => {
+    activateUnifiedReports();
+    console.log('✅ Sistema unificado ativado para GitHub Pages');
   }).catch(error => {
     console.warn('⚠️ Could not load GitHub Pages patches:', error);
   });
