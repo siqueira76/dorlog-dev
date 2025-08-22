@@ -34,9 +34,9 @@ ${getReportCSS()}
             ${generateStatsSection(reportData)}
             ${generatePainPointsSection(reportData)}
             ${generatePainEvolutionSection(reportData)}
-            ${generateObservationsSection(reportData)}
             ${generateMedicationsSection(reportData)}
             ${generateDoctorsSection(reportData)}
+            ${generateObservationsSection(reportData)}
             ${generateFooterSection(reportId, reportData)}
         </div>
     </div>
