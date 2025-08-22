@@ -32,11 +32,11 @@ ${getReportCSS()}
         
         <div class="content">
             ${generateStatsSection(reportData)}
-            ${generateMedicationsSection(reportData)}
-            ${generateDoctorsSection(reportData)}
             ${generatePainPointsSection(reportData)}
             ${generatePainEvolutionSection(reportData)}
             ${generateObservationsSection(reportData)}
+            ${generateMedicationsSection(reportData)}
+            ${generateDoctorsSection(reportData)}
             ${generateFooterSection(reportId, reportData)}
         </div>
     </div>
@@ -198,7 +198,7 @@ function getReportCSS(): string {
         /* STATS GRID - Mobile First */
         .stats-grid {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, 1fr);
             gap: var(--space-4);
             margin-bottom: var(--space-8);
         }
@@ -207,7 +207,7 @@ function getReportCSS(): string {
             background: var(--background);
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
-            padding: var(--space-6);
+            padding: var(--space-4);
             text-align: center;
             position: relative;
             min-height: 44px;
@@ -225,7 +225,7 @@ function getReportCSS(): string {
         }
 
         .stat-value {
-            font-size: var(--text-3xl);
+            font-size: var(--text-2xl);
             font-weight: 700;
             color: var(--primary);
             display: block;
@@ -403,6 +403,14 @@ function getReportCSS(): string {
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: var(--space-5);
+            }
+            
+            .stat-card {
+                padding: var(--space-6);
+            }
+            
+            .stat-value {
+                font-size: var(--text-3xl);
             }
             
             .pain-level {
