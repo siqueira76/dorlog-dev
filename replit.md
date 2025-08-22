@@ -42,6 +42,14 @@ Preferred communication style: Simple, everyday language.
 - **GitHub Pages Deployment** for the client-only build via GitHub Actions.
 - **Firebase Hosting for HTML Reports** is managed by an automated pipeline that generates, deploys, and cleans up reports, including unique URL generation for cache prevention.
 
+## WhatsApp Sharing Strategy
+- **Hybrid Multi-Platform Approach**: Implements intelligent device detection for optimal sharing experience across mobile and desktop platforms.
+- **Strategy 1 - Mobile Native**: Uses Web Share API on mobile devices to present native contact selector, allowing users to choose specific contacts from their device's sharing interface.
+- **Strategy 2 - Desktop Clipboard**: On desktop platforms, opens WhatsApp Web in a new tab while automatically copying the report message to clipboard, enabling users to navigate contacts freely and paste the message.
+- **Strategy 3 - Fallback URI**: Traditional WhatsApp URI scheme for older devices or when other methods fail, maintaining broad compatibility.
+- **Seamless Integration**: Works with the unified report generation system without requiring any backend modifications, fully compatible with GitHub Pages limitations.
+- **User Experience**: Provides clear feedback through toast notifications explaining the action taken and guiding users through the sharing process on each platform.
+
 # External Dependencies
 
 ## Firebase Services
