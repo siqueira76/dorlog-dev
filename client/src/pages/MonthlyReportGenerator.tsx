@@ -191,27 +191,13 @@ Aqui está meu relatório de saúde gerado pelo DorLog. O relatório contém inf
 
 _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
 
-        // Enhanced device detection
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const isTouch = navigator.maxTouchPoints > 0;
-        const isSmallScreen = window.innerWidth <= 768;
-        const isMobileDevice = isMobile || (isTouch && isSmallScreen);
+        console.log('🚀 Iniciando compartilhamento para WhatsApp...');
         
-        console.log(`📱 Dispositivo detectado: ${isMobileDevice ? 'Mobile' : 'Desktop'}`);
-        
-        // Always copy to clipboard first as backup
-        let clipboardSuccess = false;
-        try {
-          await navigator.clipboard.writeText(message);
-          clipboardSuccess = true;
-          console.log('📋 Mensagem copiada para clipboard como backup');
-        } catch (clipboardError) {
-          console.log('📋 Clipboard não disponível');
-        }
-        
-        // Strategy 1: Try Web Share API on mobile (best native experience)
-        if (isMobileDevice && navigator.share) {
+        // Strategy 1: Web Share API (Priority - shows native sharing interface like in image)
+        if (navigator.share) {
           try {
+            console.log('📱 Usando Web Share API - Interface nativa de compartilhamento');
+            
             await navigator.share({
               title: '🩺 DorLog - Relatório de Saúde',
               text: message,
@@ -219,112 +205,83 @@ _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
             
             toast({
               title: "Relatório compartilhado!",
-              description: "Selecione os contatos para enviar o relatório.",
+              description: "Conteúdo enviado através do app selecionado.",
               duration: 5000,
             });
             return;
+            
           } catch (shareError: unknown) {
             const error = shareError as Error;
             if (error.name === 'AbortError') {
-              // User cancelled, don't show error
+              // User cancelled the share dialog
+              console.log('📱 Compartilhamento cancelado pelo usuário');
               return;
             }
-            console.log('📱 Web Share API falhou, tentando WhatsApp direto...');
+            
+            console.log('📱 Web Share API não funcionou, tentando WhatsApp direto:', error.message);
           }
+        } else {
+          console.log('📱 Web Share API não disponível neste navegador');
         }
         
-        // Strategy 2: Try WhatsApp app directly (works on both mobile and desktop)
-        const attemptWhatsAppApp = () => {
-          return new Promise<boolean>((resolve) => {
-            // Create multiple URI schemes for better compatibility
-            const uriSchemes = [
-              `whatsapp://send?text=${encodeURIComponent(message)}`,
-              // Android intent for better compatibility
-              isMobile && navigator.userAgent.includes('Android') 
-                ? `intent://send/${encodeURIComponent(message)}#Intent;scheme=whatsapp;package=com.whatsapp;end`
-                : null
-            ].filter(Boolean) as string[];
-            
-            let attempted = 0;
-            const tryNextScheme = () => {
-              if (attempted >= uriSchemes.length) {
-                resolve(false);
-                return;
-              }
-              
-              const scheme = uriSchemes[attempted++];
-              console.log(`🔄 Tentando esquema ${attempted}: ${scheme.split('?')[0]}...`);
-              
-              // Try to open WhatsApp
-              const popup = window.open(scheme, '_blank');
-              
-              // Check if it worked after a short delay
-              setTimeout(() => {
-                if (popup && !popup.closed) {
-                  popup.close();
-                }
-                
-                // If we're still here, try next scheme or fallback
-                if (document.hasFocus()) {
-                  // App didn't open (still has focus), try next
-                  tryNextScheme();
-                } else {
-                  // App likely opened (lost focus)
-                  resolve(true);
-                }
-              }, 1500);
-            };
-            
-            tryNextScheme();
-          });
-        };
-        
-        // Show loading toast
-        const loadingToast = toast({
-          title: "Abrindo WhatsApp...",
-          description: "Tentando abrir o aplicativo WhatsApp...",
-          duration: 3000,
-        });
-        
-        const appOpened = await attemptWhatsAppApp();
-        
-        if (appOpened) {
-          toast({
-            title: "WhatsApp aberto!",
-            description: clipboardSuccess 
-              ? "Selecione um contato para enviar. Mensagem copiada como backup."
-              : "Selecione um contato para enviar o relatório.",
-            duration: 6000,
-          });
-          return;
+        // Copy to clipboard as backup for fallback methods
+        let clipboardSuccess = false;
+        try {
+          await navigator.clipboard.writeText(message);
+          clipboardSuccess = true;
+          console.log('📋 Mensagem copiada como backup');
+        } catch (clipboardError) {
+          console.log('📋 Clipboard não disponível');
         }
         
-        // Strategy 3: Fallback to WhatsApp Web with pre-filled message
-        console.log('📱 App WhatsApp não detectado, usando WhatsApp Web...');
+        // Strategy 2: Direct WhatsApp app (for devices without Web Share)
+        console.log('🔄 Tentando abrir WhatsApp diretamente...');
         
         try {
-          // Try WhatsApp Web with message first
+          const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
+          window.open(whatsappUrl, '_blank');
+          
+          toast({
+            title: "Abrindo WhatsApp...",
+            description: clipboardSuccess 
+              ? "Se não abrir automaticamente, a mensagem foi copiada como backup."
+              : "Tentando abrir o aplicativo WhatsApp...",
+            duration: 6000,
+          });
+          
+          // If WhatsApp doesn't open, show WhatsApp Web option after delay
+          setTimeout(() => {
+            toast({
+              title: "WhatsApp não abriu?",
+              description: "Clique no botão para usar WhatsApp Web",
+              duration: 5000,
+              action: (
+                <button 
+                  onClick={() => {
+                    const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappWebUrl, '_blank');
+                  }}
+                  className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                >
+                  WhatsApp Web
+                </button>
+              ),
+            });
+          }, 3000);
+          
+        } catch (error) {
+          // Strategy 3: Final fallback - WhatsApp Web
+          console.log('🌐 Fallback: Abrindo WhatsApp Web...');
+          
           const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
           window.open(whatsappWebUrl, '_blank');
           
           toast({
-            title: "WhatsApp Web aberto",
+            title: "WhatsApp Web",
             description: clipboardSuccess 
-              ? "Mensagem pré-preenchida! Selecione um contato. Texto também copiado como backup."
-              : "Mensagem pré-preenchida! Selecione um contato para enviar.",
-            duration: 8000,
-          });
-          
-        } catch (error) {
-          // Final fallback: WhatsApp Web without message
-          window.open('https://web.whatsapp.com/', '_blank');
-          
-          toast({
-            title: "WhatsApp Web aberto",
-            description: clipboardSuccess 
-              ? "Mensagem copiada! Selecione um contato e cole com Ctrl+V."
-              : "Acesse WhatsApp Web e envie o relatório manualmente.",
-            duration: 8000,
+              ? "Mensagem pré-preenchida! Também copiada como backup."
+              : "Mensagem pré-preenchida no WhatsApp Web.",
+            duration: 6000,
           });
         }
         
