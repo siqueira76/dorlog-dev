@@ -604,10 +604,10 @@ function generateMedicationsSection(reportData: ReportData): string {
         <li class="item">
             <div class="item-header">
                 <div class="item-name">${med.nome}</div>
-                <div class="item-badge">${med.frequencia}x/dia</div>
+                <div class="item-badge">${med.frequencia}</div>
             </div>
             <div class="item-details">
-                <strong>Dosagem:</strong> ${med.dosagem}<br>
+                <strong>Posologia:</strong> ${med.posologia}<br>
                 ${med.medico ? `<strong>Prescrito por:</strong> ${med.medico}` : ''}
             </div>
         </li>

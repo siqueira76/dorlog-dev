@@ -8,8 +8,8 @@ export interface ReportData {
   adherenceRate: number;
   medications: Array<{
     nome: string;
-    dosagem: string;
-    frequencia: number;
+    posologia: string;
+    frequencia: string;
     medico?: string;
   }>;
   doctors: Array<{
@@ -138,22 +138,55 @@ export async function fetchUserReportData(userId: string, periods: string[]): Pr
       });
     }
 
-    // 2. Buscar medicamentos
+    // 2. Buscar medicamentos com lookup de médicos
     console.log('💊 Buscando medicamentos...');
     try {
       const medicamentosRef = collection(db, 'medicamentos');
-      const medicamentosQuery = query(medicamentosRef, where('userId', '==', userId));
+      const medicamentosQuery = query(medicamentosRef, where('usuarioId', '==', userId));
       const medicamentosSnapshot = await getDocs(medicamentosQuery);
 
+      const medicationsData: any[] = [];
+      
+      // Primeiro, coletar todos os medicamentos
       medicamentosSnapshot.forEach((doc) => {
         const medicamento = doc.data();
-        reportData.medications.push({
+        medicationsData.push({
           nome: medicamento.nome || 'Medicamento não especificado',
-          dosagem: medicamento.dosagem || 'Dosagem não especificada',
-          frequencia: medicamento.frequencia || 1,
-          medico: medicamento.medico || 'Médico não especificado'
+          posologia: medicamento.posologia || 'Posologia não especificada',
+          frequencia: medicamento.frequencia || 'Não especificada',
+          medicoId: medicamento.medicoId || ''
         });
       });
+
+      // Se há medicamentos, buscar os nomes dos médicos
+      if (medicationsData.length > 0) {
+        console.log(`🔍 Buscando nomes de médicos para ${medicationsData.length} medicamento(s)...`);
+        
+        const medicosRef = collection(db, 'medicos');
+        const medicosQuery = query(medicosRef, where('usuarioId', '==', userId));
+        const medicosSnapshot = await getDocs(medicosQuery);
+        
+        const medicosMap = new Map<string, string>();
+        medicosSnapshot.forEach((doc) => {
+          const medico = doc.data();
+          medicosMap.set(doc.id, medico.nome || 'Médico não encontrado');
+        });
+
+        // Adicionar nomes dos médicos aos medicamentos
+        medicationsData.forEach(medication => {
+          const medicoNome = medicosMap.get(medication.medicoId) || 'Médico não especificado';
+          reportData.medications.push({
+            nome: medication.nome,
+            posologia: medication.posologia,
+            frequencia: medication.frequencia,
+            medico: medicoNome
+          });
+        });
+        
+        console.log(`✅ Medicamentos processados com nomes de médicos: ${reportData.medications.length}`);
+      } else {
+        console.log('ℹ️ Nenhum medicamento encontrado para o usuário.');
+      }
     } catch (error) {
       console.warn('⚠️ Erro ao buscar medicamentos:', error);
     }
@@ -162,7 +195,7 @@ export async function fetchUserReportData(userId: string, periods: string[]): Pr
     console.log('👨‍⚕️ Buscando médicos...');
     try {
       const medicosRef = collection(db, 'medicos');
-      const medicosQuery = query(medicosRef, where('userId', '==', userId));
+      const medicosQuery = query(medicosRef, where('usuarioId', '==', userId));
       const medicosSnapshot = await getDocs(medicosQuery);
 
       medicosSnapshot.forEach((doc) => {
@@ -229,7 +262,7 @@ export async function fetchUserReportData(userId: string, periods: string[]): Pr
       totalDays: 0,
       observations: `Erro ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Os dados mostrados são exemplos para demonstração.`,
       medications: [
-        { nome: 'Dados não disponíveis', dosagem: 'Erro na consulta', frequencia: 0 }
+        { nome: 'Dados não disponíveis', posologia: 'Erro na consulta', frequencia: 'N/A' }
       ],
       doctors: [
         { nome: 'Dados não disponíveis', especialidade: 'Erro na consulta', crm: 'N/A' }
