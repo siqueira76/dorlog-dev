@@ -691,12 +691,8 @@ export default function QuizPage() {
         description: "Suas respostas foram registradas com sucesso.",
       });
 
-      // Voltar para a home com base path correto
-      const isGitHubPages = !window.location.hostname.includes('replit') && 
-                            !window.location.hostname.includes('localhost') &&
-                            !window.location.hostname.includes('127.0.0.1');
-      const basePath = isGitHubPages ? '/dorlog' : '';
-      window.location.href = `${basePath}/home`;
+      // Voltar para a home usando o router interno
+      setLocation('/home');
     } catch (error) {
       console.error('❌ Erro ao salvar quiz:', error);
       toast({
