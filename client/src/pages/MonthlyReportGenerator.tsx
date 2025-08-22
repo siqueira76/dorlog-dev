@@ -191,8 +191,12 @@ Aqui está meu relatório de saúde gerado pelo DorLog. O relatório contém inf
 
 _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
 
-        // Try to share using Web Share API first
-        if (navigator.share) {
+        // Detect device type
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                         (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+        
+        // Strategy 1: Mobile with Web Share API (native contact selector)
+        if (isMobile && navigator.share) {
           try {
             await navigator.share({
               title: '🩺 DorLog - Relatório de Saúde',
@@ -201,16 +205,41 @@ _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
             
             toast({
               title: "Relatório compartilhado!",
-              description: "O relatório foi compartilhado com sucesso.",
+              description: "Selecione os contatos para enviar o relatório.",
               duration: 5000,
             });
             return;
           } catch (shareError) {
-            console.log('Web Share API não disponível, tentando alternativas...');
+            if (shareError.name !== 'AbortError') {
+              console.log('Web Share API falhou, tentando alternativas...');
+            } else {
+              // User cancelled, don't show error
+              return;
+            }
           }
         }
-
-        // Try WhatsApp protocol
+        
+        // Strategy 2: Desktop or Web Share API not available (WhatsApp Web + Clipboard)
+        if (!isMobile) {
+          try {
+            // Copy message to clipboard first
+            await navigator.clipboard.writeText(message);
+            
+            // Open WhatsApp Web without specific contact
+            window.open('https://web.whatsapp.com/', '_blank');
+            
+            toast({
+              title: "WhatsApp Web aberto!",
+              description: "Mensagem copiada! Selecione um contato e cole a mensagem.",
+              duration: 8000,
+            });
+            return;
+          } catch (clipboardError) {
+            console.log('Clipboard API não disponível, usando método tradicional...');
+          }
+        }
+        
+        // Strategy 3: Fallback - Traditional WhatsApp URI (pre-filled message)
         const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
         
         try {
@@ -218,27 +247,27 @@ _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
           
           toast({
             title: "Abrindo WhatsApp...",
-            description: "Se o WhatsApp não abrir automaticamente, copie o link manualmente.",
+            description: "Selecione um contato para enviar o relatório.",
             duration: 6000,
           });
           
-          // Fallback: copy to clipboard after a delay
+          // Copy to clipboard as backup
           setTimeout(async () => {
             try {
               await navigator.clipboard.writeText(message);
             } catch (clipboardError) {
-              console.log('Clipboard API não disponível');
+              console.log('Clipboard backup não disponível');
             }
-          }, 3000);
+          }, 2000);
           
         } catch (error) {
-          // Final fallback: WhatsApp Web
+          // Final fallback: WhatsApp Web with message
           const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
           window.open(whatsappWebUrl, '_blank');
           
           toast({
-            title: "Abrindo WhatsApp Web",
-            description: "O relatório será compartilhado via WhatsApp Web.",
+            title: "WhatsApp Web aberto",
+            description: "Selecione um contato para enviar o relatório.",
             duration: 5000,
           });
         }
