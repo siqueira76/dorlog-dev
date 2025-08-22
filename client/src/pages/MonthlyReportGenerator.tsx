@@ -191,40 +191,9 @@ Aqui está meu relatório de saúde gerado pelo DorLog. O relatório contém inf
 
 _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
 
-        console.log('🚀 Iniciando compartilhamento para WhatsApp...');
+        console.log('🚀 Compartilhamento WhatsApp - Oferecendo opções ao usuário...');
         
-        // Strategy 1: Web Share API (Priority - shows native sharing interface like in image)
-        if (navigator.share) {
-          try {
-            console.log('📱 Usando Web Share API - Interface nativa de compartilhamento');
-            
-            await navigator.share({
-              title: '🩺 DorLog - Relatório de Saúde',
-              text: message,
-            });
-            
-            toast({
-              title: "Relatório compartilhado!",
-              description: "Conteúdo enviado através do app selecionado.",
-              duration: 5000,
-            });
-            return;
-            
-          } catch (shareError: unknown) {
-            const error = shareError as Error;
-            if (error.name === 'AbortError') {
-              // User cancelled the share dialog
-              console.log('📱 Compartilhamento cancelado pelo usuário');
-              return;
-            }
-            
-            console.log('📱 Web Share API não funcionou, tentando WhatsApp direto:', error.message);
-          }
-        } else {
-          console.log('📱 Web Share API não disponível neste navegador');
-        }
-        
-        // Copy to clipboard as backup for fallback methods
+        // Copy to clipboard as backup
         let clipboardSuccess = false;
         try {
           await navigator.clipboard.writeText(message);
@@ -233,57 +202,69 @@ _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
         } catch (clipboardError) {
           console.log('📋 Clipboard não disponível');
         }
-        
-        // Strategy 2: Direct WhatsApp app (for devices without Web Share)
-        console.log('🔄 Tentando abrir WhatsApp diretamente...');
-        
-        try {
-          const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
-          window.open(whatsappUrl, '_blank');
-          
-          toast({
-            title: "Abrindo WhatsApp...",
-            description: clipboardSuccess 
-              ? "Se não abrir automaticamente, a mensagem foi copiada como backup."
-              : "Tentando abrir o aplicativo WhatsApp...",
-            duration: 6000,
-          });
-          
-          // If WhatsApp doesn't open, show WhatsApp Web option after delay
-          setTimeout(() => {
-            toast({
-              title: "WhatsApp não abriu?",
-              description: "Clique no botão para usar WhatsApp Web",
-              duration: 5000,
-              action: (
-                <button 
-                  onClick={() => {
-                    const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-                    window.open(whatsappWebUrl, '_blank');
-                  }}
-                  className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                >
-                  WhatsApp Web
-                </button>
-              ),
-            });
-          }, 3000);
-          
-        } catch (error) {
-          // Strategy 3: Final fallback - WhatsApp Web
-          console.log('🌐 Fallback: Abrindo WhatsApp Web...');
-          
-          const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-          window.open(whatsappWebUrl, '_blank');
-          
-          toast({
-            title: "WhatsApp Web",
-            description: clipboardSuccess 
-              ? "Mensagem pré-preenchida! Também copiada como backup."
-              : "Mensagem pré-preenchida no WhatsApp Web.",
-            duration: 6000,
-          });
-        }
+
+        // Show toast with two clear options for the user
+        toast({
+          title: "Escolha como compartilhar:",
+          description: "Selecione sua opção preferida",
+          duration: 10000,
+          action: (
+            <div className="flex gap-2">
+              <button 
+                onClick={async () => {
+                  // Option 1: Share via App (accepts popup)
+                  if (navigator.share) {
+                    try {
+                      console.log('📱 Usuário escolheu: Compartilhar via App');
+                      await navigator.share({
+                        title: '🩺 DorLog - Relatório de Saúde',
+                        text: message,
+                      });
+                      
+                      toast({
+                        title: "Relatório compartilhado!",
+                        description: "Conteúdo enviado através do app selecionado.",
+                        duration: 5000,
+                      });
+                    } catch (shareError: unknown) {
+                      const error = shareError as Error;
+                      if (error.name !== 'AbortError') {
+                        // Fallback to WhatsApp app
+                        const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
+                        window.open(whatsappUrl, '_blank');
+                      }
+                    }
+                  } else {
+                    // Fallback to WhatsApp app
+                    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                  }
+                }}
+                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+              >
+                📱 Abrir no App
+              </button>
+              
+              <button 
+                onClick={() => {
+                  // Option 2: WhatsApp Web (direct, no popup)
+                  console.log('🌐 Usuário escolheu: WhatsApp Web');
+                  const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+                  window.open(whatsappWebUrl, '_blank');
+                  
+                  toast({
+                    title: "WhatsApp Web",
+                    description: "Mensagem pré-preenchida no WhatsApp Web.",
+                    duration: 5000,
+                  });
+                }}
+                className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+              >
+                🌐 WhatsApp Web
+              </button>
+            </div>
+          ),
+        });
         
       } else {
         throw new Error(result.error || 'Erro desconhecido na geração do relatório');
