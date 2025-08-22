@@ -567,7 +567,7 @@ Este relatório foi gerado automaticamente pelo aplicativo DorLog.`;
                 <Button
                   onClick={handleShareWhatsApp}
                   disabled={!hasValidSelection() || isGenerating}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   size="lg"
                 >
                   {isGenerating ? (
@@ -578,27 +578,7 @@ Este relatório foi gerado automaticamente pelo aplicativo DorLog.`;
                   ) : (
                     <>
                       <Share2 className="h-4 w-4 mr-2" />
-                      Via WhatsApp
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  onClick={handleShareEmail}
-                  disabled={!hasValidSelection() || isGenerating}
-                  variant="outline"
-                  className="w-full"
-                  size="lg"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Gerando...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="h-4 w-4 mr-2" />
-                      Via Email
+                      📱 Compartilhar Relatório
                     </>
                   )}
                 </Button>
