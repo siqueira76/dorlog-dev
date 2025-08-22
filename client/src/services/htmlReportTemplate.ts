@@ -594,31 +594,189 @@ function generateMedicationsSection(reportData: ReportData): string {
   if (reportData.medications.length === 0) {
     return `
         <div class="section">
-            <h2 class="section-title" data-icon="💊">Medicamentos</h2>
+            <h2 class="section-title" data-icon="💊">Medicamentos Atuais</h2>
             <p class="item-details">Nenhum medicamento registrado no período.</p>
         </div>
     `;
   }
 
-  const medicationItems = reportData.medications.map(med => `
-        <li class="item">
-            <div class="item-header">
-                <div class="item-name">${med.nome}</div>
-                <div class="item-badge">${med.frequencia}</div>
-            </div>
-            <div class="item-details">
-                <strong>Posologia:</strong> ${med.posologia}<br>
-                ${med.medico ? `<strong>Prescrito por:</strong> ${med.medico}` : ''}
-            </div>
-        </li>
-  `).join('');
-
+  // Agrupar medicamentos por médico
+  const medicationsByDoctor = groupMedicationsByDoctor(reportData.medications);
+  
+  // Calcular estatísticas
+  const stats = calculateMedicationStats(reportData.medications);
+  
   return `
         <div class="section">
-            <h2 class="section-title" data-icon="💊">Medicamentos</h2>
-            <ul class="item-list">
+            <h2 class="section-title" data-icon="💊">Medicamentos Atuais</h2>
+            ${generateMedicationStats(stats)}
+            ${generateMedicationsByDoctor(medicationsByDoctor)}
+            ${stats.alertaPolifarmacia ? generatePolifarmaciaWarning(stats.totalMedicamentos) : ''}
+        </div>
+  `;
+}
+
+function groupMedicationsByDoctor(medications: any[]) {
+  const grouped: { [key: string]: any } = {};
+  
+  medications.forEach(med => {
+    const doctorKey = med.medico || 'Médico não identificado';
+    if (!grouped[doctorKey]) {
+      grouped[doctorKey] = {
+        medico: {
+          nome: doctorKey,
+          especialidade: doctorKey === 'Médico não identificado' ? 'Não informada' : ''
+        },
+        medicamentos: []
+      };
+    }
+    grouped[doctorKey].medicamentos.push({
+      nome: med.nome,
+      posologia: med.posologia,
+      frequencia: med.frequencia,
+      categoria: inferMedicationCategory(med.nome)
+    });
+  });
+
+  // Ordenar médicos alfabeticamente, mas "Médico não identificado" sempre por último
+  return Object.entries(grouped).sort(([a], [b]) => {
+    if (a === 'Médico não identificado') return 1;
+    if (b === 'Médico não identificado') return -1;
+    return a.localeCompare(b);
+  });
+}
+
+function calculateMedicationStats(medications: any[]) {
+  const categories: { [key: string]: number } = {};
+  
+  medications.forEach(med => {
+    const category = inferMedicationCategory(med.nome);
+    categories[category] = (categories[category] || 0) + 1;
+  });
+
+  const uniqueDoctors = new Set(medications.map(m => m.medico || 'Não identificado')).size;
+  
+  return {
+    totalMedicamentos: medications.length,
+    medicosEnvolvidos: uniqueDoctors,
+    medicamentosPorCategoria: categories,
+    alertaPolifarmacia: medications.length >= 6,
+    categoriaPrincipal: Object.entries(categories).sort(([,a], [,b]) => b - a)[0]?.[0] || 'Diversos'
+  };
+}
+
+function inferMedicationCategory(nome: string): string {
+  const nomeMinusculo = nome.toLowerCase();
+  
+  const categories: { [key: string]: string[] } = {
+    'Analgésicos/Anti-inflamatórios': ['paracetamol', 'ibuprofeno', 'dipirona', 'diclofenaco', 'nimesulida', 'aspirina'],
+    'Antibióticos': ['amoxicilina', 'azitromicina', 'cefalexina', 'ciprofloxacino', 'ampicilina'],
+    'Cardiológicos': ['losartana', 'atenolol', 'captopril', 'enalapril', 'propranolol', 'sinvastatina'],
+    'Neurológicos': ['gabapentina', 'pregabalina', 'amitriptilina', 'clonazepam', 'diazepam'],
+    'Endócrinos': ['metformina', 'insulina', 'levotiroxina', 'glibenclamida'],
+    'Gastroenterológicos': ['omeprazol', 'pantoprazol', 'ranitidina', 'domperidona']
+  };
+  
+  for (const [category, keywords] of Object.entries(categories)) {
+    if (keywords.some(keyword => nomeMinusculo.includes(keyword))) {
+      return category;
+    }
+  }
+  
+  return 'Outros';
+}
+
+function generateMedicationStats(stats: any): string {
+  const statusColor = stats.alertaPolifarmacia ? 'border-red-200 bg-red-50/30' : 
+                     stats.totalMedicamentos >= 4 ? 'border-yellow-200 bg-yellow-50/30' : 
+                     'border-green-200 bg-green-50/30';
+  
+  const statusIcon = stats.alertaPolifarmacia ? '🔴' : 
+                    stats.totalMedicamentos >= 4 ? '🟡' : '🟢';
+
+  return `
+        <div class="medication-overview ${statusColor}" style="border: 1px solid; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <div class="overview-header" style="display: flex; align-items: center; justify-content: between; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-weight: 600; color: var(--text);">${statusIcon} Resumo dos Medicamentos</h3>
+            </div>
+            <div class="overview-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                <div class="stat-mini" style="text-align: center;">
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">${stats.totalMedicamentos}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Total</div>
+                </div>
+                <div class="stat-mini" style="text-align: center;">
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">${stats.medicosEnvolvidos}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Médicos</div>
+                </div>
+                <div class="stat-mini" style="text-align: center;">
+                    <div style="font-size: 1rem; font-weight: 600; color: var(--text);">${stats.categoriaPrincipal}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Principal</div>
+                </div>
+            </div>
+        </div>
+  `;
+}
+
+function generateMedicationsByDoctor(medicationsByDoctor: any[]): string {
+  return medicationsByDoctor.map(([doctorName, group]) => {
+    const isUnidentified = doctorName === 'Médico não identificado';
+    const cardStyle = isUnidentified ? 'border-dashed border-gray-300' : 'border-solid border-border';
+    
+    const medicationItems = group.medicamentos.map((med: any) => `
+        <div class="medication-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--surface); border-radius: 8px; margin-bottom: 8px;">
+            <div class="medication-info" style="flex: 1;">
+                <div class="medication-name" style="font-weight: 600; color: var(--text); margin-bottom: 4px;">
+                    ${med.nome} - ${med.posologia}
+                </div>
+                <div class="medication-frequency" style="font-size: 0.875rem; color: var(--text-muted);">
+                    ${med.frequencia}
+                </div>
+            </div>
+            <div class="medication-category" style="font-size: 0.75rem; padding: 4px 8px; background: var(--accent); color: white; border-radius: 12px; white-space: nowrap;">
+                ${med.categoria}
+            </div>
+        </div>
+    `).join('');
+
+    return `
+        <div class="doctor-card" style="border: 1px ${cardStyle}; border-radius: 12px; margin-bottom: 24px; overflow: hidden;">
+            <div class="doctor-header" style="background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <h4 style="margin: 0; font-weight: 600; color: var(--text);">
+                            ${isUnidentified ? '❓' : '👨‍⚕️'} ${group.medico.nome}
+                        </h4>
+                        ${group.medico.especialidade ? `<p style="margin: 4px 0 0 0; font-size: 0.875rem; color: var(--text-muted);">${group.medico.especialidade}</p>` : ''}
+                    </div>
+                    <div class="medication-count" style="background: var(--primary); color: white; padding: 4px 12px; border-radius: 16px; font-size: 0.875rem; font-weight: 500;">
+                        ${group.medicamentos.length} medicamento${group.medicamentos.length !== 1 ? 's' : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="medications-list" style="padding: 16px;">
                 ${medicationItems}
-            </ul>
+            </div>
+        </div>
+    `;
+  }).join('');
+}
+
+function generatePolifarmaciaWarning(totalMedicamentos: number): string {
+  return `
+        <div class="polifarmacia-warning" style="border: 2px solid #ef4444; border-radius: 12px; padding: 20px; background: #fef2f2; margin-top: 24px;">
+            <div style="display: flex; align-items: start; gap: 12px;">
+                <div style="font-size: 1.5rem;">⚠️</div>
+                <div>
+                    <h4 style="margin: 0 0 8px 0; color: #dc2626; font-weight: 600;">
+                        Alerta: Polifarmácia Detectada
+                    </h4>
+                    <p style="margin: 0; font-size: 0.875rem; color: #7f1d1d; line-height: 1.5;">
+                        Paciente utiliza ${totalMedicamentos} medicamentos simultaneamente. 
+                        Recomenda-se revisão periódica para avaliar interações medicamentosas, 
+                        adesão ao tratamento e possibilidade de simplificação do regime terapêutico.
+                    </p>
+                </div>
+            </div>
         </div>
   `;
 }
