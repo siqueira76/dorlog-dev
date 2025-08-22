@@ -8,11 +8,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { createNavigate } from '@/lib/navigation';
 
 export default function Register() {
-  const [, routerNavigate] = useLocation();
-  const navigate = createNavigate(routerNavigate);
+  const [, setLocation] = useLocation();
   const { register, loading } = useAuth();
   const { toast } = useToast();
   
@@ -97,7 +95,7 @@ export default function Register() {
     setIsSubmitting(true);
     try {
       await register(formData.email, formData.password, formData.name);
-      navigate('/home');
+      setLocation('/home');
     } catch (error) {
       // Error handling is done in the auth context
     } finally {
@@ -234,7 +232,7 @@ export default function Register() {
                 <Button
                   type="button"
                   variant="link"
-                  onClick={() => navigate('/login')}
+                  onClick={() => setLocation('/login')}
                   className="text-primary font-medium hover:text-primary/80 p-0"
                   data-testid="link-login"
                 >

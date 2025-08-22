@@ -8,11 +8,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { createNavigate } from '@/lib/navigation';
 
 export default function Login() {
-  const [, routerNavigate] = useLocation();
-  const navigate = createNavigate(routerNavigate);
+  const [, setLocation] = useLocation();
   const { login, loginWithGoogle, loading } = useAuth();
   const { toast } = useToast();
   
@@ -58,7 +56,7 @@ export default function Login() {
     setIsSubmitting(true);
     try {
       await login(formData.email, formData.password);
-      navigate('/home');
+      setLocation('/home');
     } catch (error) {
       // Error handling is done in the auth context
     } finally {
@@ -69,7 +67,7 @@ export default function Login() {
   const handleGoogleSignIn = async () => {
     try {
       await loginWithGoogle();
-      navigate('/home');
+      setLocation('/home');
     } catch (error) {
       // Error handling is done in the auth context
     }
@@ -204,7 +202,7 @@ export default function Login() {
                 <Button
                   type="button"
                   variant="link"
-                  onClick={() => navigate('/register')}
+                  onClick={() => setLocation('/register')}
                   className="text-primary font-medium hover:text-primary/80 p-0"
                   data-testid="link-register"
                 >
