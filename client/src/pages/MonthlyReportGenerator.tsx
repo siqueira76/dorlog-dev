@@ -191,12 +191,26 @@ Aqui está meu relatório de saúde gerado pelo DorLog. O relatório contém inf
 
 _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
 
-        // Detect device type
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                         (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+        // Enhanced device detection
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isTouch = navigator.maxTouchPoints > 0;
+        const isSmallScreen = window.innerWidth <= 768;
+        const isMobileDevice = isMobile || (isTouch && isSmallScreen);
         
-        // Strategy 1: Mobile with Web Share API (native contact selector)
-        if (isMobile && navigator.share) {
+        console.log(`📱 Dispositivo detectado: ${isMobileDevice ? 'Mobile' : 'Desktop'}`);
+        
+        // Always copy to clipboard first as backup
+        let clipboardSuccess = false;
+        try {
+          await navigator.clipboard.writeText(message);
+          clipboardSuccess = true;
+          console.log('📋 Mensagem copiada para clipboard como backup');
+        } catch (clipboardError) {
+          console.log('📋 Clipboard não disponível');
+        }
+        
+        // Strategy 1: Try Web Share API on mobile (best native experience)
+        if (isMobileDevice && navigator.share) {
           try {
             await navigator.share({
               title: '🩺 DorLog - Relatório de Saúde',
@@ -209,66 +223,108 @@ _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
               duration: 5000,
             });
             return;
-          } catch (shareError) {
-            if (shareError.name !== 'AbortError') {
-              console.log('Web Share API falhou, tentando alternativas...');
-            } else {
+          } catch (shareError: unknown) {
+            const error = shareError as Error;
+            if (error.name === 'AbortError') {
               // User cancelled, don't show error
               return;
             }
+            console.log('📱 Web Share API falhou, tentando WhatsApp direto...');
           }
         }
         
-        // Strategy 2: Desktop or Web Share API not available (WhatsApp Web + Clipboard)
-        if (!isMobile) {
-          try {
-            // Copy message to clipboard first
-            await navigator.clipboard.writeText(message);
+        // Strategy 2: Try WhatsApp app directly (works on both mobile and desktop)
+        const attemptWhatsAppApp = () => {
+          return new Promise<boolean>((resolve) => {
+            // Create multiple URI schemes for better compatibility
+            const uriSchemes = [
+              `whatsapp://send?text=${encodeURIComponent(message)}`,
+              // Android intent for better compatibility
+              isMobile && navigator.userAgent.includes('Android') 
+                ? `intent://send/${encodeURIComponent(message)}#Intent;scheme=whatsapp;package=com.whatsapp;end`
+                : null
+            ].filter(Boolean) as string[];
             
-            // Open WhatsApp Web without specific contact
-            window.open('https://web.whatsapp.com/', '_blank');
+            let attempted = 0;
+            const tryNextScheme = () => {
+              if (attempted >= uriSchemes.length) {
+                resolve(false);
+                return;
+              }
+              
+              const scheme = uriSchemes[attempted++];
+              console.log(`🔄 Tentando esquema ${attempted}: ${scheme.split('?')[0]}...`);
+              
+              // Try to open WhatsApp
+              const popup = window.open(scheme, '_blank');
+              
+              // Check if it worked after a short delay
+              setTimeout(() => {
+                if (popup && !popup.closed) {
+                  popup.close();
+                }
+                
+                // If we're still here, try next scheme or fallback
+                if (document.hasFocus()) {
+                  // App didn't open (still has focus), try next
+                  tryNextScheme();
+                } else {
+                  // App likely opened (lost focus)
+                  resolve(true);
+                }
+              }, 1500);
+            };
             
-            toast({
-              title: "WhatsApp Web aberto!",
-              description: "Mensagem copiada! Selecione um contato e cole a mensagem.",
-              duration: 8000,
-            });
-            return;
-          } catch (clipboardError) {
-            console.log('Clipboard API não disponível, usando método tradicional...');
-          }
-        }
+            tryNextScheme();
+          });
+        };
         
-        // Strategy 3: Fallback - Traditional WhatsApp URI (pre-filled message)
-        const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
+        // Show loading toast
+        const loadingToast = toast({
+          title: "Abrindo WhatsApp...",
+          description: "Tentando abrir o aplicativo WhatsApp...",
+          duration: 3000,
+        });
         
-        try {
-          window.open(whatsappUrl, '_blank');
-          
+        const appOpened = await attemptWhatsAppApp();
+        
+        if (appOpened) {
           toast({
-            title: "Abrindo WhatsApp...",
-            description: "Selecione um contato para enviar o relatório.",
+            title: "WhatsApp aberto!",
+            description: clipboardSuccess 
+              ? "Selecione um contato para enviar. Mensagem copiada como backup."
+              : "Selecione um contato para enviar o relatório.",
             duration: 6000,
           });
-          
-          // Copy to clipboard as backup
-          setTimeout(async () => {
-            try {
-              await navigator.clipboard.writeText(message);
-            } catch (clipboardError) {
-              console.log('Clipboard backup não disponível');
-            }
-          }, 2000);
-          
-        } catch (error) {
-          // Final fallback: WhatsApp Web with message
+          return;
+        }
+        
+        // Strategy 3: Fallback to WhatsApp Web with pre-filled message
+        console.log('📱 App WhatsApp não detectado, usando WhatsApp Web...');
+        
+        try {
+          // Try WhatsApp Web with message first
           const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
           window.open(whatsappWebUrl, '_blank');
           
           toast({
             title: "WhatsApp Web aberto",
-            description: "Selecione um contato para enviar o relatório.",
-            duration: 5000,
+            description: clipboardSuccess 
+              ? "Mensagem pré-preenchida! Selecione um contato. Texto também copiado como backup."
+              : "Mensagem pré-preenchida! Selecione um contato para enviar.",
+            duration: 8000,
+          });
+          
+        } catch (error) {
+          // Final fallback: WhatsApp Web without message
+          window.open('https://web.whatsapp.com/', '_blank');
+          
+          toast({
+            title: "WhatsApp Web aberto",
+            description: clipboardSuccess 
+              ? "Mensagem copiada! Selecione um contato e cole com Ctrl+V."
+              : "Acesse WhatsApp Web e envie o relatório manualmente.",
+            duration: 8000,
           });
         }
         
