@@ -191,7 +191,44 @@ Aqui está meu relatório de saúde gerado pelo DorLog. O relatório contém inf
 
 _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
 
-        console.log('🚀 Compartilhamento WhatsApp - Oferecendo opções ao usuário...');
+        console.log('🚀 Iniciando compartilhamento mobile-first...');
+        
+        // Detect mobile environment
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const hasWebShareAPI = 'share' in navigator;
+        
+        console.log(`📱 Ambiente: ${isMobile ? 'Mobile' : 'Desktop'}, Web Share API: ${hasWebShareAPI}`);
+
+        // Mobile-First Strategy: Prioritize Web Share API (shows native interface like in image)
+        if (hasWebShareAPI && isMobile) {
+          try {
+            console.log('📱 Usando Web Share API nativa (interface como na imagem)');
+            
+            await navigator.share({
+              title: '🩺 DorLog - Relatório de Saúde',
+              text: message,
+            });
+            
+            toast({
+              title: "Relatório compartilhado!",
+              description: "Conteúdo enviado com sucesso.",
+              duration: 5000,
+            });
+            return;
+            
+          } catch (shareError: unknown) {
+            const error = shareError as Error;
+            if (error.name === 'AbortError') {
+              console.log('📱 Compartilhamento cancelado pelo usuário');
+              return;
+            }
+            
+            console.log('📱 Web Share API falhou, tentando fallback:', error.message);
+          }
+        }
+
+        // Fallback for Desktop or Web Share API not available
+        console.log('💻 Usando fallback para desktop/navegadores antigos');
         
         // Copy to clipboard as backup
         let clipboardSuccess = false;
@@ -203,52 +240,15 @@ _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
           console.log('📋 Clipboard não disponível');
         }
 
-        // Show toast with two clear options for the user
+        // Show fallback options for desktop
         toast({
-          title: "Escolha como compartilhar:",
-          description: "Selecione sua opção preferida",
-          duration: 10000,
+          title: "Compartilhar relatório:",
+          description: "Escolha uma opção abaixo",
+          duration: 12000,
           action: (
-            <div className="flex gap-2">
-              <button 
-                onClick={async () => {
-                  // Option 1: Share via App (accepts popup)
-                  if (navigator.share) {
-                    try {
-                      console.log('📱 Usuário escolheu: Compartilhar via App');
-                      await navigator.share({
-                        title: '🩺 DorLog - Relatório de Saúde',
-                        text: message,
-                      });
-                      
-                      toast({
-                        title: "Relatório compartilhado!",
-                        description: "Conteúdo enviado através do app selecionado.",
-                        duration: 5000,
-                      });
-                    } catch (shareError: unknown) {
-                      const error = shareError as Error;
-                      if (error.name !== 'AbortError') {
-                        // Fallback to WhatsApp app
-                        const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
-                        window.open(whatsappUrl, '_blank');
-                      }
-                    }
-                  } else {
-                    // Fallback to WhatsApp app
-                    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
-                    window.open(whatsappUrl, '_blank');
-                  }
-                }}
-                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-              >
-                📱 Abrir no App
-              </button>
-              
+            <div className="flex flex-col gap-2">
               <button 
                 onClick={() => {
-                  // Option 2: WhatsApp Web (direct, no popup)
-                  console.log('🌐 Usuário escolheu: WhatsApp Web');
                   const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
                   window.open(whatsappWebUrl, '_blank');
                   
@@ -260,8 +260,24 @@ _Este relatório foi gerado automaticamente pelo aplicativo DorLog._`;
                 }}
                 className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
               >
-                🌐 WhatsApp Web
+                💬 WhatsApp Web
               </button>
+              
+              <button 
+                onClick={() => {
+                  const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
+                  window.open(whatsappUrl, '_blank');
+                }}
+                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+              >
+                📱 App WhatsApp
+              </button>
+              
+              {clipboardSuccess && (
+                <span className="text-xs text-gray-600">
+                  ✅ Mensagem copiada!
+                </span>
+              )}
             </div>
           ),
         });
