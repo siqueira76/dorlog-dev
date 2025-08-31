@@ -103,7 +103,7 @@ export default function Reports() {
       });
 
       console.log(`📊 Documentos do usuário encontrados: ${userDocuments}`);
-      console.log('📅 Último registro encontrado:', lastEntryDate?.toISOString() ?? null);
+      console.log('📅 Último registro encontrado:', lastEntryDate ? lastEntryDate.toISOString() : null);
 
       // Se não há registros
       if (!lastEntryDate || userDocuments === 0) {
@@ -117,7 +117,7 @@ export default function Reports() {
       const today = new Date();
       const todayStr = today.toDateString();
       const yesterdayStr = new Date(today.getTime() - 24 * 60 * 60 * 1000).toDateString();
-      const lastEntryStr = lastEntryDate?.toDateString() ?? '';
+      const lastEntryStr = lastEntryDate ? lastEntryDate.toDateString() : '';
 
       // Se o último registro é hoje
       if (lastEntryStr === todayStr) {
@@ -138,7 +138,7 @@ export default function Reports() {
       }
 
       // Calcular dias desde o último registro
-      const diffTime = today.getTime() - (lastEntryDate ? lastEntryDate.getTime() : 0);
+      const diffTime = today.getTime() - (lastEntryDate ? lastEntryDate.getTime() : today.getTime());
       const daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
       return {
