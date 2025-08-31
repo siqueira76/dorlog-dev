@@ -22,6 +22,8 @@ const NLPDemo = () => {
   const [nlpResult, setNlpResult] = useState<NLPAnalysisResult | null>(null);
   const [insights, setInsights] = useState<HealthInsight[]>([]);
   const [smartSummary, setSmartSummary] = useState<SmartSummary | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [modelStatus, setModelStatus] = useState({ ai: false, fallback: false });
 
   // Textos de exemplo para demonstração
   const sampleTexts = [
@@ -111,6 +113,11 @@ const NLPDemo = () => {
 
     try {
       console.log('🧠 Iniciando demonstração NLP...');
+      setAnalysisError(null);
+      
+      // Verificar status dos modelos
+      const status = nlpService.getModelStatus();
+      setModelStatus({ ai: !status.fallbackMode, fallback: status.fallbackMode });
       
       // 1. Análise NLP do texto
       const nlpAnalysis = await nlpService.analyzeText(sampleText);
@@ -130,8 +137,9 @@ const NLPDemo = () => {
       console.log('✅ Demonstração NLP concluída');
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error('❌ Erro na análise:', error);
-      alert('Erro na análise. Verifique o console para detalhes.');
+      setAnalysisError(errorMessage);
     } finally {
       setIsAnalyzing(false);
     }
@@ -164,10 +172,28 @@ const NLPDemo = () => {
             <CardTitle className="flex items-center gap-2">
               <Brain className="h-6 w-6 text-blue-600" />
               Demonstração NLP - DorLog
+              {modelStatus.fallback && (
+                <Badge variant="outline" className="ml-2 text-xs">
+                  Modo Regras
+                </Badge>
+              )}
+              {modelStatus.ai && (
+                <Badge className="ml-2 text-xs bg-green-100 text-green-800">
+                  IA Ativa
+                </Badge>
+              )}
             </CardTitle>
             <p className="text-gray-600">
               Sistema isolado de análise de linguagem natural para insights de saúde
             </p>
+            {analysisError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+                <p className="text-red-800 text-sm">
+                  <AlertTriangle className="inline h-4 w-4 mr-1" />
+                  Erro: {analysisError}
+                </p>
+              </div>
+            )}
           </CardHeader>
         </Card>
 
