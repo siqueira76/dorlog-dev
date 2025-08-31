@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Brain } from 'lucide-react';
+import { Link } from 'wouter';
 
 export default function Profile() {
   const { currentUser, updateUserProfile, updateUserPassword, testFirestoreConnection } = useAuth();
@@ -321,6 +322,31 @@ export default function Profile() {
                 {isUpdatingPassword ? 'Alterando...' : 'Alterar Senha'}
               </Button>
             </form>
+          </div>
+
+          <Separator />
+
+          {/* NLP Demo Section */}
+          <div>
+            <h4 className="font-medium text-foreground mb-4">Análise Inteligente (Beta)</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              Experimente nosso sistema de análise NLP para insights automáticos dos seus dados de saúde.
+            </p>
+            
+            <Link href="/nlp-demo">
+              <Button
+                variant="outline"
+                className="w-full rounded-xl font-medium transition-colors bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 border-blue-200"
+                data-testid="button-nlp-demo"
+              >
+                <Brain className="mr-2 h-4 w-4 text-blue-600" />
+                <span className="text-blue-700">Demonstração NLP</span>
+              </Button>
+            </Link>
+            
+            <div className="mt-2 text-xs text-center text-gray-500">
+              🧠 Sistema isolado • Não interfere nas funcionalidades existentes
+            </div>
           </div>
 
           <Separator />

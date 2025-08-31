@@ -70,6 +70,7 @@ import AddDoctor from '@/pages/AddDoctor';
 import AddMedication from '@/pages/AddMedication';
 import Quiz from '@/pages/Quiz';
 import Register from '@/pages/Register';
+import NLPDemo from '@/pages/NLPDemo';
 import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient({
@@ -173,6 +174,14 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Quiz />
+                </Layout>
+              </ProtectedRoute>
+            </Route>
+            
+            <Route path="/nlp-demo">
+              <ProtectedRoute>
+                <Layout>
+                  <NLPDemo />
                 </Layout>
               </ProtectedRoute>
             </Route>
