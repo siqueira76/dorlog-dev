@@ -125,20 +125,34 @@ export default function Reports() {
             // Processar quizzes do dia
             if (data.quizzes && Array.isArray(data.quizzes)) {
               data.quizzes.forEach((quiz: any) => {
-                if (quiz.respostas && Array.isArray(quiz.respostas)) {
-                  quiz.respostas.forEach((resposta: any) => {
-                    // Capturar nível de dor (EVA)
-                    if (resposta.tipo === 'eva' && typeof resposta.valor === 'number') {
-                      dayPainLevel = resposta.valor;
+                // Capturar nível de dor baseado no tipo de quiz
+                if (quiz.respostas && typeof quiz.respostas === 'object') {
+                  // Para quiz noturno e matinal: dor está na pergunta 2
+                  // Para quiz emergencial: dor está na pergunta 1
+                  let painQuestionId = '2';
+                  if (quiz.tipo === 'emergencial') {
+                    painQuestionId = '1';
+                  }
+                  
+                  if (quiz.respostas[painQuestionId] !== undefined) {
+                    const painResponse = quiz.respostas[painQuestionId];
+                    if (typeof painResponse === 'number') {
+                      dayPainLevel = painResponse;
+                    } else if (typeof painResponse === 'string') {
+                      const painValue = parseInt(painResponse, 10);
+                      if (!isNaN(painValue)) {
+                        dayPainLevel = painValue;
+                      }
                     }
-                  });
-                }
-                
-                // Capturar humor do quiz noturno - pergunta 9
-                if (quiz.tipo === 'noturno' && quiz.respostas) {
-                  const humorResponse = quiz.respostas.find((r: any) => r.questionId === '9' || r.questionId === 9);
-                  if (humorResponse && humorResponse.answer) {
-                    dayMood = humorResponse.answer;
+                  }
+                  
+                  // Capturar humor baseado no tipo de quiz
+                  if (quiz.tipo === 'noturno' && quiz.respostas['9'] !== undefined) {
+                    // Quiz noturno: humor na pergunta 9
+                    dayMood = quiz.respostas['9'];
+                  } else if (quiz.tipo === 'matinal' && quiz.respostas['1'] !== undefined) {
+                    // Quiz matinal: humor na pergunta 1
+                    dayMood = quiz.respostas['1'];
                   }
                 }
               });
@@ -167,6 +181,7 @@ export default function Reports() {
       
       const result = Array.from(correlationData.values());
       console.log('🎯 Dados de correlação encontrados:', result.length, 'pontos');
+      console.log('📊 Amostra dos dados de correlação:', result.slice(0, 3));
       return result;
     } catch (error) {
       console.error('Erro ao buscar correlação dor-humor:', error);
