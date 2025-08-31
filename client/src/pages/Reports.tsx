@@ -1,8 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle, MapPin, BookOpen } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle, MapPin, BookOpen, Brain } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter, Cell } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
@@ -12,6 +12,15 @@ import { db } from '@/lib/firebase';
 export default function Reports() {
   const { currentUser } = useAuth();
   const [, setLocation] = useLocation();
+
+  // Interface para dados de correlação dor-humor
+  interface PainMoodCorrelation {
+    painLevel: number;
+    mood: string;
+    moodValue: number; // Valor numérico para o humor
+    date: string;
+    count: number; // Número de ocorrências deste par
+  }
 
   // Função para buscar episódios de crise
   const fetchCrisisEpisodes = async (): Promise<number> => {
@@ -69,6 +78,102 @@ export default function Reports() {
     }
   };
 
+  // Função para buscar dados de correlação dor-humor
+  const fetchPainMoodCorrelation = async (): Promise<PainMoodCorrelation[]> => {
+    if (!currentUser?.email) {
+      return [];
+    }
+
+    try {
+      console.log('🧠 Buscando dados de correlação dor-humor para:', currentUser.email);
+      
+      // Calcular data de 30 dias atrás
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const thirtyDaysAgoTimestamp = Timestamp.fromDate(thirtyDaysAgo);
+      
+      const reportDiarioRef = collection(db, 'report_diario');
+      const q = query(reportDiarioRef);
+      
+      const querySnapshot = await getDocs(q);
+      const correlationData: Map<string, PainMoodCorrelation> = new Map();
+      
+      // Mapeamento de humor para valores numéricos
+      const moodToValue: { [key: string]: number } = {
+        'Depressivo': 1,
+        'Triste': 2,
+        'Irritado': 3,
+        'Ansioso': 4,
+        'Calmo': 5,
+        'Feliz': 6
+      };
+      
+      querySnapshot.forEach((doc) => {
+        const docId = doc.id;
+        const data = doc.data();
+        
+        // Verificar se o documento pertence ao usuário
+        if (docId.startsWith(`${currentUser.email}_`) || data.usuarioId === currentUser.email || data.email === currentUser.email) {
+          const docData = data.data;
+          
+          // Verificar se está dentro dos últimos 30 dias
+          if (docData && typeof docData.toDate === 'function' && docData >= thirtyDaysAgoTimestamp) {
+            const dayKey = (docData.toDate() as Date).toISOString().split('T')[0];
+            let dayPainLevel: number | null = null;
+            let dayMood: string | null = null;
+            
+            // Processar quizzes do dia
+            if (data.quizzes && Array.isArray(data.quizzes)) {
+              data.quizzes.forEach((quiz: any) => {
+                if (quiz.respostas && Array.isArray(quiz.respostas)) {
+                  quiz.respostas.forEach((resposta: any) => {
+                    // Capturar nível de dor (EVA)
+                    if (resposta.tipo === 'eva' && typeof resposta.valor === 'number') {
+                      dayPainLevel = resposta.valor;
+                    }
+                  });
+                }
+                
+                // Capturar humor do quiz noturno - pergunta 9
+                if (quiz.tipo === 'noturno' && quiz.respostas) {
+                  const humorResponse = quiz.respostas.find((r: any) => r.questionId === '9' || r.questionId === 9);
+                  if (humorResponse && humorResponse.answer) {
+                    dayMood = humorResponse.answer;
+                  }
+                }
+              });
+            }
+            
+            // Se temos ambos os dados, criar ponto de correlação
+            if (dayPainLevel !== null && dayMood && moodToValue[dayMood]) {
+              const key = `${dayPainLevel}-${dayMood}`;
+              const existing = correlationData.get(key);
+              
+              if (existing) {
+                existing.count++;
+              } else {
+                correlationData.set(key, {
+                  painLevel: dayPainLevel,
+                  mood: dayMood,
+                  moodValue: moodToValue[dayMood],
+                  date: dayKey,
+                  count: 1
+                });
+              }
+            }
+          }
+        }
+      });
+      
+      const result = Array.from(correlationData.values());
+      console.log('🎯 Dados de correlação encontrados:', result.length, 'pontos');
+      return result;
+    } catch (error) {
+      console.error('Erro ao buscar correlação dor-humor:', error);
+      return [];
+    }
+  };
+
   // Função para verificar adesão ao diário
   const fetchDiaryAdherence = async (): Promise<{ daysSinceLastEntry: number; message: string; status: 'good' | 'warning' | 'danger' | 'empty' }> => {
     if (!currentUser?.email) {
@@ -103,7 +208,7 @@ export default function Reports() {
       });
 
       console.log(`📊 Documentos do usuário encontrados: ${userDocuments}`);
-      console.log('📅 Último registro encontrado:', lastEntryDate ? lastEntryDate.toISOString() : null);
+      console.log('📅 Último registro encontrado:', lastEntryDate ? (lastEntryDate as Date).toISOString() : null);
 
       // Se não há registros
       if (!lastEntryDate || userDocuments === 0) {
@@ -117,7 +222,7 @@ export default function Reports() {
       const today = new Date();
       const todayStr = today.toDateString();
       const yesterdayStr = new Date(today.getTime() - 24 * 60 * 60 * 1000).toDateString();
-      const lastEntryStr = lastEntryDate ? lastEntryDate.toDateString() : '';
+      const lastEntryStr = lastEntryDate ? (lastEntryDate as Date).toDateString() : '';
 
       // Se o último registro é hoje
       if (lastEntryStr === todayStr) {
@@ -138,7 +243,7 @@ export default function Reports() {
       }
 
       // Calcular dias desde o último registro
-      const diffTime = today.getTime() - (lastEntryDate ? lastEntryDate.getTime() : today.getTime());
+      const diffTime = today.getTime() - (lastEntryDate ? (lastEntryDate as Date).getTime() : today.getTime());
       const daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
       return {
@@ -334,6 +439,14 @@ export default function Reports() {
   const { data: painEvolution, isLoading: isLoadingEvolution } = useQuery({
     queryKey: ['pain-evolution', currentUser?.email],
     queryFn: fetchPainEvolution,
+    enabled: !!currentUser?.email,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+
+  // Query para buscar correlação dor-humor
+  const { data: painMoodCorrelation, isLoading: isLoadingCorrelation } = useQuery({
+    queryKey: ['pain-mood-correlation', currentUser?.email],
+    queryFn: fetchPainMoodCorrelation,
     enabled: !!currentUser?.email,
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
@@ -674,6 +787,193 @@ export default function Reports() {
           </CardContent>
         </Card>
 
+        {/* Correlação Dor-Humor */}
+        <Card className="shadow-sm border border-border">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-lg">
+              <Brain className="h-5 w-5 mr-2 text-purple-500" />
+              Correlação Dor-Humor
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Relação entre intensidade da dor e estado de humor nos últimos 30 dias
+            </p>
+            {isLoadingCorrelation ? (
+              <div className="bg-muted rounded-xl p-6 text-center">
+                <Brain className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50 animate-pulse" />
+                <p className="text-sm text-muted-foreground">
+                  Carregando dados...
+                </p>
+              </div>
+            ) : !painMoodCorrelation || painMoodCorrelation.length === 0 ? (
+              <div className="bg-muted rounded-xl p-6 text-center">
+                <Brain className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">
+                  Complete alguns diários noturnos e registre episódios de dor para ver a correlação
+                </p>
+              </div>
+            ) : (
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="90%">
+                  <ScatterChart
+                    data={painMoodCorrelation}
+                    margin={{
+                      top: 20,
+                      right: 30,
+                      left: 20,
+                      bottom: 20,
+                    }}
+                  >
+                    <CartesianGrid 
+                      strokeDasharray="1 3" 
+                      stroke="#e2e8f0" 
+                      strokeOpacity={0.3}
+                    />
+                    
+                    <XAxis 
+                      type="number"
+                      dataKey="painLevel"
+                      domain={[0, 10]}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ 
+                        fontSize: 11, 
+                        fill: '#64748b',
+                        fontWeight: 500
+                      }}
+                      label={{ 
+                        value: 'Intensidade da Dor (0-10)', 
+                        position: 'insideBottom',
+                        offset: -10,
+                        style: { 
+                          textAnchor: 'middle', 
+                          fontSize: '11px', 
+                          fill: '#64748b',
+                          fontWeight: 500
+                        }
+                      }}
+                    />
+                    
+                    <YAxis 
+                      type="number"
+                      dataKey="moodValue"
+                      domain={[1, 6]}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ 
+                        fontSize: 11, 
+                        fill: '#64748b',
+                        fontWeight: 500
+                      }}
+                      tickFormatter={(value) => {
+                        const moodLabels: { [key: number]: string } = {
+                          1: 'Depressivo',
+                          2: 'Triste', 
+                          3: 'Irritado',
+                          4: 'Ansioso',
+                          5: 'Calmo',
+                          6: 'Feliz'
+                        };
+                        return moodLabels[value] || '';
+                      }}
+                      label={{ 
+                        value: 'Estado de Humor', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        style: { 
+                          textAnchor: 'middle', 
+                          fontSize: '11px', 
+                          fill: '#64748b',
+                          fontWeight: 500
+                        }
+                      }}
+                    />
+                    
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        padding: '8px 12px',
+                        backdropFilter: 'blur(8px)'
+                      }}
+                      labelStyle={{ 
+                        color: '#1e293b',
+                        fontWeight: 600,
+                        fontSize: '12px',
+                        marginBottom: '2px'
+                      }}
+                      formatter={(value: number, name: string, props: any) => {
+                        if (name === 'painLevel') {
+                          return [
+                            <span style={{ color: '#8b5cf6', fontWeight: 700, fontSize: '14px' }}>
+                              {value}/10
+                            </span>, 
+                            'Nível de Dor'
+                          ];
+                        }
+                        return [value, name];
+                      }}
+                      labelFormatter={(value, payload) => {
+                        if (payload && payload[0]) {
+                          const data = payload[0].payload;
+                          return `Humor: ${data.mood} | Ocorrências: ${data.count}`;
+                        }
+                        return '';
+                      }}
+                    />
+                    
+                    <Scatter dataKey="painLevel" fill="#8b5cf6">
+                      {painMoodCorrelation?.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={
+                            entry.moodValue <= 2 ? '#ef4444' :  // Depressivo/Triste - vermelho
+                            entry.moodValue <= 4 ? '#f59e0b' :  // Irritado/Ansioso - laranja
+                            '#10b981'  // Calmo/Feliz - verde
+                          }
+                        />
+                      ))}
+                    </Scatter>
+                  </ScatterChart>
+                </ResponsiveContainer>
+                
+                {/* Legenda */}
+                <div className="mt-4 pt-3 border-t border-slate-100">
+                  <div className="grid grid-cols-3 gap-4 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <span className="text-slate-600">Humor Baixo</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                      <span className="text-slate-600">Humor Neutro</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span className="text-slate-600">Humor Positivo</span>
+                    </div>
+                  </div>
+                  {painMoodCorrelation && painMoodCorrelation.length > 0 && (
+                    <div className="mt-2 text-center">
+                      <span className="text-xs text-slate-600">
+                        Total de registros correlacionados: <span className="font-semibold text-purple-600">
+                          {painMoodCorrelation.reduce((sum, item) => sum + item.count, 0)}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Seção de Resumo */}
+      <div className="grid grid-cols-1 gap-6 mt-6">
         {/* Resumo Mensal */}
         <Card className="shadow-sm border border-border">
           <CardHeader className="pb-3">
