@@ -1107,7 +1107,7 @@ function generateUrgencyHeatmapHTML(heatmapData: any[]): string {
 
 function getEnhancedReportJavaScript(withPassword?: boolean, passwordHash?: string, reportId?: string): string {
   return `
-    // Enhanced Report JavaScript with Chart.js integration
+    // Enhanced Report JavaScript with Robust Chart.js integration
     document.addEventListener('DOMContentLoaded', function() {
         console.log('🧠 DorLog Enhanced Report loaded');
         
@@ -1126,38 +1126,140 @@ function getEnhancedReportJavaScript(withPassword?: boolean, passwordHash?: stri
             }
         ` : ''}
         
-        // Initialize charts
-        initializeSentimentChart();
-        initializeCorrelationChart();
-        
-        // Add interactivity
-        setupInteractiveElements();
-        
-        // Report analytics
-        logReportView('${reportId}');
+        // Wait for Chart.js to be available and initialize charts robustly
+        waitForChart(() => {
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    initializeAllCharts();
+                    setupInteractiveElements();
+                    logReportView('${reportId}');
+                }, 50);
+            });
+        });
     });
     
-    function initializeSentimentChart() {
-        const canvas = document.getElementById('sentimentChart');
-        if (!canvas) return;
+    // Robust Chart.js initialization functions
+    function waitForChart(callback, maxAttempts = 10) {
+        let attempts = 0;
+        const checkChart = () => {
+            if (typeof Chart !== 'undefined') {
+                console.log('✅ Chart.js carregado com sucesso');
+                callback();
+            } else if (attempts < maxAttempts) {
+                attempts++;
+                console.log(\`⏳ Aguardando Chart.js... (\${attempts}/\${maxAttempts})\`);
+                setTimeout(checkChart, 100);
+            } else {
+                console.error('❌ Chart.js não carregou - usando fallback');
+                showChartsFallback();
+            }
+        };
+        checkChart();
+    }
+    
+    function validateCanvas(canvasId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+            console.error(\`❌ Canvas \${canvasId} não encontrado\`);
+            return null;
+        }
         
         const ctx = canvas.getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
+        if (!ctx) {
+            console.error(\`❌ Contexto 2D não disponível para \${canvasId}\`);
+            return null;
+        }
+        
+        return { canvas, ctx };
+    }
+    
+    function safeInitializeChart(chartType, canvasId, config) {
+        try {
+            const canvasData = validateCanvas(canvasId);
+            if (!canvasData) return false;
+            
+            const chart = new Chart(canvasData.ctx, config);
+            console.log(\`✅ \${chartType} renderizado com sucesso\`);
+            return chart;
+            
+        } catch (error) {
+            console.error(\`❌ Erro ao renderizar \${chartType}:\`, error);
+            showChartError(canvasId, chartType, error.message);
+            return false;
+        }
+    }
+    
+    function showChartError(canvasId, chartType, reason = 'Erro na renderização') {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        canvas.style.display = 'none';
+        const fallback = document.createElement('div');
+        fallback.className = 'chart-fallback bg-gray-50 rounded-lg p-8 text-center';
+        fallback.innerHTML = \`
+            <div class="text-4xl mb-3">📊</div>
+            <p class="text-gray-600 font-medium">\${chartType}</p>
+            <p class="text-sm text-gray-500 mt-1">Temporariamente indisponível</p>
+            <p class="text-xs text-gray-400 mt-2">\${reason}</p>
+        \`;
+        canvas.parentNode.insertBefore(fallback, canvas);
+    }
+    
+    function showChartsFallback() {
+        ['sentimentChart', 'correlationChart'].forEach(id => {
+            showChartError(id, 'Gráfico', 'Chart.js não carregou');
+        });
+    }
+    
+    function initializeAllCharts() {
+        const charts = [
+            { type: 'Evolução do Sentimento', id: 'sentimentChart', fn: initializeSentimentChart },
+            { type: 'Correlação Dor-Humor', id: 'correlationChart', fn: initializeCorrelationChart }
+        ];
+        
+        let index = 0;
+        function initNext() {
+            if (index >= charts.length) {
+                console.log('✅ Todos os gráficos processados');
+                return;
+            }
+            
+            const chart = charts[index];
+            console.log(\`📊 Inicializando \${chart.type}...\`);
+            
+            if (chart.fn()) {
+                index++;
+                setTimeout(initNext, 100);
+            } else {
+                console.warn(\`⚠️ Falha em \${chart.type}, continuando...\`);
+                index++;
+                initNext();
+            }
+        }
+        
+        initNext();
+    }
+    
+    function initializeSentimentChart() {
+        const config = {
+            type: 'bar',
             data: {
-                labels: ['Sem', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+                labels: ['Positivo', 'Negativo', 'Neutro'],
                 datasets: [{
-                    label: 'Sentimento Positivo',
-                    data: [65, 59, 80, 81, 56, 55, 40],
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    tension: 0.4
-                }, {
-                    label: 'Sentimento Negativo',
-                    data: [28, 48, 40, 19, 86, 27, 90],
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    tension: 0.4
+                    label: 'Distribuição de Sentimento (%)',
+                    data: [45, 35, 20],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(239, 68, 68, 0.8)',
+                        'rgba(107, 114, 128, 0.8)'
+                    ],
+                    borderColor: [
+                        '#10b981',
+                        '#ef4444',
+                        '#6b7280'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 4
                 }]
             },
             options: {
@@ -1166,35 +1268,48 @@ function getEnhancedReportJavaScript(withPassword?: boolean, passwordHash?: stri
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Evolução do Sentimento (NLP)'
+                        text: 'Análise de Sentimento (NLP)',
+                        font: { size: 14, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 100
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Percentual (%)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Classificação Emocional'
+                        }
                     }
                 }
             }
-        });
+        };
+        
+        return safeInitializeChart('Gráfico de Sentimento', 'sentimentChart', config);
     }
     
     function initializeCorrelationChart() {
-        const canvas = document.getElementById('correlationChart');
-        if (!canvas) return;
-        
-        const ctx = canvas.getContext('2d');
-        new Chart(ctx, {
-            type: 'scatter',
+        const config = {
+            type: 'bubble',
             data: {
                 datasets: [{
-                    label: 'Dor vs Humor',
+                    label: 'Dor vs Humor (intensidade)',
                     data: [
-                        {x: 2, y: 3}, {x: 4, y: 1}, {x: 6, y: -1}, 
-                        {x: 8, y: -3}, {x: 3, y: 2}, {x: 7, y: -2}
+                        {x: 2, y: 3, r: 8}, {x: 4, y: 1, r: 12}, {x: 6, y: -1, r: 15}, 
+                        {x: 8, y: -3, r: 18}, {x: 3, y: 2, r: 10}, {x: 7, y: -2, r: 16}
                     ],
                     backgroundColor: 'rgba(99, 102, 241, 0.6)',
-                    borderColor: '#6366f1'
+                    borderColor: '#6366f1',
+                    borderWidth: 2
                 }]
             },
             options: {
@@ -1203,14 +1318,26 @@ function getEnhancedReportJavaScript(withPassword?: boolean, passwordHash?: stri
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Correlação Dor (0-10) vs Humor (-5 a +5)'
+                        text: 'Correlação Dor vs Humor',
+                        font: { size: 14, weight: 'bold' }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return \`Dor: \${context.parsed.x}/10, Humor: \${context.parsed.y}/5, Intensidade: \${context.parsed._custom || context.raw.r}\`;
+                            }
+                        }
                     }
                 },
                 scales: {
                     x: {
                         title: {
                             display: true,
-                            text: 'Nível de Dor'
+                            text: 'Nível de Dor (0-10)'
                         },
                         min: 0,
                         max: 10
@@ -1218,14 +1345,16 @@ function getEnhancedReportJavaScript(withPassword?: boolean, passwordHash?: stri
                     y: {
                         title: {
                             display: true,
-                            text: 'Score de Humor'
+                            text: 'Score de Humor (-5 a +5)'
                         },
                         min: -5,
                         max: 5
                     }
                 }
             }
-        });
+        };
+        
+        return safeInitializeChart('Gráfico de Correlação', 'correlationChart', config);
     }
     
     function setupInteractiveElements() {
