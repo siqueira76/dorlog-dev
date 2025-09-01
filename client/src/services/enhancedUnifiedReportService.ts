@@ -16,7 +16,7 @@ export interface EnhancedReportOptions extends UnifiedReportOptions {
   includeNLPInsights?: boolean;
   includeVisualizationCharts?: boolean;
   includePredictiveAlerts?: boolean;
-  textResponses?: string[]; // Textos livres para análise NLP
+  textResponses?: string[] | Array<{text: string, date: string, timestamp?: string, quizType: string}>; // Textos livres para análise NLP
 }
 
 export interface EnhancedReportResult extends UnifiedReportResult {
@@ -345,37 +345,65 @@ export class EnhancedUnifiedReportService {
   }
 
   /**
-   * Utilitário para extrair textos de respostas de quizzes baseado em definições reais do Firebase
+   * Utilitário para extrair textos de respostas de quizzes preservando contexto temporal
    */
-  static async extractTextResponsesFromReportData(reportData: any): Promise<string[]> {
-    const texts: string[] = [];
+  static async extractTextResponsesWithContext(reportData: any): Promise<Array<{
+    text: string;
+    date: string;
+    timestamp?: string;
+    quizType: string;
+    questionId?: string;
+    documentId?: string;
+  }>> {
+    const textsWithContext: Array<{
+      text: string;
+      date: string;
+      timestamp?: string;
+      quizType: string;
+      questionId?: string;
+      documentId?: string;
+    }> = [];
     
     try {
-      console.log('🔍 Iniciando extração de textos com definições dinâmicas...');
+      console.log('🔍 Iniciando extração de textos com contexto temporal...');
       
       // Extrair observações gerais (mantido para compatibilidade)
       if (reportData.observations && typeof reportData.observations === 'string') {
-        texts.push(reportData.observations);
+        textsWithContext.push({
+          text: reportData.observations,
+          date: reportData.generatedAt ? new Date(reportData.generatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          timestamp: reportData.generatedAt || new Date().toISOString(),
+          quizType: 'observacoes',
+          questionId: 'general'
+        });
       }
       
       // Processar quizzes se existirem no reportData
       if (reportData.quizzes && Array.isArray(reportData.quizzes)) {
-        console.log(`📊 Processando ${reportData.quizzes.length} quiz(es)...`);
+        console.log(`📊 Processando ${reportData.quizzes.length} quiz(es) com contexto temporal...`);
         
         for (const quiz of reportData.quizzes) {
           const quizType = quiz.tipo;
-          console.log(`🔎 Analisando quiz tipo: ${quizType}`);
+          const quizDate = quiz.date || quiz.timestamp;
+          console.log(`🔎 Analisando quiz tipo: ${quizType} - Data: ${quizDate}`);
           
           // Buscar definições de questões de texto para este tipo de quiz
           const definition = await this.getQuizDefinition(quizType);
           
           if (quiz.respostas && typeof quiz.respostas === 'object') {
             // Extrair respostas de texto baseado nas definições
-            definition.textQuestions.forEach(questionId => {
+            definition.textQuestions.forEach((questionId: string) => {
               const answer = quiz.respostas[questionId];
               if (answer && typeof answer === 'string' && answer.trim().length > 5) {
-                texts.push(answer);
-                console.log(`📝 Texto extraído da questão ${questionId}: "${answer.substring(0, 50)}..."`);
+                textsWithContext.push({
+                  text: answer,
+                  date: quizDate ? new Date(quizDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                  timestamp: quizDate || new Date().toISOString(),
+                  quizType: quizType,
+                  questionId: questionId,
+                  documentId: quiz.documentId || quiz.id
+                });
+                console.log(`📝 Texto extraído da questão ${questionId} em ${quizDate}: "${answer.substring(0, 50)}..."`);
               }
             });
           }
@@ -383,31 +411,58 @@ export class EnhancedUnifiedReportService {
       }
       
       // Buscar em outras estruturas possíveis se não encontrou nos quizzes
-      if (texts.length === 0) {
+      if (textsWithContext.length === 0) {
         console.log('🔍 Tentando extrair de outras fontes...');
         
         // Extrair textos de painEvolution se houver contexto
         if (reportData.painEvolution) {
           reportData.painEvolution.forEach((pain: any) => {
             if (pain.context && typeof pain.context === 'string') {
-              texts.push(pain.context);
+              textsWithContext.push({
+                text: pain.context,
+                date: pain.date || new Date().toISOString().split('T')[0],
+                timestamp: pain.timestamp || new Date().toISOString(),
+                quizType: 'painEvolution',
+                questionId: 'context'
+              });
             }
           });
         }
         
         // Tentar extrair de outras fontes de texto livre
         if (reportData.textualResponses && Array.isArray(reportData.textualResponses)) {
-          texts.push(...reportData.textualResponses.filter((t: any) => typeof t === 'string'));
+          reportData.textualResponses.forEach((textResponse: any, index: number) => {
+            if (typeof textResponse === 'string' && textResponse.trim().length > 5) {
+              textsWithContext.push({
+                text: textResponse,
+                date: new Date().toISOString().split('T')[0],
+                timestamp: new Date().toISOString(),
+                quizType: 'textualResponses',
+                questionId: `response_${index}`
+              });
+            }
+          });
         }
       }
       
-      console.log(`✅ Extração concluída: ${texts.length} texto(s) encontrado(s)`);
+      console.log(`✅ Extração concluída: ${textsWithContext.length} texto(s) com contexto encontrado(s)`);
       
     } catch (error) {
       console.warn('❌ Erro ao extrair textos:', error);
     }
     
-    return texts.filter(text => text && text.trim().length > 5);
+    // Ordenar por data para manter cronologia
+    return textsWithContext
+      .filter(item => item.text && item.text.trim().length > 5)
+      .sort((a, b) => new Date(a.timestamp || a.date).getTime() - new Date(b.timestamp || b.date).getTime());
+  }
+
+  /**
+   * Método de compatibilidade para retornar apenas os textos (para não quebrar código existente)
+   */
+  static async extractTextResponsesFromReportData(reportData: any): Promise<string[]> {
+    const textsWithContext = await this.extractTextResponsesWithContext(reportData);
+    return textsWithContext.map(item => item.text);
   }
   
   /**
@@ -420,8 +475,9 @@ export class EnhancedUnifiedReportService {
       // 1. Buscar dados básicos para análise
       const baseData = await fetchUserReportData(options.userId, options.periods);
       
-      // 2. Auto-detectar textos disponíveis (agora usando definições dinâmicas)
-      const extractedTexts = await this.extractTextResponsesFromReportData(baseData);
+      // 2. Auto-detectar textos disponíveis (agora usando definições dinâmicas com contexto temporal)
+      const extractedTextsWithContext = await this.extractTextResponsesWithContext(baseData);
+      const extractedTexts = extractedTextsWithContext.map(item => item.text);
       
       // 3. Determinar se usar enhanced baseado na disponibilidade de dados (critério otimizado)
       const useEnhanced = extractedTexts.length >= 1 || 
@@ -437,7 +493,7 @@ export class EnhancedUnifiedReportService {
         includeNLPInsights: extractedTexts.length > 0,
         includeVisualizationCharts: useEnhanced,
         includePredictiveAlerts: useEnhanced && baseData.totalDays > 5,
-        textResponses: extractedTexts
+        textResponses: extractedTextsWithContext
       };
       
       // 5. Gerar relatório apropriado
