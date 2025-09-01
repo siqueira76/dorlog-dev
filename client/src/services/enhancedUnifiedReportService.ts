@@ -277,33 +277,134 @@ export class EnhancedUnifiedReportService {
   }
   
   /**
-   * Utilitário para extrair textos de respostas de quizzes
+   * Cache global para definições de quiz (otimização de performance)
    */
-  static extractTextResponsesFromReportData(reportData: any): string[] {
+  private static quizDefinitionsCache = new Map<string, {
+    textQuestions: string[],
+    evaQuestions: string[],
+    checkboxQuestions: string[],
+    lastUpdated: number
+  }>();
+  
+  private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+  /**
+   * Busca definições de quiz do Firebase para identificar tipos de questão
+   */
+  private static async getQuizDefinition(quizType: string) {
+    const cached = this.quizDefinitionsCache.get(quizType);
+    
+    if (cached && (Date.now() - cached.lastUpdated) < this.CACHE_DURATION) {
+      return cached;
+    }
+    
+    try {
+      const { collection, getDocs } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+      
+      const quizRef = collection(db, 'quizzes', quizType, 'perguntas');
+      const snapshot = await getDocs(quizRef);
+      
+      const definition = {
+        textQuestions: [] as string[],
+        evaQuestions: [] as string[],
+        checkboxQuestions: [] as string[],
+        lastUpdated: Date.now()
+      };
+      
+      snapshot.forEach(doc => {
+        const question = doc.data();
+        const questionId = question.id?.toString() || doc.id;
+        
+        switch (question.tipo) {
+          case 'texto':
+            definition.textQuestions.push(questionId);
+            break;
+          case 'eva':
+            definition.evaQuestions.push(questionId);
+            break;
+          case 'checkbox':
+            definition.checkboxQuestions.push(questionId);
+            break;
+        }
+      });
+      
+      this.quizDefinitionsCache.set(quizType, definition);
+      console.log(`📋 Definições carregadas para ${quizType}:`, definition);
+      return definition;
+      
+    } catch (error) {
+      console.warn(`⚠️ Erro ao buscar definições para ${quizType}:`, error);
+      return {
+        textQuestions: [],
+        evaQuestions: [],
+        checkboxQuestions: [],
+        lastUpdated: Date.now()
+      };
+    }
+  }
+
+  /**
+   * Utilitário para extrair textos de respostas de quizzes baseado em definições reais do Firebase
+   */
+  static async extractTextResponsesFromReportData(reportData: any): Promise<string[]> {
     const texts: string[] = [];
     
     try {
-      // Extrair observações gerais
+      console.log('🔍 Iniciando extração de textos com definições dinâmicas...');
+      
+      // Extrair observações gerais (mantido para compatibilidade)
       if (reportData.observations && typeof reportData.observations === 'string') {
         texts.push(reportData.observations);
       }
       
-      // Extrair textos de painEvolution se houver contexto
-      if (reportData.painEvolution) {
-        reportData.painEvolution.forEach((pain: any) => {
-          if (pain.context && typeof pain.context === 'string') {
-            texts.push(pain.context);
+      // Processar quizzes se existirem no reportData
+      if (reportData.quizzes && Array.isArray(reportData.quizzes)) {
+        console.log(`📊 Processando ${reportData.quizzes.length} quiz(es)...`);
+        
+        for (const quiz of reportData.quizzes) {
+          const quizType = quiz.tipo;
+          console.log(`🔎 Analisando quiz tipo: ${quizType}`);
+          
+          // Buscar definições de questões de texto para este tipo de quiz
+          const definition = await this.getQuizDefinition(quizType);
+          
+          if (quiz.respostas && typeof quiz.respostas === 'object') {
+            // Extrair respostas de texto baseado nas definições
+            definition.textQuestions.forEach(questionId => {
+              const answer = quiz.respostas[questionId];
+              if (answer && typeof answer === 'string' && answer.trim().length > 5) {
+                texts.push(answer);
+                console.log(`📝 Texto extraído da questão ${questionId}: "${answer.substring(0, 50)}..."`);
+              }
+            });
           }
-        });
+        }
       }
       
-      // Tentar extrair de outras fontes de texto livre
-      if (reportData.textualResponses && Array.isArray(reportData.textualResponses)) {
-        texts.push(...reportData.textualResponses.filter((t: any) => typeof t === 'string'));
+      // Buscar em outras estruturas possíveis se não encontrou nos quizzes
+      if (texts.length === 0) {
+        console.log('🔍 Tentando extrair de outras fontes...');
+        
+        // Extrair textos de painEvolution se houver contexto
+        if (reportData.painEvolution) {
+          reportData.painEvolution.forEach((pain: any) => {
+            if (pain.context && typeof pain.context === 'string') {
+              texts.push(pain.context);
+            }
+          });
+        }
+        
+        // Tentar extrair de outras fontes de texto livre
+        if (reportData.textualResponses && Array.isArray(reportData.textualResponses)) {
+          texts.push(...reportData.textualResponses.filter((t: any) => typeof t === 'string'));
+        }
       }
+      
+      console.log(`✅ Extração concluída: ${texts.length} texto(s) encontrado(s)`);
       
     } catch (error) {
-      console.warn('Erro ao extrair textos:', error);
+      console.warn('❌ Erro ao extrair textos:', error);
     }
     
     return texts.filter(text => text && text.trim().length > 5);
@@ -319,11 +420,13 @@ export class EnhancedUnifiedReportService {
       // 1. Buscar dados básicos para análise
       const baseData = await fetchUserReportData(options.userId, options.periods);
       
-      // 2. Auto-detectar textos disponíveis
-      const extractedTexts = this.extractTextResponsesFromReportData(baseData);
+      // 2. Auto-detectar textos disponíveis (agora usando definições dinâmicas)
+      const extractedTexts = await this.extractTextResponsesFromReportData(baseData);
       
-      // 3. Determinar se usar enhanced baseado na disponibilidade de dados
-      const useEnhanced = extractedTexts.length >= 2 || baseData.totalDays > 7;
+      // 3. Determinar se usar enhanced baseado na disponibilidade de dados (critério otimizado)
+      const useEnhanced = extractedTexts.length >= 1 || 
+                         (baseData.totalDays > 3 && baseData.crisisEpisodes > 0) ||
+                         baseData.totalDays > 7;
       
       console.log(`📊 Auto-detecção: Enhanced=${useEnhanced}, Textos=${extractedTexts.length}, Dias=${baseData.totalDays}`);
       

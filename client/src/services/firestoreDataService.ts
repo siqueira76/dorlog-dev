@@ -99,32 +99,37 @@ export async function fetchUserReportData(userId: string, periods: string[]): Pr
                     crisisCount++;
                   }
 
-                  // Processar respostas de dor
-                  if (quiz.respostas && Array.isArray(quiz.respostas)) {
-                    quiz.respostas.forEach((resposta: any) => {
-                      if (resposta.tipo === 'eva' && typeof resposta.valor === 'number') {
-                        totalPainSum += resposta.valor;
+                  // Processar respostas (estrutura corrigida para object em vez de array)
+                  if (quiz.respostas && typeof quiz.respostas === 'object') {
+                    Object.entries(quiz.respostas).forEach(([questionId, answer]) => {
+                      // Processar escala EVA (questões 1 e 2 geralmente são EVA scale)
+                      if ((questionId === '1' || questionId === '2') && typeof answer === 'number') {
+                        totalPainSum += answer;
                         totalPainCount++;
                         
                         // Adicionar à evolução da dor
                         reportData.painEvolution.push({
                           date: dayKey,
-                          level: resposta.valor,
-                          period: quiz.periodo || 'não especificado'
+                          level: answer,
+                          period: quiz.tipo || 'não especificado'
                         });
                       }
                       
-                      // Mapear pontos de dor
-                      if (resposta.tipo === 'body_map' && resposta.pontos) {
-                        resposta.pontos.forEach((ponto: any) => {
-                          const existingPoint = reportData.painPoints.find(p => p.local === ponto.local);
-                          if (existingPoint) {
-                            existingPoint.occurrences++;
-                          } else {
-                            reportData.painPoints.push({
-                              local: ponto.local || 'Local não especificado',
-                              occurrences: 1
-                            });
+                      // Mapear pontos de dor (questões checkbox, principalmente questão 2 em emergencial)
+                      if (Array.isArray(answer)) {
+                        answer.forEach((item: string) => {
+                          // Verificar se é local anatômico (pontos de dor)
+                          const anatomicalPoints = ['Cabeça', 'Pescoço', 'Ombros', 'Costas', 'Braços', 'Pernas', 'Abdômen', 'Músculos', 'Articulações'];
+                          if (anatomicalPoints.some(point => item.includes(point))) {
+                            const existingPoint = reportData.painPoints.find(p => p.local === item);
+                            if (existingPoint) {
+                              existingPoint.occurrences++;
+                            } else {
+                              reportData.painPoints.push({
+                                local: item || 'Local não especificado',
+                                occurrences: 1
+                              });
+                            }
                           }
                         });
                       }
