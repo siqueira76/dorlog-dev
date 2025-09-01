@@ -98,14 +98,26 @@ export default function Reports() {
       const querySnapshot = await getDocs(q);
       const correlationData: Map<string, PainMoodCorrelation> = new Map();
       
-      // Mapeamento de humor para valores numéricos
+      // Mapeamento de humor para valores numéricos (incluindo valores reais do Firestore)
       const moodToValue: { [key: string]: number } = {
+        // Valores do quiz noturno (pergunta 9 - humor)
         'Depressivo': 1,
         'Triste': 2,
         'Irritado': 3,
         'Ansioso': 4,
         'Calmo': 5,
-        'Feliz': 6
+        'Feliz': 6,
+        // Valores do quiz matinal (pergunta 1 - qualidade do sono como proxy de humor)
+        'Ruim': 2,
+        'Não dormiu': 1,
+        'Médio': 4,
+        'Bem': 6,
+        // Valores de fallback do QuestionRenderer para emojis
+        'muito-ruim': 1,
+        'ruim': 2,
+        'bom': 5,
+        'muito-bom': 6,
+        'excelente': 6
       };
       
       querySnapshot.forEach((doc) => {
