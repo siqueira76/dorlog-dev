@@ -273,3 +273,4 @@ export async function fetchUserReportData(userId: string, periods: string[]): Pr
     };
   }
 }
+
