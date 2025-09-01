@@ -61,10 +61,20 @@ export default function Reports() {
             documentsChecked++;
             console.log('📋 Documento válido encontrado:', docId, 'Data:', docData.toDate().toISOString());
             
-            // Contar quizzes do tipo 'emergencial'
+            // Contar quizzes do tipo 'emergencial' (usando normalização)
             if (data.quizzes && Array.isArray(data.quizzes)) {
-              const emergencyQuizzes = data.quizzes.filter((quiz: any) => quiz.tipo === 'emergencial');
-              console.log(`🚨 ${emergencyQuizzes.length} quiz(zes) emergencial(is) encontrado(s) em ${docId}`);
+              // Aplicar mesma normalização usada no firestoreDataService
+              const normalizedQuizzes = data.quizzes.filter((quiz: any) => {
+                return quiz && typeof quiz === 'object' && quiz.tipo && quiz.respostas;
+              });
+              
+              const emergencyQuizzes = normalizedQuizzes.filter((quiz: any) => quiz.tipo === 'emergencial');
+              console.log(`🚨 ${emergencyQuizzes.length} quiz(zes) emergencial(is) estruturado(s) encontrado(s) em ${docId}`);
+              
+              if (emergencyQuizzes.length === 0 && data.quizzes.length > 0) {
+                console.log(`⚠️ ${data.quizzes.length} quiz(zes) em formato antigo/inválido ignorado(s) em ${docId}`);
+              }
+              
               crisisCount += emergencyQuizzes.length;
             }
           }
@@ -135,9 +145,18 @@ export default function Reports() {
             let dayPainLevel: number | null = null;
             let dayMood: string | null = null;
             
-            // Processar quizzes do dia
+            // Processar quizzes do dia (com normalização)
             if (data.quizzes && Array.isArray(data.quizzes)) {
-              data.quizzes.forEach((quiz: any) => {
+              // Aplicar normalização para filtrar apenas quizzes válidos
+              const normalizedQuizzes = data.quizzes.filter((quiz: any) => {
+                return quiz && typeof quiz === 'object' && quiz.tipo && quiz.respostas;
+              });
+              
+              if (normalizedQuizzes.length === 0 && data.quizzes.length > 0) {
+                console.log(`⚠️ Quizzes em formato antigo ignorados em ${docId}`);
+              }
+              
+              normalizedQuizzes.forEach((quiz: any) => {
                 // Capturar nível de dor baseado no tipo de quiz
                 if (quiz.respostas && typeof quiz.respostas === 'object') {
                   // Para quiz noturno e matinal: dor está na pergunta 2
@@ -209,6 +228,7 @@ export default function Reports() {
     }
 
     try {
+      console.log('📖 === VERIFICANDO ADESÃO AO DIÁRIO ===');
       console.log('📖 Verificando adesão ao diário para:', currentUser.email);
       
       const reportDiarioRef = collection(db, 'report_diario');
@@ -217,6 +237,18 @@ export default function Reports() {
       const querySnapshot = await getDocs(q);
       let lastEntryDate: Date | null = null;
       let userDocuments = 0;
+      let todayHasRecord = false;
+      
+      // CORREÇÃO: Usar UTC para evitar problemas de fuso horário
+      const now = new Date();
+      
+      // Obter data de hoje em UTC (para coincidir com Firestore)
+      const nowUTC = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
+      const todayStartUTC = new Date(Date.UTC(nowUTC.getFullYear(), nowUTC.getMonth(), nowUTC.getDate(), 0, 0, 0));
+      const todayEndUTC = new Date(Date.UTC(nowUTC.getFullYear(), nowUTC.getMonth(), nowUTC.getDate(), 23, 59, 59));
+      
+      console.log('🕐 Verificando registros para o dia:', nowUTC.toLocaleDateString('pt-BR'));
+      console.log('🕐 Intervalo UTC: ', todayStartUTC.toISOString(), 'a', todayEndUTC.toISOString());
       
       // Encontrar a data do último registro do usuário
       querySnapshot.forEach((doc) => {
@@ -228,6 +260,16 @@ export default function Reports() {
           const docData = data.data;
           if (docData && typeof docData.toDate === 'function') {
             const entryDate = docData.toDate();
+            
+            // Verificar se o registro é de hoje (comparação em UTC)
+            if (entryDate >= todayStartUTC && entryDate <= todayEndUTC) {
+              todayHasRecord = true;
+              console.log('✅ Registro encontrado para hoje (UTC):', docId, entryDate.toISOString());
+            } else {
+              console.log('ℹ️ Registro fora do intervalo de hoje:', docId, entryDate.toISOString());
+            }
+            
+            // Atualizar último registro geral
             if (!lastEntryDate || entryDate > lastEntryDate) {
               lastEntryDate = entryDate;
             }
@@ -237,6 +279,7 @@ export default function Reports() {
 
       console.log(`📊 Documentos do usuário encontrados: ${userDocuments}`);
       console.log('📅 Último registro encontrado:', lastEntryDate ? (lastEntryDate as Date).toISOString() : null);
+      console.log('🎯 Tem registro hoje?', todayHasRecord);
 
       // Se não há registros
       if (!lastEntryDate || userDocuments === 0) {
@@ -247,13 +290,9 @@ export default function Reports() {
         };
       }
 
-      const today = new Date();
-      const todayStr = today.toDateString();
-      const yesterdayStr = new Date(today.getTime() - 24 * 60 * 60 * 1000).toDateString();
-      const lastEntryStr = lastEntryDate ? (lastEntryDate as Date).toDateString() : '';
-
-      // Se o último registro é hoje
-      if (lastEntryStr === todayStr) {
+      // CORREÇÃO: Usar verificação melhorada para hoje
+      if (todayHasRecord) {
+        console.log('🎉 Usuário tem registro para hoje!');
         return {
           daysSinceLastEntry: 0,
           message: 'Você está em dia com os registros no Diário',
@@ -261,8 +300,12 @@ export default function Reports() {
         };
       }
 
-      // Se o último registro foi ontem
-      if (lastEntryStr === yesterdayStr) {
+      // Verificar se o último registro foi ontem (usando UTC)
+      const yesterdayUTC = new Date(todayStartUTC.getTime() - 24 * 60 * 60 * 1000);
+      const dayAfterYesterdayUTC = new Date(yesterdayUTC.getTime() + 24 * 60 * 60 * 1000);
+      
+      if (lastEntryDate && lastEntryDate instanceof Date && lastEntryDate >= yesterdayUTC && lastEntryDate < dayAfterYesterdayUTC) {
+        console.log('⚠️ Último registro foi ontem');
         return {
           daysSinceLastEntry: 1,
           message: 'Você ainda não fez nenhum registro hoje',
@@ -270,9 +313,11 @@ export default function Reports() {
         };
       }
 
-      // Calcular dias desde o último registro
-      const diffTime = today.getTime() - (lastEntryDate ? (lastEntryDate as Date).getTime() : today.getTime());
-      const daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      // Calcular dias desde o último registro (usando UTC)
+      const diffTime = (lastEntryDate && lastEntryDate instanceof Date) ? (todayStartUTC.getTime() - lastEntryDate.getTime()) : 0;
+      const daysSince = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      console.log(`📈 Dias desde último registro: ${daysSince}`);
 
       return {
         daysSinceLastEntry: daysSince,
@@ -281,7 +326,7 @@ export default function Reports() {
       };
 
     } catch (error) {
-      console.error('Erro ao verificar adesão ao diário:', error);
+      console.error('❌ Erro ao verificar adesão ao diário:', error);
       return { daysSinceLastEntry: 0, message: 'Erro ao verificar registros', status: 'empty' };
     }
   };
