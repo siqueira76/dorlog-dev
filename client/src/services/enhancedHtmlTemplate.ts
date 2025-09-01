@@ -423,7 +423,8 @@ function getEnhancedReportCSS(): string {
 
         .chart-canvas {
             width: 100%;
-            height: 300px;
+            height: 200px;
+            max-height: 250px;
             margin-bottom: var(--space-4);
         }
 
@@ -584,6 +585,8 @@ function getEnhancedReportCSS(): string {
             }
             
             .chart-canvas {
+                height: 150px;
+                max-height: 180px;
                 break-inside: avoid;
             }
         }
@@ -1264,7 +1267,7 @@ function getEnhancedReportJavaScript(withPassword?: boolean, passwordHash?: stri
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
                 plugins: {
                     title: {
                         display: true,
@@ -1314,7 +1317,7 @@ function getEnhancedReportJavaScript(withPassword?: boolean, passwordHash?: stri
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
                 plugins: {
                     title: {
                         display: true,
