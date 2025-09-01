@@ -1,6 +1,6 @@
 # Overview
 
-DorLog is a Progressive Web App (PWA) for health management, specializing in pain tracking, medication management, and healthcare provider coordination. It offers a mobile-first, light-mode interface with Firebase authentication and Firestore data storage. Key capabilities include comprehensive pain and crisis episode tracking, medication and doctor management with CRUD operations, and dynamic daily health quizzes. The application also features automated professional HTML report generation and deployment, designed for seamless sharing with healthcare providers. DorLog aims to empower users in managing their health data and facilitate better communication with their medical teams.
+DorLog is a Progressive Web App (PWA) designed for comprehensive health management. It enables users to track pain, manage medications, and coordinate with healthcare providers. Key features include detailed tracking of pain and crisis episodes, full CRUD operations for medication and doctor management, dynamic daily health quizzes, and automated generation of professional HTML reports for easy sharing with medical professionals. The primary goal is to empower users in managing their health data and enhance communication with their healthcare teams.
 
 # User Preferences
 
@@ -8,84 +8,40 @@ Preferred communication style: Simple, everyday language.
 
 # System Architecture
 
-## Frontend Architecture
-- **React 18** with TypeScript, using **Vite** for build processes.
-- **Wouter** for client-side routing and **TanStack Query** for data management.
-- Styling is handled by **Tailwind CSS** with **shadcn/ui** components.
-- **Mobile-first responsive design** ensures a unified experience across devices.
+## Frontend
+Developed with React 18 and TypeScript, using Vite for building. It employs Wouter for routing and TanStack Query for data management. Styling is handled by Tailwind CSS and shadcn/ui, ensuring a mobile-first, responsive, and light-mode-only interface with high-contrast, accessible colors. Navigation utilizes bottom tabs and a drawer-based side menu.
 
-## UI/UX Design Patterns
-- **Light mode only** with a high-contrast, accessible color scheme.
-- Primary navigation uses **bottom navigation tabs** (Home, Doctors, Medications, Reports) and a **drawer-based side navigation** for settings.
-- Features **card-based layouts** for content organization and **PWA capabilities** for offline support.
-- Includes a **Dynamic Quiz System** for morning, night, and emergency crisis tracking, and an **Enhanced EVA Scale Component** for pain assessment.
-
-## Backend Architecture
-- **Express.js** server with TypeScript.
-- **Drizzle ORM** for PostgreSQL database operations, with **Neon Database** as the provider.
-- **RESTful API structure** under the `/api` prefix.
+## Backend
+An Express.js server in TypeScript manages the backend. It uses Drizzle ORM with Neon Database (PostgreSQL) for core application data.
 
 ## Data Layer
-- **PostgreSQL** for core application data.
-- **Firestore** for user profiles, authentication, and specific collections:
-    - `usuarios`: User data.
-    - `assinaturas`: Subscription management.
-    - `quizzes`: Dynamic quiz content.
-    - `medicos`: Doctor information.
-    - `medicamentos`: Medication management with doctor associations.
-    - `report_diario`: Daily quiz responses and health reports.
-- **Firebase Authentication** handles user logins (email/password, Google OAuth) and persistence.
-- A **Subscription System** verifies user subscription status via the `assinaturas` collection.
+PostgreSQL stores primary application data. Firestore is used for user profiles, authentication, and specific collections including `usuarios`, `assinaturas` (subscriptions), `quizzes`, `medicos`, `medicamentos`, and `report_diario`. Firebase Authentication manages user logins (email/password, Google OAuth).
 
-## Development & Build Process
-- Uses **ESM modules** and **path aliases** for clean imports.
-- **GitHub Pages Deployment** for the client-only build via GitHub Actions.
+## Report Generation & Sharing
+A unified client-side system generates professional HTML reports from Firestore data, uploading them to Firebase Storage for permanent public URLs. This system integrates a template engine for comprehensive medical reports, optimized for performance and cross-platform compatibility. Report sharing is handled via a hybrid multi-platform WhatsApp strategy, using Web Share API on mobile, clipboard integration for desktop, and a fallback URI scheme.
 
-## Unified Report Generation System
-- **Client-Side Architecture**: Unified report generation system that works seamlessly across both Replit and GitHub Pages environments without server-side dependencies.
-- **Real Data Integration**: Direct connection to Firestore using Firebase Client SDK to fetch authentic user data (medications, doctors, daily reports, pain episodes) instead of mock/placeholder data.
-- **Firebase Storage Upload**: Generated HTML reports are uploaded directly to Firebase Storage, creating permanent, publicly accessible URLs with proper caching headers and metadata.
-- **Intelligent Interception**: Uses fetch API interception on GitHub Pages to redirect API calls to the client-side unified service, maintaining identical behavior across environments.
-- **Template System**: Complete HTML report generation with embedded CSS, charts, and responsive design, creating professional medical reports suitable for healthcare providers.
-- **Performance Optimization**: Client-side processing reduces server load and latency, with reports generated in 2-5 seconds compared to 5-15 seconds in server-side approaches.
-- **Cross-Platform Compatibility**: Single codebase serves both development (Replit) and production (GitHub Pages) environments through intelligent environment detection.
-- **Key Components**:
-  - `unifiedReportService.ts`: Core service handling report generation workflow and Firebase Storage integration
-  - `firebaseStorageService.ts`: Firebase Storage operations with unique ID generation and metadata management
-  - `firestoreDataService.ts`: Real-time data fetching from Firestore collections
-  - `htmlReportTemplate.ts`: Professional HTML template generator with embedded styling
-  - `unifiedReportPatch.ts`: GitHub Pages fetch interceptor for seamless API compatibility
-
-## WhatsApp Sharing Strategy
-- **Hybrid Multi-Platform Approach**: Implements intelligent device detection for optimal sharing experience across mobile and desktop platforms.
-- **Strategy 1 - Mobile Native**: Uses Web Share API on mobile devices to present native contact selector, allowing users to choose specific contacts from their device's sharing interface.
-- **Strategy 2 - Desktop Clipboard**: On desktop platforms, opens WhatsApp Web in a new tab while automatically copying the report message to clipboard, enabling users to navigate contacts freely and paste the message.
-- **Strategy 3 - Fallback URI**: Traditional WhatsApp URI scheme for older devices or when other methods fail, maintaining broad compatibility.
-- **Seamless Integration**: Works with the unified report generation system without requiring any backend modifications, fully compatible with GitHub Pages limitations.
-- **User Experience**: Provides clear feedback through toast notifications explaining the action taken and guiding users through the sharing process on each platform.
+## UI/UX Design Patterns
+The application features a light-mode-only interface with a high-contrast color scheme, bottom navigation tabs, drawer-based side navigation, and card-based layouts. It includes a dynamic quiz system for health tracking and an enhanced EVA Scale component for pain assessment.
 
 # External Dependencies
 
 ## Firebase Services
-- **Firebase Auth**: User authentication with email/password and Google OAuth.
-- **Firestore**: Database for user data and real-time updates.
-- **Firebase Storage**: Configured for future file upload capabilities.
-- **Google Auth Provider**: For Google sign-in integration.
-- **Firebase Configuration**: Now properly configured with environment variables (VITE_FIREBASE_API_KEY, VITE_FIREBASE_APP_ID, VITE_FIREBASE_PROJECT_ID).
+- **Firebase Auth**: For user authentication (email/password, Google OAuth).
+- **Firestore**: Primary NoSQL database for user-centric data.
+- **Firebase Storage**: For storing generated HTML reports.
 
 ## Database & ORM
 - **Neon Database**: Serverless PostgreSQL hosting.
-- **Drizzle ORM**: Type-safe database operations.
-- **connect-pg-simple**: PostgreSQL session store for Express.
+- **Drizzle ORM**: Type-safe ORM for PostgreSQL.
 
 ## UI & Design System
-- **shadcn/ui**: Pre-built accessible React components.
+- **shadcn/ui**: React components.
 - **Radix UI**: Headless UI primitives.
 - **Tailwind CSS**: Utility-first CSS framework.
 - **Lucide React**: Icon library.
 
 ## Development Tools
-- **Vite**: Build tool and development server.
+- **Vite**: Build tool.
 - **TanStack Query**: Server state management.
-- **Wouter**: Lightweight routing library.
-- **React Hook Form**: Form state management and validation.
+- **Wouter**: Routing library.
+- **React Hook Form**: Form management and validation.
