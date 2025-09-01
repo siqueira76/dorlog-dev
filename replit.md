@@ -94,6 +94,82 @@ The application features a light-mode-only interface with a high-contrast color 
 - **Análise ao Vivo**: Resultados instantâneos de sentimento, entidades e urgência
 - **Fallback Testing**: Demonstração de estratégias quando IA não está disponível
 
+## Overview do Relatório Mensal DorLog (/reports/monthly)
+
+### Interface de Seleção de Período
+- **Modo Único**: Seleção de um mês específico para análise
+- **Modo Intervalo**: Seleção de múltiplos meses consecutivos (ex: Janeiro até Março 2025)
+- **Opções Disponíveis**: Últimos 12 meses + próximos 3 meses
+- **Seleção Padrão**: Mês atual pré-selecionado automaticamente
+
+### Funcionalidades de Compartilhamento
+- **Estratégia Mobile-First**: Prioriza Web Share API nativa (interface do sistema)
+- **Fallbacks Desktop**: WhatsApp Web, App WhatsApp, e clipboard como alternativas
+- **URL Pública Permanente**: Upload automático para Firebase Storage com links compartilháveis
+
+### Dados Coletados e Processados
+
+#### Fontes de Dados Firestore
+- **Collection `medicamentos`**: Lista completa de medicamentos com posologia e frequência
+- **Collection `medicos`**: Profissionais cadastrados com especialidades e contatos
+- **Collection `quizzes`**: Questionários diários (matinal, noturno, emergencial) com textos livres
+- **Collection `report_diario`**: Relatórios diários detalhados de episódios de saúde
+- **Collection `usuarios`**: Perfis de usuário e configurações
+
+#### Estratégia de Busca Híbrida
+1. **Primary**: Busca por email do usuário
+2. **Fallback**: Busca por Firebase UID quando email não retorna resultados
+3. **Cache Otimizado**: Armazenamento temporário de identificadores para performance
+
+### Seções do Relatório Padrão
+
+#### Estrutura Base
+- **Cabeçalho**: Logo DorLog, período selecionado, email do usuário, data de geração
+- **Estatísticas Gerais**: Total de dias, episódios de crise, dor média, taxa de aderência
+- **Pontos de Dor**: Mapa de locais mais afetados com frequência de ocorrência
+- **Evolução Temporal**: Gráfico de intensidade da dor por períodos do dia
+- **Lista de Medicamentos**: Medicamentos ativos com posologia e médicos responsáveis
+- **Profissionais de Saúde**: Médicos cadastrados com especialidades e CRM
+- **Observações Textuais**: Compilação de notas livres e contextos importantes
+
+### Seções Exclusivas do Relatório Enhanced (NLP)
+
+#### Sumário Executivo Inteligente
+- **Síntese Automatizada**: Resumo gerado por IA dos principais achados do período
+- **Métricas-Chave Visuais**: Cards com dias analisados, crises, dor média, adesão
+- **Avaliação de Risco**: Classificação geral (baixo/médio/alto/crítico) baseada em IA
+
+#### Análise de Linguagem Natural
+- **Sentimento Geral**: Classificação emocional (positivo/negativo/neutro) com score de confiança
+- **Nível de Urgência**: Escala 1-10 baseada em análise semântica de relatos
+- **Entidades Médicas**: Contagem automática de sintomas, medicamentos, partes do corpo, emoções identificadas
+
+#### Visualizações Avançadas com IA
+- **Timeline de Sentimento**: Evolução emocional correlacionada com episódios de dor
+- **Correlação Dor-Humor**: Análise da relação entre dor física e estado emocional
+- **Mapa de Entidades**: Nuvem de palavras com termos médicos mais frequentes
+- **Heatmap de Urgência**: Padrões de urgência por dia da semana e horário
+
+#### Insights Preditivos e Clínicos
+- **Detecção de Padrões**: Correlações comportamentais descobertas por machine learning
+- **Alertas Preditivos**: Identificação precoce de situações críticas com probabilidades
+- **Recomendações Personalizadas**: Sugestões clínicas baseadas na análise integral dos dados
+- **Timeline de Risco**: Projeção temporal de situações que requerem atenção médica
+
+### Processamento de Textos Livres
+- **Entrada**: Observações dos questionários, descrições de dor, relatos de crises, contextos de gatilhos
+- **Análise NLP**: Sentimento (DistilBERT-SST-2), sumarização (T5-Small), classificação de entidades (DistilBERT-MNLI)
+- **Detecção de Urgência**: Sistema híbrido combinando IA com regras especializadas
+- **Saída**: Insights médicos estruturados, alertas clínicos relevantes, e visualizações inteligentes
+
+### Características Técnicas e Privacidade
+- **Geração Otimizada**: 2-5 segundos de processamento client-side
+- **Formato Standalone**: HTML com CSS/JS inline para máxima compatibilidade
+- **Design Responsivo**: Mobile-first com adaptação automática para diferentes dispositivos
+- **Privacidade Total**: Processamento NLP 100% local no navegador, zero vazamento de dados
+- **Armazenamento Seguro**: URLs públicas permanentes via Firebase Storage
+- **Proteção Opcional**: Sistema de senhas para relatórios sensíveis
+
 # External Dependencies
 
 ## Firebase Services
