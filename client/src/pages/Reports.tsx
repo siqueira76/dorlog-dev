@@ -304,7 +304,7 @@ export default function Reports() {
       const yesterdayUTC = new Date(todayStartUTC.getTime() - 24 * 60 * 60 * 1000);
       const dayAfterYesterdayUTC = new Date(yesterdayUTC.getTime() + 24 * 60 * 60 * 1000);
       
-      if (lastEntryDate && lastEntryDate instanceof Date && lastEntryDate >= yesterdayUTC && lastEntryDate < dayAfterYesterdayUTC) {
+      if (lastEntryDate && lastEntryDate >= yesterdayUTC && lastEntryDate < dayAfterYesterdayUTC) {
         console.log('⚠️ Último registro foi ontem');
         return {
           daysSinceLastEntry: 1,
@@ -314,7 +314,7 @@ export default function Reports() {
       }
 
       // Calcular dias desde o último registro (usando UTC)
-      const diffTime = (lastEntryDate && lastEntryDate instanceof Date) ? (todayStartUTC.getTime() - lastEntryDate.getTime()) : 0;
+      const diffTime = lastEntryDate ? (todayStartUTC.getTime() - lastEntryDate.getTime()) : 0;
       const daysSince = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
       console.log(`📈 Dias desde último registro: ${daysSince}`);
@@ -924,17 +924,19 @@ export default function Reports() {
                 </p>
               </div>
             ) : (
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="90%">
-                  <ScatterChart
-                    data={painMoodCorrelation}
-                    margin={{
-                      top: 20,
-                      right: 30,
-                      left: 20,
-                      bottom: 20,
-                    }}
-                  >
+              <div className="space-y-4">
+                {/* Gráfico de correlação com melhor responsividade */}
+                <div className="h-72 sm:h-80 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ScatterChart
+                      data={painMoodCorrelation}
+                      margin={{
+                        top: 20,
+                        right: 15,
+                        left: 15,
+                        bottom: 60,
+                      }}
+                    >
                     <CartesianGrid 
                       strokeDasharray="1 3" 
                       stroke="#e2e8f0" 
@@ -948,17 +950,17 @@ export default function Reports() {
                       axisLine={false}
                       tickLine={false}
                       tick={{ 
-                        fontSize: 11, 
+                        fontSize: 10, 
                         fill: '#64748b',
                         fontWeight: 500
                       }}
                       label={{ 
                         value: 'Intensidade da Dor (0-10)', 
                         position: 'insideBottom',
-                        offset: -10,
+                        offset: -5,
                         style: { 
                           textAnchor: 'middle', 
-                          fontSize: '11px', 
+                          fontSize: '10px', 
                           fill: '#64748b',
                           fontWeight: 500
                         }
@@ -972,10 +974,11 @@ export default function Reports() {
                       axisLine={false}
                       tickLine={false}
                       tick={{ 
-                        fontSize: 11, 
+                        fontSize: 9, 
                         fill: '#64748b',
                         fontWeight: 500
                       }}
+                      width={60}
                       tickFormatter={(value) => {
                         const moodLabels: { [key: number]: string } = {
                           1: 'Depressivo',
@@ -988,12 +991,12 @@ export default function Reports() {
                         return moodLabels[value] || '';
                       }}
                       label={{ 
-                        value: 'Estado de Humor', 
+                        value: 'Humor', 
                         angle: -90, 
                         position: 'insideLeft',
                         style: { 
                           textAnchor: 'middle', 
-                          fontSize: '11px', 
+                          fontSize: '10px', 
                           fill: '#64748b',
                           fontWeight: 500
                         }
@@ -1049,19 +1052,47 @@ export default function Reports() {
                     </Scatter>
                   </ScatterChart>
                 </ResponsiveContainer>
+                </div>
                 
-                {/* Insights NLP sobre correlação */}
+                {/* Legenda com melhor layout mobile */}
+                <div className="pt-3 border-t border-slate-100">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0"></div>
+                      <span className="text-slate-600">Humor Baixo (Depressivo/Triste)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-amber-500 rounded-full flex-shrink-0"></div>
+                      <span className="text-slate-600">Humor Neutro (Irritado/Ansioso)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
+                      <span className="text-slate-600">Humor Positivo (Calmo/Feliz)</span>
+                    </div>
+                  </div>
+                  {painMoodCorrelation && painMoodCorrelation.length > 0 && (
+                    <div className="text-center bg-purple-50 px-3 py-2 rounded-md">
+                      <span className="text-xs text-slate-700">
+                        Total de registros: <span className="font-semibold text-purple-700">
+                          {painMoodCorrelation.reduce((sum, item) => sum + item.count, 0)}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Insights automáticos movidos para fora do gráfico */}
                 {(() => {
                   const insights = generateCorrelationInsights(painMoodCorrelation);
                   return insights && insights.length > 0 ? (
-                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="flex items-start gap-2">
                         <Brain className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <h4 className="text-sm font-medium text-blue-900 mb-2">Insights Automáticos</h4>
                           <ul className="space-y-1">
                             {insights.map((insight, index) => (
-                              <li key={index} className="text-xs text-blue-800 leading-relaxed">
+                              <li key={index} className="text-xs text-blue-800 leading-relaxed break-words">
                                 • {insight}
                               </li>
                             ))}
@@ -1071,33 +1102,6 @@ export default function Reports() {
                     </div>
                   ) : null;
                 })()}
-
-                {/* Legenda */}
-                <div className="mt-4 pt-3 border-t border-slate-100">
-                  <div className="grid grid-cols-3 gap-4 text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                      <span className="text-slate-600">Humor Baixo</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
-                      <span className="text-slate-600">Humor Neutro</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <span className="text-slate-600">Humor Positivo</span>
-                    </div>
-                  </div>
-                  {painMoodCorrelation && painMoodCorrelation.length > 0 && (
-                    <div className="mt-2 text-center">
-                      <span className="text-xs text-slate-600">
-                        Total de registros correlacionados: <span className="font-semibold text-purple-600">
-                          {painMoodCorrelation.reduce((sum, item) => sum + item.count, 0)}
-                        </span>
-                      </span>
-                    </div>
-                  )}
-                </div>
               </div>
             )}
           </CardContent>
