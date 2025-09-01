@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { insightGenerationService } from '@/services/insightGenerationService';
 
 export default function Reports() {
   const { currentUser } = useAuth();
@@ -477,6 +478,43 @@ export default function Reports() {
     enabled: !!currentUser?.email,
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
+
+  // Função para gerar insights NLP sobre correlação dor-humor
+  const generateCorrelationInsights = (correlationData: PainMoodCorrelation[]) => {
+    if (!correlationData || correlationData.length === 0) return null;
+
+    const insights = [];
+    
+    // Análise de tendências de humor
+    const avgPainLevel = correlationData.reduce((sum, item) => sum + item.painLevel, 0) / correlationData.length;
+    const avgMoodValue = correlationData.reduce((sum, item) => sum + item.moodValue, 0) / correlationData.length;
+    
+    // Insight sobre nível geral de dor
+    if (avgPainLevel > 7) {
+      insights.push(`Níveis altos de dor (média: ${avgPainLevel.toFixed(1)}/10) - considere consultar seu médico`);
+    } else if (avgPainLevel < 3) {
+      insights.push(`Níveis baixos de dor (média: ${avgPainLevel.toFixed(1)}/10) - boa gestão da dor`);
+    }
+    
+    // Insight sobre humor predominante
+    if (avgMoodValue > 5) {
+      insights.push(`Humor predominantemente positivo - isso pode ajudar no controle da dor`);
+    } else if (avgMoodValue < 3) {
+      insights.push(`Humor frequentemente baixo - pode estar relacionado aos níveis de dor`);
+    }
+    
+    // Análise de correlação
+    const highPainHighMood = correlationData.filter(item => item.painLevel > 6 && item.moodValue > 4).length;
+    const highPainLowMood = correlationData.filter(item => item.painLevel > 6 && item.moodValue < 3).length;
+    
+    if (highPainHighMood > highPainLowMood) {
+      insights.push(`Resiliência emocional: mesmo com dor alta, você mantém humor positivo`);
+    } else if (highPainLowMood > 0) {
+      insights.push(`Dor intensa impacta seu humor - estratégias de bem-estar podem ajudar`);
+    }
+    
+    return insights.length > 0 ? insights : null;
+  };
 
   return (
     <div className="p-4 pb-20 max-w-4xl mx-auto">
@@ -967,6 +1005,28 @@ export default function Reports() {
                   </ScatterChart>
                 </ResponsiveContainer>
                 
+                {/* Insights NLP sobre correlação */}
+                {(() => {
+                  const insights = generateCorrelationInsights(painMoodCorrelation);
+                  return insights && insights.length > 0 ? (
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-start gap-2">
+                        <Brain className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <h4 className="text-sm font-medium text-blue-900 mb-2">Insights Automáticos</h4>
+                          <ul className="space-y-1">
+                            {insights.map((insight, index) => (
+                              <li key={index} className="text-xs text-blue-800 leading-relaxed">
+                                • {insight}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+
                 {/* Legenda */}
                 <div className="mt-4 pt-3 border-t border-slate-100">
                   <div className="grid grid-cols-3 gap-4 text-xs">
