@@ -1,4 +1,5 @@
 import { UnifiedReportService, UnifiedReportOptions } from '@/services/unifiedReportService';
+import { EnhancedUnifiedReportService } from '@/services/enhancedUnifiedReportService';
 
 /**
  * New unified patch that replaces githubPagesFix.ts
@@ -23,7 +24,7 @@ export const patchApiCallsUnified = () => {
         const body = JSON.parse(init.body as string);
         const { userId, periods, periodsText } = body;
         
-        console.log(`📋 Gerando relatório unificado:`, { userId, periodsText, periodsCount: periods.length });
+        console.log(`🧠 Gerando relatório enhanced inteligente:`, { userId, periodsText, periodsCount: periods.length });
         
         // Use unified report service
         const options: UnifiedReportOptions = {
@@ -32,7 +33,7 @@ export const patchApiCallsUnified = () => {
           periodsText
         };
         
-        const result = await UnifiedReportService.generateReport(options);
+        const result = await EnhancedUnifiedReportService.generateIntelligentReport(options);
         
         if (result.success) {
           // Return success response (compatible with existing code)
@@ -45,7 +46,11 @@ export const patchApiCallsUnified = () => {
             message: result.message,
             dataSource: 'firestore',
             storageProvider: 'firebase_storage',
-            environment: 'unified_client_side'
+            environment: 'enhanced_unified_client_side',
+            analysisType: result.analysisType || 'enhanced',
+            nlpProcessed: result.nlpProcessed || false,
+            chartsGenerated: result.chartsGenerated || false,
+            alertsGenerated: result.alertsGenerated || 0
           }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
