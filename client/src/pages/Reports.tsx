@@ -9,6 +9,7 @@ import { useLocation } from 'wouter';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { insightGenerationService } from '@/services/insightGenerationService';
+import { PainMoodMetricsCards } from '@/components/enhanced/EnhancedChartComponents';
 
 export default function Reports() {
   const { currentUser } = useAuth();
@@ -902,12 +903,12 @@ export default function Reports() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-lg">
               <Brain className="h-5 w-5 mr-2 text-purple-500" />
-              Correlação Dor-Humor
+              Métricas Dor-Humor
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Relação entre intensidade da dor e estado de humor nos últimos 30 dias
+              Análise das métricas de dor e humor nos últimos 30 dias
             </p>
             {isLoadingCorrelation ? (
               <div className="bg-muted rounded-xl p-6 text-center">
@@ -925,161 +926,16 @@ export default function Reports() {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Gráfico de correlação com melhor responsividade */}
-                <div className="h-72 sm:h-80 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ScatterChart
-                      data={painMoodCorrelation}
-                      margin={{
-                        top: 20,
-                        right: 15,
-                        left: 15,
-                        bottom: 60,
-                      }}
-                    >
-                    <CartesianGrid 
-                      strokeDasharray="1 3" 
-                      stroke="#e2e8f0" 
-                      strokeOpacity={0.3}
-                    />
-                    
-                    <XAxis 
-                      type="number"
-                      dataKey="painLevel"
-                      domain={[0, 10]}
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ 
-                        fontSize: 10, 
-                        fill: '#64748b',
-                        fontWeight: 500
-                      }}
-                      label={{ 
-                        value: 'Intensidade da Dor (0-10)', 
-                        position: 'insideBottom',
-                        offset: -5,
-                        style: { 
-                          textAnchor: 'middle', 
-                          fontSize: '10px', 
-                          fill: '#64748b',
-                          fontWeight: 500
-                        }
-                      }}
-                    />
-                    
-                    <YAxis 
-                      type="number"
-                      dataKey="moodValue"
-                      domain={[1, 6]}
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ 
-                        fontSize: 9, 
-                        fill: '#64748b',
-                        fontWeight: 500
-                      }}
-                      width={60}
-                      tickFormatter={(value) => {
-                        const moodLabels: { [key: number]: string } = {
-                          1: 'Depressivo',
-                          2: 'Triste', 
-                          3: 'Irritado',
-                          4: 'Ansioso',
-                          5: 'Calmo',
-                          6: 'Feliz'
-                        };
-                        return moodLabels[value] || '';
-                      }}
-                      label={{ 
-                        value: 'Humor', 
-                        angle: -90, 
-                        position: 'insideLeft',
-                        style: { 
-                          textAnchor: 'middle', 
-                          fontSize: '10px', 
-                          fill: '#64748b',
-                          fontWeight: 500
-                        }
-                      }}
-                    />
-                    
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                        padding: '8px 12px',
-                        backdropFilter: 'blur(8px)'
-                      }}
-                      labelStyle={{ 
-                        color: '#1e293b',
-                        fontWeight: 600,
-                        fontSize: '12px',
-                        marginBottom: '2px'
-                      }}
-                      formatter={(value: number, name: string, props: any) => {
-                        if (name === 'painLevel') {
-                          return [
-                            <span style={{ color: '#8b5cf6', fontWeight: 700, fontSize: '14px' }}>
-                              {value}/10
-                            </span>, 
-                            'Nível de Dor'
-                          ];
-                        }
-                        return [value, name];
-                      }}
-                      labelFormatter={(value, payload) => {
-                        if (payload && payload[0]) {
-                          const data = payload[0].payload;
-                          return `Humor: ${data.mood} | Ocorrências: ${data.count}`;
-                        }
-                        return '';
-                      }}
-                    />
-                    
-                    <Scatter dataKey="painLevel" fill="#8b5cf6">
-                      {painMoodCorrelation?.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={
-                            entry.moodValue <= 2 ? '#ef4444' :  // Depressivo/Triste - vermelho
-                            entry.moodValue <= 4 ? '#f59e0b' :  // Irritado/Ansioso - laranja
-                            '#10b981'  // Calmo/Feliz - verde
-                          }
-                        />
-                      ))}
-                    </Scatter>
-                  </ScatterChart>
-                </ResponsiveContainer>
-                </div>
-                
-                {/* Legenda com melhor layout mobile */}
-                <div className="pt-3 border-t border-slate-100">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0"></div>
-                      <span className="text-slate-600">Humor Baixo (Depressivo/Triste)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-amber-500 rounded-full flex-shrink-0"></div>
-                      <span className="text-slate-600">Humor Neutro (Irritado/Ansioso)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
-                      <span className="text-slate-600">Humor Positivo (Calmo/Feliz)</span>
-                    </div>
-                  </div>
-                  {painMoodCorrelation && painMoodCorrelation.length > 0 && (
-                    <div className="text-center bg-purple-50 px-3 py-2 rounded-md">
-                      <span className="text-xs text-slate-700">
-                        Total de registros: <span className="font-semibold text-purple-700">
-                          {painMoodCorrelation.reduce((sum, item) => sum + item.count, 0)}
-                        </span>
-                      </span>
-                    </div>
-                  )}
-                </div>
+                {/* Componente de métricas aprimorado */}
+                <PainMoodMetricsCards data={painMoodCorrelation.map(item => ({
+                  painLevel: item.painLevel,
+                  mood: item.mood,
+                  moodValue: item.moodValue,
+                  date: item.date,
+                  count: item.count,
+                  sentiment: item.moodValue <= 2 ? 'NEGATIVE' : 
+                           item.moodValue <= 4 ? 'NEUTRAL' : 'POSITIVE'
+                }))} />
                 
                 {/* Insights automáticos movidos para fora do gráfico */}
                 {(() => {
