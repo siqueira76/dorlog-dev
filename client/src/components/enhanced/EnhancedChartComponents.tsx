@@ -220,102 +220,175 @@ export const SentimentEvolutionChart: React.FC<{
 };
 
 /**
- * Scatter plot para correlação dor-humor
+ * Cards de métricas simples para análise dor-humor
  */
-export const PainMoodCorrelationChart: React.FC<{
+export const PainMoodMetricsCards: React.FC<{
   data: CorrelationData[];
 }> = ({ data }) => {
-  const processedData = useMemo(() => {
-    return data.map(item => ({
-      ...item,
-      sentimentColor: item.sentiment === 'POSITIVE' ? ENHANCED_COLORS.positive :
-                     item.sentiment === 'NEGATIVE' ? ENHANCED_COLORS.danger :
-                     ENHANCED_COLORS.neutral
-    }));
+  const metrics = useMemo(() => {
+    if (!data || data.length === 0) {
+      return {
+        avgPain: 0,
+        moodTrend: 'Neutro',
+        totalRecords: 0,
+        correlationStatus: 'Dados insuficientes',
+        moodColor: ENHANCED_COLORS.neutral,
+        statusColor: ENHANCED_COLORS.neutral
+      };
+    }
+
+    // Calcular dor média
+    const avgPain = Math.round((data.reduce((sum, item) => sum + item.painLevel, 0) / data.length) * 10) / 10;
+    
+    // Analisar humor predominante
+    const positiveCount = data.filter(item => item.sentiment === 'POSITIVE').length;
+    const negativeCount = data.filter(item => item.sentiment === 'NEGATIVE').length;
+    const neutralCount = data.filter(item => item.sentiment === 'NEUTRAL').length;
+    
+    let moodTrend: string;
+    let moodColor: string;
+    
+    if (positiveCount > negativeCount && positiveCount > neutralCount) {
+      moodTrend = 'Predominantemente Positivo';
+      moodColor = ENHANCED_COLORS.positive;
+    } else if (negativeCount > positiveCount && negativeCount > neutralCount) {
+      moodTrend = 'Predominantemente Negativo';
+      moodColor = ENHANCED_COLORS.danger;
+    } else {
+      moodTrend = 'Variado/Neutro';
+      moodColor = ENHANCED_COLORS.neutral;
+    }
+
+    // Status da correlação
+    let correlationStatus: string;
+    let statusColor: string;
+    
+    if (data.length < 5) {
+      correlationStatus = `${data.length}/5 registros mínimos`;
+      statusColor = ENHANCED_COLORS.warning;
+    } else {
+      correlationStatus = 'Análise disponível';
+      statusColor = ENHANCED_COLORS.success;
+    }
+
+    return {
+      avgPain,
+      moodTrend,
+      totalRecords: data.length,
+      correlationStatus,
+      moodColor,
+      statusColor
+    };
   }, [data]);
 
-  if (!data || data.length === 0) {
-    return (
-      <div className="h-80 w-full flex items-center justify-center bg-gray-50 rounded-lg">
-        <div className="text-center">
-          <div className="text-4xl mb-2">🔗</div>
-          <p className="text-gray-500">Dados insuficientes para análise de correlação</p>
+  return (
+    <div className="w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card: Dor Média */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 rounded-lg bg-red-50">
+              <span className="text-2xl">🎯</span>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">
+                {metrics.avgPain}/10
+              </div>
+              <div className="text-sm text-gray-500">Dor Média</div>
+            </div>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+            <div 
+              className="bg-red-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(metrics.avgPain / 10) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Card: Humor */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 rounded-lg bg-blue-50">
+              <span className="text-2xl">😊</span>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-semibold text-gray-900">
+                {metrics.moodTrend}
+              </div>
+              <div className="text-sm text-gray-500">Humor Geral</div>
+            </div>
+          </div>
+          <div className="flex items-center mt-3">
+            <div 
+              className="w-3 h-3 rounded-full mr-2"
+              style={{ backgroundColor: metrics.moodColor }}
+            />
+            <span className="text-xs text-gray-600">
+              {metrics.totalRecords} {metrics.totalRecords === 1 ? 'registro' : 'registros'}
+            </span>
+          </div>
+        </div>
+
+        {/* Card: Registros */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 rounded-lg bg-green-50">
+              <span className="text-2xl">📊</span>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">
+                {metrics.totalRecords}
+              </div>
+              <div className="text-sm text-gray-500">Registros</div>
+            </div>
+          </div>
+          <div className="text-xs text-gray-600 mt-3">
+            Dados coletados para análise
+          </div>
+        </div>
+
+        {/* Card: Status da Correlação */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 rounded-lg bg-purple-50">
+              <span className="text-2xl">🔗</span>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-semibold text-gray-900">
+                {metrics.correlationStatus}
+              </div>
+              <div className="text-sm text-gray-500">Correlação</div>
+            </div>
+          </div>
+          <div className="flex items-center mt-3">
+            <div 
+              className="w-3 h-3 rounded-full mr-2"
+              style={{ backgroundColor: metrics.statusColor }}
+            />
+            <span className="text-xs text-gray-600">
+              {metrics.totalRecords < 5 ? 'Insuficiente' : 'Disponível'}
+            </span>
+          </div>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="h-80 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <ScatterChart data={processedData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeOpacity={0.4} />
-          
-          <XAxis
-            type="number"
-            dataKey="painLevel"
-            domain={[0, 10]}
-            tick={{ fontSize: 11, fill: '#64748b' }}
-            axisLine={false}
-            tickLine={false}
-            label={{ 
-              value: 'Nível de Dor (0-10)', 
-              position: 'insideBottom',
-              offset: -10,
-              style: { textAnchor: 'middle', fontSize: '12px', fill: '#64748b' }
-            }}
-          />
-          
-          <YAxis
-            type="number"
-            dataKey="moodScore"
-            domain={[-5, 5]}
-            tick={{ fontSize: 11, fill: '#64748b' }}
-            axisLine={false}
-            tickLine={false}
-            label={{ 
-              value: 'Score de Humor (-5 a +5)', 
-              angle: -90, 
-              position: 'insideLeft',
-              style: { textAnchor: 'middle', fontSize: '12px', fill: '#64748b' }
-            }}
-          />
-          
-          <Tooltip 
-            content={({ active, payload }) => {
-              if (active && payload && payload.length) {
-                const data = payload[0].payload;
-                return (
-                  <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg max-w-xs">
-                    <p className="font-medium text-gray-900 mb-1">{data.date}</p>
-                    <p className="text-sm text-gray-600 mb-2">
-                      Dor: {data.painLevel}/10 | Humor: {data.moodScore.toFixed(1)}
-                    </p>
-                    <p className="text-sm">
-                      <span 
-                        className="px-2 py-1 rounded text-xs font-medium text-white capitalize"
-                        style={{ backgroundColor: data.sentimentColor }}
-                      >
-                        {data.sentiment.toLowerCase()}
-                      </span>
-                    </p>
-                    {data.context && (
-                      <p className="text-xs text-gray-500 mt-1 italic">"{data.context}"</p>
-                    )}
-                  </div>
-                );
-              }
-              return null;
-            }}
-          />
-          
-          <Scatter name="Correlação" fill={ENHANCED_COLORS.primary}>
-            {processedData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.sentimentColor} />
-            ))}
-          </Scatter>
-        </ScatterChart>
-      </ResponsiveContainer>
+      {/* Observação quando há poucos dados */}
+      {metrics.totalRecords > 0 && metrics.totalRecords < 5 && (
+        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <span className="text-amber-500 text-lg">⚠️</span>
+            <div>
+              <h4 className="text-sm font-medium text-amber-800 mb-1">
+                Dados insuficientes para correlação estatística
+              </h4>
+              <p className="text-xs text-amber-700">
+                São necessários pelo menos 5 registros para análise de correlação válida. 
+                Continue preenchendo os questionários diários para obter insights mais precisos.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -591,14 +664,14 @@ export const EnhancedVisualizationContainer: React.FC<{
         </div>
       )}
 
-      {/* Correlação Dor-Humor */}
-      {correlationData.length > 0 && (
+      {/* Métricas Dor-Humor */}
+      {(correlationData.length > 0 || true) && (
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-lg">🔗</span>
-            <h3 className="text-lg font-semibold text-gray-900">Correlação Dor-Humor</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Métricas Dor-Humor</h3>
           </div>
-          <PainMoodCorrelationChart data={correlationData} />
+          <PainMoodMetricsCards data={correlationData} />
         </div>
       )}
 
