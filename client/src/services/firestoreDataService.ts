@@ -36,6 +36,16 @@ export interface ReportData {
     level: number;
     period: string;
   }>;
+  // Nova seção: Medicamentos de Resgate
+  rescueMedications: Array<{
+    medication: string;
+    frequency: number;
+    dates: string[];
+    context?: string;
+    category: 'prescribed' | 'otc' | 'unknown';
+    isEffective?: boolean;
+    riskLevel: 'low' | 'medium' | 'high';
+  }>;
   observations: string;
   dataSource: 'firestore';
   generatedAt: string;
@@ -263,6 +273,7 @@ export async function fetchUserReportData(userId: string, periods: string[]): Pr
     doctors: [],
     painPoints: [],
     painEvolution: [],
+    rescueMedications: [],
     observations: '',
     dataSource: 'firestore',
     generatedAt: new Date().toISOString()
@@ -329,6 +340,31 @@ export async function fetchUserReportData(userId: string, periods: string[]): Pr
                           date: dayKey,
                           level: answer,
                           period: quiz.tipo || 'não especificado'
+                        });
+                      }
+                      
+                      // NOVO: Extrair medicamentos de resgate da pergunta 2 (emergencial)
+                      if (questionId === '2' && quiz.tipo === 'emergencial' && typeof answer === 'string' && answer.trim().length > 0) {
+                        console.log(`💊 Medicamento de resgate encontrado: "${answer}" em ${dayKey}`);
+                        
+                        // Armazenar texto para análise posterior
+                        if (!reportData.rescueMedications.find(m => m.medication === 'ANÁLISE_PENDENTE')) {
+                          reportData.rescueMedications.push({
+                            medication: 'ANÁLISE_PENDENTE',
+                            frequency: 0,
+                            dates: [],
+                            context: '',
+                            category: 'unknown',
+                            riskLevel: 'low'
+                          });
+                        }
+                        
+                        // Armazenar dados brutos para análise posterior
+                        (reportData as any).rawMedicationTexts = (reportData as any).rawMedicationTexts || [];
+                        (reportData as any).rawMedicationTexts.push({
+                          text: answer,
+                          date: dayKey,
+                          quizType: quiz.tipo
                         });
                       }
                       
@@ -449,6 +485,45 @@ export async function fetchUserReportData(userId: string, periods: string[]): Pr
     
     if (reportData.medications.length > 0) {
       reportData.observations += `O paciente utiliza ${reportData.medications.length} medicamento(s) prescritos. `;
+    }
+
+    // NOVO: Processar medicamentos de resgate
+    if ((reportData as any).rawMedicationTexts && (reportData as any).rawMedicationTexts.length > 0) {
+      console.log(`💊 === PROCESSANDO MEDICAMENTOS DE RESGATE ===`);
+      
+      try {
+        // Importar serviço dinamicamente para evitar problemas de circular import
+        const { RescueMedicationAnalysisService } = await import('./rescueMedicationAnalysisService');
+        
+        const rawTexts = (reportData as any).rawMedicationTexts;
+        console.log(`📝 Analisando ${rawTexts.length} registro(s) de medicamentos de resgate...`);
+        
+        // Analisar cada texto
+        const analyses = rawTexts.map((item: any) => 
+          RescueMedicationAnalysisService.analyzeMedicationText(item.text, item.date)
+        );
+        
+        // Consolidar resultados
+        const consolidatedMedications = RescueMedicationAnalysisService.consolidateAnalyses(analyses);
+        
+        // Atualizar reportData
+        reportData.rescueMedications = consolidatedMedications;
+        
+        console.log(`✅ Análise concluída: ${consolidatedMedications.length} medicamento(s) de resgate identificado(s)`);
+        
+        if (consolidatedMedications.length > 0) {
+          reportData.observations += `Durante crises, foram utilizados ${consolidatedMedications.length} medicamento(s) de resgate. `;
+        }
+        
+        // Limpar dados temporários
+        delete (reportData as any).rawMedicationTexts;
+        
+      } catch (error) {
+        console.error('❌ Erro no processamento de medicamentos de resgate:', error);
+        reportData.rescueMedications = [];
+      }
+    } else {
+      console.log(`ℹ️ Nenhum medicamento de resgate encontrado nos dados`);
     }
 
     // Log final detalhado das melhorias implementadas

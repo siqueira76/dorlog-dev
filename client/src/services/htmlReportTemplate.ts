@@ -35,6 +35,7 @@ ${getReportCSS()}
             ${generatePainPointsSection(reportData)}
             ${generatePainEvolutionSection(reportData)}
             ${generateMedicationsSection(reportData)}
+            ${generateRescueMedicationsSection(reportData)}
             ${generateDoctorsSection(reportData)}
             ${generateObservationsSection(reportData)}
             ${generateFooterSection(reportId, reportData)}
@@ -777,6 +778,91 @@ function generatePolifarmaciaWarning(totalMedicamentos: number): string {
                     </p>
                 </div>
             </div>
+        </div>
+  `;
+}
+
+// NOVA SEÇÃO: Medicamentos de Resgate
+function generateRescueMedicationsSection(reportData: ReportData): string {
+  if (!reportData.rescueMedications || reportData.rescueMedications.length === 0) {
+    return `
+        <div class="section">
+            <h2 class="section-title" data-icon="🚑">Medicamentos de Resgate</h2>
+            <p class="item-details">Nenhum medicamento de resgate foi registrado durante episódios de crise.</p>
+        </div>
+    `;
+  }
+
+  // Estatísticas gerais
+  const totalUsages = reportData.rescueMedications.reduce((sum, med) => sum + med.frequency, 0);
+  const highRiskMeds = reportData.rescueMedications.filter(med => med.riskLevel === 'high').length;
+  const mediumRiskMeds = reportData.rescueMedications.filter(med => med.riskLevel === 'medium').length;
+
+  // Items dos medicamentos
+  const medicationItems = reportData.rescueMedications.map(med => {
+    const riskColor = med.riskLevel === 'high' ? '#ef4444' : 
+                     med.riskLevel === 'medium' ? '#f59e0b' : '#10b981';
+    const riskText = med.riskLevel === 'high' ? 'Alto' : 
+                    med.riskLevel === 'medium' ? 'Médio' : 'Baixo';
+    const categoryText = med.category === 'prescribed' ? 'Prescrito' : 
+                        med.category === 'otc' ? 'Sem receita' : 'Não identificado';
+
+    return `
+        <li class="item">
+            <div class="item-header">
+                <div class="item-name">${med.medication}</div>
+                <div class="item-badge" style="background: ${riskColor}; color: white;">
+                    Risco ${riskText}
+                </div>
+            </div>
+            <div class="item-details">
+                <strong>Frequência de uso:</strong> ${med.frequency} episódio${med.frequency !== 1 ? 's' : ''}<br>
+                <strong>Categoria:</strong> ${categoryText}<br>
+                <strong>Datas de uso:</strong> ${med.dates.map(date => 
+                  new Date(date).toLocaleDateString('pt-BR')
+                ).join(', ')}<br>
+                ${med.context ? `<strong>Contexto:</strong> ${med.context}` : ''}
+            </div>
+        </li>
+    `;
+  }).join('');
+
+  return `
+        <div class="section">
+            <h2 class="section-title" data-icon="🚑">Medicamentos de Resgate</h2>
+            
+            <!-- Estatísticas -->
+            <div class="rescue-stats" style="margin-bottom: 24px; padding: 16px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #6366f1;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px; margin-bottom: 12px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: #1f2937;">${reportData.rescueMedications.length}</div>
+                        <div style="font-size: 0.875rem; color: #6b7280;">Medicamentos</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: #1f2937;">${totalUsages}</div>
+                        <div style="font-size: 0.875rem; color: #6b7280;">Usos totais</div>
+                    </div>
+                    ${highRiskMeds > 0 ? `
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: #ef4444;">${highRiskMeds}</div>
+                        <div style="font-size: 0.875rem; color: #6b7280;">Alto risco</div>
+                    </div>
+                    ` : ''}
+                </div>
+                <p style="margin: 0; font-size: 0.875rem; color: #4b5563; line-height: 1.5;">
+                    ${highRiskMeds > 0 ? 
+                      '<strong style="color: #ef4444;">⚠️ Atenção:</strong> Medicamentos de alto risco identificados. Recomenda-se revisão médica.' :
+                      mediumRiskMeds > 0 ?
+                      '<strong style="color: #f59e0b;">⚠️ Cuidado:</strong> Alguns medicamentos requerem monitoramento.' :
+                      '✅ Uso de medicamentos dentro dos padrões de segurança identificados.'
+                    }
+                </p>
+            </div>
+
+            <!-- Lista de medicamentos -->
+            <ul class="item-list">
+                ${medicationItems}
+            </ul>
         </div>
   `;
 }
