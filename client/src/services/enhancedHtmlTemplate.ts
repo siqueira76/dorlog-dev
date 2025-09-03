@@ -982,9 +982,230 @@ function generateClinicalRecommendationsSection(reportData: EnhancedReportData):
   `;
 }
 
+// Seções Enhanced adaptadas do template padrão
+function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData): string {
+  if (!reportData.rescueMedications || reportData.rescueMedications.length === 0) {
+    return `
+      <div class="section-enhanced">
+        <div class="section-title-enhanced">
+          <span class="section-icon">🚑</span>
+          <span>Medicamentos de Resgate</span>
+        </div>
+        <div class="bg-gray-50 border rounded-lg p-6 text-center">
+          <p class="text-gray-600">Nenhum medicamento de resgate foi registrado durante episódios de crise.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  const totalUsages = reportData.rescueMedications.reduce((sum, med) => sum + med.frequency, 0);
+  const highRiskMeds = reportData.rescueMedications.filter(med => med.riskLevel === 'high').length;
+  const mediumRiskMeds = reportData.rescueMedications.filter(med => med.riskLevel === 'medium').length;
+
+  return `
+    <div class="section-enhanced">
+      <div class="section-title-enhanced">
+        <span class="section-icon">🚑</span>
+        <span>Medicamentos de Resgate</span>
+      </div>
+      
+      <!-- Estatísticas -->
+      <div class="grid grid-cols-3 gap-4 mb-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-800">${reportData.rescueMedications.length}</div>
+          <div class="text-sm text-gray-600">Medicamentos</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-800">${totalUsages}</div>
+          <div class="text-sm text-gray-600">Usos totais</div>
+        </div>
+        ${highRiskMeds > 0 ? `
+        <div class="text-center">
+          <div class="text-2xl font-bold text-red-600">${highRiskMeds}</div>
+          <div class="text-sm text-gray-600">Alto risco</div>
+        </div>` : ''}
+      </div>
+
+      <!-- Lista de medicamentos -->
+      <div class="space-y-3">
+        ${reportData.rescueMedications.map(med => {
+          const riskColor = med.riskLevel === 'high' ? 'bg-red-100 border-red-400' : 
+                           med.riskLevel === 'medium' ? 'bg-yellow-100 border-yellow-400' : 'bg-green-100 border-green-400';
+          const riskText = med.riskLevel === 'high' ? 'Alto' : 
+                          med.riskLevel === 'medium' ? 'Médio' : 'Baixo';
+          const categoryText = med.category === 'prescribed' ? 'Prescrito' : 
+                              med.category === 'otc' ? 'Sem receita' : 'Não identificado';
+
+          return `
+            <div class="border border-gray-200 rounded-lg p-4 ${riskColor}">
+              <div class="flex justify-between items-start mb-2">
+                <div class="font-medium text-lg">${med.medication}</div>
+                <span class="px-2 py-1 bg-gray-800 text-white text-xs rounded">Risco ${riskText}</span>
+              </div>
+              <div class="text-sm text-gray-700 space-y-1">
+                <div><strong>Frequência:</strong> ${med.frequency} episódio${med.frequency !== 1 ? 's' : ''}</div>
+                <div><strong>Categoria:</strong> ${categoryText}</div>
+                <div><strong>Datas:</strong> ${med.dates.map(date => 
+                  new Date(date).toLocaleDateString('pt-BR')
+                ).join(', ')}</div>
+                ${med.context ? `<div><strong>Contexto:</strong> ${med.context}</div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- Alerta de segurança -->
+      ${highRiskMeds > 0 ? `
+      <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded mt-4">
+        <div class="text-sm">
+          <strong class="text-red-800">⚠️ Atenção:</strong> 
+          <span class="text-red-700">Medicamentos de alto risco identificados. Recomenda-se revisão médica.</span>
+        </div>
+      </div>` : mediumRiskMeds > 0 ? `
+      <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded mt-4">
+        <div class="text-sm">
+          <strong class="text-yellow-800">⚠️ Cuidado:</strong> 
+          <span class="text-yellow-700">Alguns medicamentos requerem monitoramento.</span>
+        </div>
+      </div>` : `
+      <div class="bg-green-50 border-l-4 border-green-400 p-4 rounded mt-4">
+        <div class="text-sm">
+          <strong class="text-green-800">✅</strong> 
+          <span class="text-green-700">Uso de medicamentos dentro dos padrões de segurança identificados.</span>
+        </div>
+      </div>`}
+    </div>
+  `;
+}
+
+function generateEnhancedPainPointsSection(reportData: EnhancedReportData): string {
+  if (reportData.painPoints.length === 0) {
+    return `
+      <div class="section-enhanced">
+        <div class="section-title-enhanced">
+          <span class="section-icon">📍</span>
+          <span>Pontos de Dor</span>
+        </div>
+        <div class="bg-gray-50 border rounded-lg p-6 text-center">
+          <p class="text-gray-600">Nenhum ponto de dor mapeado no período.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="section-enhanced">
+      <div class="section-title-enhanced">
+        <span class="section-icon">📍</span>
+        <span>Pontos de Dor Mais Frequentes</span>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        ${reportData.painPoints.slice(0, 10).map(point => `
+          <div class="border border-gray-200 rounded-lg p-3 bg-white">
+            <div class="flex justify-between items-center">
+              <div class="font-medium">${point.local}</div>
+              <span class="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded">
+                ${point.occurrences} ocorrência${point.occurrences !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function generateEnhancedPainEvolutionSection(reportData: EnhancedReportData): string {
+  if (reportData.painEvolution.length === 0) {
+    return `
+      <div class="section-enhanced">
+        <div class="section-title-enhanced">
+          <span class="section-icon">📈</span>
+          <span>Evolução da Dor</span>
+        </div>
+        <div class="bg-gray-50 border rounded-lg p-6 text-center">
+          <p class="text-gray-600">Nenhum registro de evolução da dor no período.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  // Agrupar por data e calcular média
+  const dailyAverages: { [key: string]: { sum: number; count: number } } = {};
+  
+  reportData.painEvolution.forEach(record => {
+    if (!dailyAverages[record.date]) {
+      dailyAverages[record.date] = { sum: 0, count: 0 };
+    }
+    dailyAverages[record.date].sum += record.level;
+    dailyAverages[record.date].count++;
+  });
+
+  const chartItems = Object.entries(dailyAverages)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-14) // Últimos 14 dias
+    .map(([date, data]) => {
+      const average = data.sum / data.count;
+      const percentage = (average / 10) * 100;
+      const formattedDate = new Date(date).toLocaleDateString('pt-BR', { 
+        day: '2-digit', 
+        month: '2-digit' 
+      });
+      
+      return `
+        <div class="flex items-center space-x-3 py-2">
+          <div class="w-12 text-sm text-gray-600">${formattedDate}</div>
+          <div class="flex-1 bg-gray-200 rounded-full h-6 relative">
+            <div class="bg-gradient-to-r from-green-400 to-red-500 h-6 rounded-full transition-all duration-300" 
+                 style="width: ${percentage}%"></div>
+            <div class="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-800">
+              ${average.toFixed(1)}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+  return `
+    <div class="section-enhanced">
+      <div class="section-title-enhanced">
+        <span class="section-icon">📈</span>
+        <span>Evolução da Dor (Últimos 14 dias)</span>
+      </div>
+      
+      <div class="bg-white border border-gray-200 rounded-lg p-4 space-y-2">
+        ${chartItems}
+      </div>
+    </div>
+  `;
+}
+
+function generateEnhancedObservationsSection(reportData: EnhancedReportData): string {
+  return `
+    <div class="section-enhanced">
+      <div class="section-title-enhanced">
+        <span class="section-icon">📝</span>
+        <span>Observações e Resumo</span>
+      </div>
+      
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div class="text-gray-800 leading-relaxed">
+          ${reportData.observations}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function generateTraditionalSections(reportData: EnhancedReportData): string {
   // Seções tradicionais mantidas para compatibilidade
   return `
+    ${generateEnhancedRescueMedicationsSection(reportData)}
+    ${generateEnhancedPainPointsSection(reportData)}
+    ${generateEnhancedPainEvolutionSection(reportData)}
+    
     <div class="section-enhanced">
         <div class="section-title-enhanced">
             <span class="section-icon">💊</span>
@@ -1019,6 +1240,8 @@ function generateTraditionalSections(reportData: EnhancedReportData): string {
             </div>
         </div>
     </div>
+    
+    ${generateEnhancedObservationsSection(reportData)}
   `;
 }
 
