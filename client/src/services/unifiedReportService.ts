@@ -1,5 +1,5 @@
 import { fetchUserReportData, ReportData } from './firestoreDataService';
-import { generateCompleteReportHTML, ReportTemplateData } from './htmlReportTemplate';
+import { generateEnhancedReportHTML, EnhancedReportTemplateData } from './enhancedHtmlTemplate';
 import { uploadReportToStorage, generateReportId, generatePasswordHash } from './firebaseStorageService';
 
 export interface UnifiedReportOptions {
@@ -49,8 +49,8 @@ export class UnifiedReportService {
         doctorsCount: reportData.doctors.length
       });
       
-      // 3. Prepare template data
-      const templateData: ReportTemplateData = {
+      // 3. Prepare enhanced template data
+      const templateData: EnhancedReportTemplateData = {
         userEmail: options.userId,
         periodsText: options.periodsText,
         reportData,
@@ -59,10 +59,10 @@ export class UnifiedReportService {
         passwordHash: options.password ? generatePasswordHash(options.password) : undefined
       };
       
-      // 4. Generate complete HTML
-      console.log(`📝 Gerando HTML completo...`);
-      const htmlContent = generateCompleteReportHTML(templateData);
-      console.log(`✅ HTML gerado: ${Math.round(htmlContent.length / 1024)}KB`);
+      // 4. Generate enhanced HTML with all features
+      console.log(`🧠 Processando análise NLP e gerando relatório enhanced...`);
+      const htmlContent = generateEnhancedReportHTML(templateData);
+      console.log(`✅ HTML Enhanced gerado: ${Math.round(htmlContent.length / 1024)}KB`);
       
       // 5. Upload to Firebase Storage
       console.log(`☁️ Fazendo upload para Firebase Storage...`);
@@ -138,22 +138,22 @@ export class UnifiedReportService {
   }
   
   /**
-   * Generate a simple report for testing (without upload)
+   * Generate a simple enhanced report for testing (without upload)
    */
   static async generateTestReport(options: UnifiedReportOptions): Promise<string> {
-    console.log(`🧪 Gerando relatório de teste...`);
+    console.log(`🧪 Gerando relatório enhanced de teste...`);
     
     const reportId = generateReportId(options.userId);
     const reportData = await fetchUserReportData(options.userId, options.periods);
     
-    const templateData: ReportTemplateData = {
+    const templateData: EnhancedReportTemplateData = {
       userEmail: options.userId,
       periodsText: options.periodsText,
       reportData,
       reportId
     };
     
-    return generateCompleteReportHTML(templateData);
+    return generateEnhancedReportHTML(templateData);
   }
 }
 

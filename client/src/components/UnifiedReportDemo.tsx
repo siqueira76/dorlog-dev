@@ -133,7 +133,7 @@ export const UnifiedReportDemo: React.FC = () => {
             <p><strong>Arquivos criados:</strong></p>
             <ul className="text-xs space-y-1 ml-4">
               <li>• firestoreDataService.ts - Busca dados reais</li>
-              <li>• htmlReportTemplate.ts - Template HTML completo</li>
+              <li>• enhancedHtmlTemplate.ts - Template Enhanced com NLP</li>
               <li>• firebaseStorageService.ts - Upload para Storage</li>
               <li>• unifiedReportService.ts - Serviço principal</li>
               <li>• unifiedReportPatch.ts - Patch de interceptação</li>
