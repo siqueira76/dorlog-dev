@@ -1032,16 +1032,47 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem;">
           ${reportData.rescueMedications.map(med => {
+            // Sanitizar e validar dados do medicamento
+            const medicationName = med.medication && typeof med.medication === 'string' && med.medication.trim().length > 0 
+              ? med.medication.trim() 
+              : 'Medicamento não identificado';
+            
+            // Detectar nomes corrompidos ou gerados incorretamente
+            const isCorruptedName = /^[^aeiouAEIOU]*$/.test(medicationName) || medicationName.length < 3 || /^(.)\1{3,}/.test(medicationName);
+            const cleanMedicationName = isCorruptedName ? 'Medicamento não identificado' : medicationName;
+            
+            // Determinar categoria com fallback melhor
+            let categoryText = 'Medicamento de Uso Emergencial';
+            if (med.category === 'prescribed') {
+              categoryText = 'Medicamento Prescrito';
+            } else if (med.category === 'otc') {
+              categoryText = 'Sem Prescrição Médica';
+            } else if (cleanMedicationName !== 'Medicamento não identificado') {
+              // Tentar inferir categoria baseada no nome do medicamento
+              const commonPrescribed = ['tramadol', 'morfina', 'codeina', 'pregabalina', 'gabapentina', 'amitriptilina'];
+              const commonOTC = ['paracetamol', 'ibuprofeno', 'dipirona', 'aspirina', 'diclofenaco'];
+              
+              const lowerName = cleanMedicationName.toLowerCase();
+              if (commonPrescribed.some(med => lowerName.includes(med))) {
+                categoryText = 'Medicamento Prescrito';
+              } else if (commonOTC.some(med => lowerName.includes(med))) {
+                categoryText = 'Sem Prescrição Médica';
+              }
+            }
+            
+            // Limpar contexto duplicado
+            const cleanContext = med.context && typeof med.context === 'string' 
+              ? med.context.replace(/(\b\w+\b)(\1)+/gi, '$1').trim()
+              : null;
+            
             const riskColors = {
               high: { bg: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)', border: '#fca5a5', accent: '#ef4444' },
               medium: { bg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', border: '#fbbf24', accent: '#f59e0b' },
               low: { bg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', border: '#86efac', accent: '#22c55e' }
             };
-            const colors = riskColors[med.riskLevel as keyof typeof riskColors];
+            const colors = riskColors[med.riskLevel as keyof typeof riskColors] || riskColors.low;
             const riskIcon = med.riskLevel === 'high' ? '🚨' : med.riskLevel === 'medium' ? '⚠️' : '✅';
             const riskText = med.riskLevel === 'high' ? 'ALTO RISCO' : med.riskLevel === 'medium' ? 'RISCO MÉDIO' : 'BAIXO RISCO';
-            const categoryText = med.category === 'prescribed' ? 'Medicamento Prescrito' : 
-                                med.category === 'otc' ? 'Sem Prescrição Médica' : 'Categoria Não Identificada';
             
             const effectivenessScore = Math.min(100, (med.frequency * 20) + (med.category === 'prescribed' ? 40 : 20));
 
@@ -1055,7 +1086,7 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
                       <span style="font-size: 1.5rem;">💊</span>
                     </div>
                     <div>
-                      <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">${med.medication}</h4>
+                      <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">${cleanMedicationName}</h4>
                       <p style="margin: 0; color: #64748b; font-size: 0.9rem; font-weight: 500;">${categoryText}</p>
                     </div>
                   </div>
@@ -1105,11 +1136,11 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
                   </div>
                 </div>
                 
-                ${med.context ? `
+                ${cleanContext ? `
                 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid ${colors.border};">
                   <div style="font-size: 0.9rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">🧠 Contexto Analisado pela IA:</div>
                   <div style="background: white; border-radius: 10px; padding: 1rem; font-size: 0.85rem; color: #4b5563; font-style: italic; border: 1px solid ${colors.border}; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    "${med.context.length > 120 ? med.context.substring(0, 120) + '...' : med.context}"
+                    "${cleanContext.length > 120 ? cleanContext.substring(0, 120) + '...' : cleanContext}"
                   </div>
                 </div>
                 ` : ''}
@@ -1132,7 +1163,7 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
             <div>
               <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e40af;">Medicamento Mais Utilizado</h4>
               <p style="margin: 0; color: #3730a3; font-size: 0.9rem; margin-top: 0.25rem;">
-                <strong>${mostUsedMed.medication}</strong> foi utilizado em ${mostUsedMed.frequency} episódio(s), 
+                <strong>${mostUsedMed.medication && typeof mostUsedMed.medication === 'string' && mostUsedMed.medication.trim().length > 0 && !/^[^aeiouAEIOU]*$/.test(mostUsedMed.medication.trim()) ? mostUsedMed.medication : 'Medicamento'}</strong> foi utilizado em ${mostUsedMed.frequency} episódio(s), 
                 representando <strong>${Math.round((mostUsedMed.frequency / totalUsages) * 100)}%</strong> do total de usos registrados.
               </p>
             </div>
