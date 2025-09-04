@@ -71,6 +71,7 @@ import AddMedication from '@/pages/AddMedication';
 import Quiz from '@/pages/Quiz';
 import Register from '@/pages/Register';
 import NLPDemo from '@/pages/NLPDemo';
+import RescueMedicationDemo from '@/pages/RescueMedicationDemo';
 import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient({
@@ -182,6 +183,14 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <NLPDemo />
+                </Layout>
+              </ProtectedRoute>
+            </Route>
+            
+            <Route path="/rescue-medication-demo">
+              <ProtectedRoute>
+                <Layout>
+                  <RescueMedicationDemo />
                 </Layout>
               </ProtectedRoute>
             </Route>
