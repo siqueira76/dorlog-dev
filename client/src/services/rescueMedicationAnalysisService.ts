@@ -74,30 +74,49 @@ export class RescueMedicationAnalysisService {
     const medications: string[] = [];
     const cleanText = text.toLowerCase().trim();
     
-    // Base de medicamentos comuns (fallback principal)
+    // Base expandida de medicamentos conhecidos
     const commonMedications = [
-      // Analgésicos comuns
+      // Analgésicos e Anti-inflamatórios
       'dipirona', 'paracetamol', 'aspirina', 'ibuprofeno', 'diclofenaco',
-      'nimesulida', 'cetoprofeno', 'naproxeno', 'meloxicam',
+      'nimesulida', 'cetoprofeno', 'naproxeno', 'meloxicam', 'piroxicam',
+      'indometacina', 'sulindaco', 'fenilbutazona', 'etoricoxib', 'celecoxib',
       
-      // Antiespasmódicos
-      'buscopan', 'escopolamina', 'hioscina', 'dorflex',
+      // Antiespasmódicos e Relaxantes
+      'buscopan', 'escopolamina', 'hioscina', 'dorflex', 'atropina',
+      'ciclobenzaprina', 'carisoprodol', 'orfenadrina', 'tizanidina',
+      'baclofeno', 'clorzoxazona', 'metocarbamol',
       
-      // Relaxantes musculares
-      'ciclobenzaprina', 'carisoprodol', 'orfenadrina',
+      // Corticosteroides
+      'prednisolona', 'prednisona', 'dexametasona', 'betametasona',
+      'hidrocortisona', 'metilprednisolona', 'triamcinolona',
       
-      // Anti-inflamatórios
-      'prednisolona', 'prednisona', 'dexametasona',
+      // Opióides e Derivados - Lista Ampliada
+      'tramadol', 'codeína', 'morfina', 'oxicodona', 'dimorf', 'dimorf-lc',
+      'fentanila', 'fentanil', 'buprenorfina', 'nalbuphina', 'petidina',
+      'meperidina', 'metadona', 'tapentadol', 'oximorfona', 'hidromorfona',
       
-      // Medicamentos para dor neuropática
-      'gabapentina', 'pregabalina', 'amitriptilina',
+      // Anticonvulsivantes/Neuropáticos
+      'gabapentina', 'pregabalina', 'amitriptilina', 'nortriptilina',
+      'duloxetina', 'venlafaxina', 'carbamazepina', 'fenitoína',
+      'ácido valpróico', 'lamotrigina', 'topiramato', 'clonazepam',
       
-      // Opióides
-      'tramadol', 'codeína', 'morfina', 'oxicodona',
+      // Benzodiazepínicos
+      'diazepam', 'lorazepam', 'alprazolam', 'clonazepam', 'bromazepam',
+      'midazolam', 'flunitrazepam', 'nitrazepam', 'temazepam',
       
-      // Outros comuns
-      'novalgina', 'tylenol', 'advil', 'voltaren', 'cataflan',
-      'doril', 'neosaldina', 'anador', 'lisador'
+      // Anestésicos Locais
+      'lidocaína', 'lidocaina', 'procaína', 'benzocaína', 'prilocaína',
+      'bupivacaína', 'articaína', 'mepivacaína',
+      
+      // Medicamentos de Marca/Comerciais
+      'novalgina', 'tylenol', 'advil', 'voltaren', 'cataflan', 'doril',
+      'neosaldina', 'anador', 'lisador', 'toragesic', 'tramal', 'epidurol',
+      'artrolive', 'atroveran', 'buscopan', 'spidufen', 'flanax',
+      'profenid', 'feldene', 'mioflex', 'beserol', 'miosan', 'tandrilax',
+      
+      // Outros medicamentos para dor
+      'capsaicina', 'mentol', 'salicilato', 'benzidamina', 'flurbiprofeno',
+      'ketoprofeno', 'dexketoprofeno', 'aceclofenaco', 'lornoxicam'
     ];
     
     // Buscar medicamentos conhecidos
@@ -107,21 +126,45 @@ export class RescueMedicationAnalysisService {
       }
     });
     
-    // Padrões de extração adicional
+    // Padrões de extração melhorados
     const patterns = [
-      /(\w+)mg/g,  // Nomes seguidos de dosagem
-      /tomei\s+(\w+)/g,  // "tomei X"
-      /usei\s+(\w+)/g,   // "usei X"
-      /(\w+)\s+comprimido/g  // "X comprimido"
+      // Dosagens
+      /(\w+)\s*\d+\s*mg/gi,  // "medicamento 10mg"
+      /(\w+)mg/gi,           // "medicamentomg"
+      /(\w+)\s*\d+\s*g/gi,   // "medicamento 1g"
+      
+      // Ações com medicamentos
+      /(?:tomei|usei|apliquei|coloquei|passei)\s+(\w+)/gi,
+      /(?:tomo|uso|aplico|coloco|passo)\s+(\w+)/gi,
+      
+      // Formas farmacêuticas
+      /(\w+)\s+(?:comprimido|capsula|gota|ampola|injeção|pomada|gel|creme)/gi,
+      /(?:comprimido|capsula|gota|ampola|injeção|pomada|gel|creme)\s+(?:de\s+)?(\w+)/gi,
+      
+      // Padrões diretos - palavras isoladas que podem ser medicamentos
+      /\b([a-zA-Z]{4,15})\b/g  // palavras de 4-15 caracteres (candidatas a medicamentos)
     ];
     
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern, index) => {
       let match;
       while ((match = pattern.exec(text)) !== null) {
         if (match[1] && match[1].length > 2) {
-          const medication = this.normalizeMedicationName(match[1]);
-          if (medication && !medications.includes(medication)) {
-            medications.push(medication);
+          const candidate = match[1].toLowerCase();
+          
+          // Para o último padrão (palavras isoladas), aplicar filtros mais rigorosos
+          if (index === patterns.length - 1) {
+            if (this.isPotentialMedication(candidate)) {
+              const medication = this.normalizeMedicationName(candidate);
+              if (medication && !medications.includes(medication)) {
+                medications.push(medication);
+              }
+            }
+          } else {
+            // Para padrões específicos, aceitar diretamente
+            const medication = this.normalizeMedicationName(candidate);
+            if (medication && !medications.includes(medication)) {
+              medications.push(medication);
+            }
           }
         }
       }
@@ -192,12 +235,44 @@ export class RescueMedicationAnalysisService {
   private static basicMedicationExtraction(text: string): string[] {
     const words = text.toLowerCase().split(/\s+/);
     const potentialMeds = words.filter(word => 
-      word.length > 4 && 
-      /^[a-z]+$/.test(word) &&
-      !['tomei', 'usei', 'para', 'dor', 'muito', 'pouco'].includes(word)
+      this.isPotentialMedication(word)
     );
     
-    return potentialMeds.slice(0, 3); // Máximo 3 candidatos
+    return potentialMeds.slice(0, 5); // Máximo 5 candidatos
+  }
+  
+  /**
+   * Verifica se uma palavra pode ser um medicamento
+   */
+  private static isPotentialMedication(word: string): boolean {
+    // Lista de palavras comuns que NÃO são medicamentos
+    const excludeWords = [
+      'tomei', 'usei', 'para', 'dor', 'muito', 'pouco', 'hoje', 'ontem',
+      'amanha', 'sempre', 'nunca', 'quando', 'onde', 'como', 'porque',
+      'estava', 'estou', 'senti', 'sinto', 'tinha', 'tenho', 'fiquei',
+      'fico', 'passou', 'passa', 'melhor', 'pior', 'bem', 'mal', 'forte',
+      'fraco', 'mais', 'menos', 'ainda', 'agora', 'depois', 'antes',
+      'durante', 'sobre', 'contra', 'entre', 'sem', 'com', 'uma', 'dois',
+      'tres', 'quatro', 'cinco', 'horas', 'dias', 'vezes', 'vez', 'hora',
+      'dia', 'noite', 'manha', 'tarde', 'minutos', 'segundo', 'casa',
+      'trabalho', 'hospital', 'medico', 'enfermeiro', 'farmacia'
+    ];
+    
+    return word.length >= 4 && 
+           word.length <= 15 && 
+           /^[a-zA-Z]+$/.test(word) &&
+           !excludeWords.includes(word.toLowerCase()) &&
+           // Características típicas de nomes de medicamentos
+           (word.includes('ina') || word.includes('ol') || word.includes('an') || 
+            word.includes('il') || word.includes('ox') || word.includes('fen') ||
+            word.includes('mor') || word.includes('tram') || word.includes('dol') ||
+            word.includes('phen') || word.includes('meth') || word.includes('cain') ||
+            // Ou palavras que terminam com sufixos comuns de medicamentos
+            word.endsWith('ina') || word.endsWith('fen') || word.endsWith('tine') ||
+            word.endsWith('pine') || word.endsWith('done') || word.endsWith('aine') ||
+            word.endsWith('lone') || word.endsWith('sone') || word.endsWith('cain') ||
+            // Ou tem características farmacológicas
+            word.length >= 6);
   }
   
   /**
