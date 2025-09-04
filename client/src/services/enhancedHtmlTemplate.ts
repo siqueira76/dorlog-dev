@@ -1022,6 +1022,27 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
           <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: 0.5px;">Análise Inteligente de Medicamentos de Resgate</h2>
         </div>
         <p style="color: #64748b; font-size: 1rem; margin: 0; font-weight: 500;">Sistema de IA avançado para análise comportamental e padrões de uso</p>
+        
+        <!-- Explicação Clara dos Dados -->
+        <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #38bdf8; border-radius: 15px; padding: 1.5rem; margin-top: 1.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 1rem;">
+            <span style="font-size: 1.5rem;">📊</span>
+            <span style="font-weight: 700; color: #0f172a; font-size: 1.1rem;">Interpretação dos Dados</span>
+          </div>
+          <div style="color: #0f172a; font-size: 1rem; line-height: 1.6; text-align: left;">
+            <p style="margin: 0 0 0.75rem 0;">
+              <strong style="color: #0ea5e9;">${reportData.rescueMedications.length} medicamento${reportData.rescueMedications.length !== 1 ? 's' : ''} único${reportData.rescueMedications.length !== 1 ? 's' : ''}</strong> ${reportData.rescueMedications.length === 1 ? 'foi identificado' : 'foram identificados'} pela IA durante episódios de crise.
+            </p>
+            <p style="margin: 0 0 0.75rem 0;">
+              ${reportData.rescueMedications.length === 1 ? 'Este medicamento foi utilizado' : 'Estes medicamentos foram utilizados'} em <strong style="color: #0ea5e9;">${totalUsages} ocasiõe${totalUsages !== 1 ? 's' : ''} diferentes</strong> no período analisado.
+            </p>
+            ${reportData.rescueMedications.length === 1 && totalUsages > 1 ? `
+            <p style="margin: 0; padding: 0.75rem; background: #f1f5f9; border-radius: 8px; border-left: 4px solid #0ea5e9;">
+              <strong>Exemplo:</strong> O mesmo medicamento usado ${totalUsages} vezes em datas diferentes = ${reportData.rescueMedications.length} medicamento único com ${totalUsages} episódios de uso.
+            </p>
+            ` : ''}
+          </div>
+        </div>
       </div>
       
       <!-- Dashboard de Métricas Premium -->
@@ -1040,19 +1061,35 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
           <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); transform: translateY(0); transition: transform 0.3s ease;">
             <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">${reportData.rescueMedications.length}</div>
-            <div style="font-size: 0.9rem; opacity: 0.9; font-weight: 600;">Medicamentos Identificados</div>
+            <div style="font-size: 0.9rem; opacity: 0.9; font-weight: 600;">Medicamentos Únicos</div>
+            <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Diferentes tipos identificados</div>
           </div>
           <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
             <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">${totalUsages}</div>
-            <div style="font-size: 0.9rem; opacity: 0.9; font-weight: 600;">Total de Episódios</div>
+            <div style="font-size: 0.9rem; opacity: 0.9; font-weight: 600;">Episódios de Uso</div>
+            <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Vezes utilizados no período</div>
           </div>
           <div style="background: linear-gradient(135deg, ${overallRisk === 'high' ? '#ef4444, #dc2626' : overallRisk === 'medium' ? '#f59e0b, #d97706' : '#10b981, #059669'}); color: white; padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(${overallRisk === 'high' ? '239, 68, 68' : overallRisk === 'medium' ? '245, 158, 11' : '16, 185, 129'}, 0.3);">
             <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">${overallRisk.toUpperCase()}</div>
-            <div style="font-size: 0.9rem; opacity: 0.9; font-weight: 600;">Nível de Risco Geral</div>
+            <div style="font-size: 0.9rem; opacity: 0.9; font-weight: 600;">Nível de Risco</div>
+            <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Análise geral de segurança</div>
           </div>
           <div style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white; padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);">
             <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">${avgFrequency.toFixed(1)}</div>
-            <div style="font-size: 0.9rem; opacity: 0.9; font-weight: 600;">Frequência Média</div>
+            <div style="font-size: 0.9rem; opacity: 0.9; font-weight: 600;">Uso Médio</div>
+            <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Por medicamento</div>
+          </div>
+        </div>
+        
+        <!-- Explicação dos Dados -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; margin-top: 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span style="color: #6366f1;">📊</span>
+            <span style="font-weight: 600; color: #374151; font-size: 0.9rem;">Como Interpretar os Dados:</span>
+          </div>
+          <div style="color: #64748b; font-size: 0.85rem; line-height: 1.4;">
+            <strong>${reportData.rescueMedications.length} medicamento${reportData.rescueMedications.length !== 1 ? 's' : ''} único${reportData.rescueMedications.length !== 1 ? 's' : ''}</strong> ${reportData.rescueMedications.length === 1 ? 'foi identificado' : 'foram identificados'} pela IA, ${reportData.rescueMedications.length === 1 ? 'utilizado' : 'utilizados'} em <strong>${totalUsages} episódio${totalUsages !== 1 ? 's' : ''}</strong> de crise no período analisado.
+            ${reportData.rescueMedications.length === 1 && totalUsages > 1 ? `Isso significa que o mesmo medicamento foi usado ${totalUsages} vezes em datas diferentes.` : ''}
           </div>
         </div>
       </div>
