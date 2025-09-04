@@ -1015,83 +1015,13 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
   return `
     <div class="section-enhanced" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 20px; padding: 2rem; margin: 2rem 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
       
-      <!-- Título Principal com Design Moderno -->
-      <div style="text-align: center; margin-bottom: 3rem;">
-        <div style="display: inline-flex; align-items: center; gap: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 2rem; border-radius: 50px; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); margin-bottom: 1rem;">
-          <span style="font-size: 2rem;">🧠</span>
-          <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: 0.5px;">Análise Inteligente de Medicamentos de Resgate</h2>
+      <!-- Título Principal com Design Clean -->
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <div style="display: inline-flex; align-items: center; gap: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); margin-bottom: 0.75rem;">
+          <span style="font-size: 1.25rem;">🧠</span>
+          <h2 style="margin: 0; font-size: 1.125rem; font-weight: 600;">Análise Inteligente de Medicamentos de Resgate</h2>
         </div>
-        <p style="color: #64748b; font-size: 1rem; margin: 0; font-weight: 500;">Sistema de IA avançado para análise comportamental e padrões de uso</p>
-        
-        <!-- Explicação Clara dos Dados -->
-        <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #38bdf8; border-radius: 15px; padding: 1.5rem; margin-top: 1.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
-          <div style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 1rem;">
-            <span style="font-size: 1.5rem;">📊</span>
-            <span style="font-weight: 700; color: #0f172a; font-size: 1.1rem;">Interpretação dos Dados</span>
-          </div>
-          <div style="color: #0f172a; font-size: 1rem; line-height: 1.6; text-align: left;">
-            <p style="margin: 0 0 0.75rem 0;">
-              <strong style="color: #0ea5e9;">${reportData.rescueMedications.length} medicamento${reportData.rescueMedications.length !== 1 ? 's' : ''} único${reportData.rescueMedications.length !== 1 ? 's' : ''}</strong> ${reportData.rescueMedications.length === 1 ? 'foi identificado' : 'foram identificados'} pela IA durante episódios de crise.
-            </p>
-            <p style="margin: 0 0 0.75rem 0;">
-              ${reportData.rescueMedications.length === 1 ? 'Este medicamento foi utilizado' : 'Estes medicamentos foram utilizados'} em <strong style="color: #0ea5e9;">${totalUsages} ocasiõe${totalUsages !== 1 ? 's' : ''} diferentes</strong> no período analisado.
-            </p>
-            ${reportData.rescueMedications.length === 1 && totalUsages > 1 ? `
-            <p style="margin: 0; padding: 0.75rem; background: #f1f5f9; border-radius: 8px; border-left: 4px solid #0ea5e9;">
-              <strong>Exemplo:</strong> O mesmo medicamento usado ${totalUsages} vezes em datas diferentes = ${reportData.rescueMedications.length} medicamento único com ${totalUsages} episódios de uso.
-            </p>
-            ` : ''}
-          </div>
-        </div>
-      </div>
-      
-      <!-- Dashboard de Métricas Premium -->
-      <div style="background: white; border-radius: 20px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 8px 30px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
-        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #f1f5f9;">
-          <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);">
-            <span style="font-size: 1.8rem; color: white;">🚑</span>
-          </div>
-          <div>
-            <h3 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">Dashboard de Análise com IA</h3>
-            <p style="margin: 0; color: #64748b; font-size: 1rem;">Processamento inteligente de ${reportData.rescueMedications.length} medicamento(s) identificado(s)</p>
-          </div>
-        </div>
-        
-        <!-- Grid de Métricas Avançadas -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-          <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); transform: translateY(0); transition: transform 0.3s ease;">
-            <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">${reportData.rescueMedications.length}</div>
-            <div style="font-size: 0.9rem; opacity: 0.9; font-weight: 600;">Medicamentos Únicos</div>
-            <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Diferentes tipos identificados</div>
-          </div>
-          <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
-            <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">${totalUsages}</div>
-            <div style="font-size: 0.9rem; opacity: 0.9; font-weight: 600;">Episódios de Uso</div>
-            <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Vezes utilizados no período</div>
-          </div>
-          <div style="background: linear-gradient(135deg, ${overallRisk === 'high' ? '#ef4444, #dc2626' : overallRisk === 'medium' ? '#f59e0b, #d97706' : '#10b981, #059669'}); color: white; padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(${overallRisk === 'high' ? '239, 68, 68' : overallRisk === 'medium' ? '245, 158, 11' : '16, 185, 129'}, 0.3);">
-            <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">${overallRisk.toUpperCase()}</div>
-            <div style="font-size: 0.9rem; opacity: 0.9; font-weight: 600;">Nível de Risco</div>
-            <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Análise geral de segurança</div>
-          </div>
-          <div style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white; padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);">
-            <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">${avgFrequency.toFixed(1)}</div>
-            <div style="font-size: 0.9rem; opacity: 0.9; font-weight: 600;">Uso Médio</div>
-            <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Por medicamento</div>
-          </div>
-        </div>
-        
-        <!-- Explicação dos Dados -->
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; margin-top: 1.5rem;">
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-            <span style="color: #6366f1;">📊</span>
-            <span style="font-weight: 600; color: #374151; font-size: 0.9rem;">Como Interpretar os Dados:</span>
-          </div>
-          <div style="color: #64748b; font-size: 0.85rem; line-height: 1.4;">
-            <strong>${reportData.rescueMedications.length} medicamento${reportData.rescueMedications.length !== 1 ? 's' : ''} único${reportData.rescueMedications.length !== 1 ? 's' : ''}</strong> ${reportData.rescueMedications.length === 1 ? 'foi identificado' : 'foram identificados'} pela IA, ${reportData.rescueMedications.length === 1 ? 'utilizado' : 'utilizados'} em <strong>${totalUsages} episódio${totalUsages !== 1 ? 's' : ''}</strong> de crise no período analisado.
-            ${reportData.rescueMedications.length === 1 && totalUsages > 1 ? `Isso significa que o mesmo medicamento foi usado ${totalUsages} vezes em datas diferentes.` : ''}
-          </div>
-        </div>
+        <p style="color: #64748b; font-size: 0.875rem; margin: 0; font-weight: 500;">Sistema de IA para análise de padrões de uso</p>
       </div>
 
       <!-- Cards de Medicamentos Premium -->
@@ -1100,7 +1030,7 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
           <span style="color: #6366f1;">💊</span> Análise Detalhada por Medicamento
         </h3>
         
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem;">
           ${reportData.rescueMedications.map(med => {
             const riskColors = {
               high: { bg: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)', border: '#fca5a5', accent: '#ef4444' },
@@ -1116,7 +1046,7 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
             const effectivenessScore = Math.min(100, (med.frequency * 20) + (med.category === 'prescribed' ? 40 : 20));
 
             return `
-              <div style="background: ${colors.bg}; border: 2px solid ${colors.border}; border-radius: 20px; padding: 2rem; box-shadow: 0 8px 30px rgba(0,0,0,0.1); transition: all 0.3s ease; position: relative; overflow: hidden;">
+              <div style="background: ${colors.bg}; border: 2px solid ${colors.border}; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; overflow: hidden;">
                 
                 <!-- Header do Medicamento -->
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
@@ -1190,18 +1120,18 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
       </div>
 
       <!-- Seção de Insights e Alertas -->
-      <div style="background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 8px 30px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
-        <h3 style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
-          <span style="color: #6366f1;">🧠</span> Insights e Recomendações da IA
+      <div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+        <h3 style="font-size: 1.2rem; font-weight: 700; color: #1e293b; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span style="color: #6366f1; font-size: 1.25rem;">🧠</span> Insights e Recomendações da IA
         </h3>
         
         <!-- Destaque Principal -->
-        <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; border-radius: 15px; padding: 1.5rem; margin-bottom: 1.5rem; position: relative;">
-          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-            <span style="font-size: 2rem;">🏆</span>
+        <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+            <span style="font-size: 1.5rem; margin-top: 0.125rem;">🏆</span>
             <div>
-              <h4 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #1e40af;">Medicamento Mais Utilizado</h4>
-              <p style="margin: 0; color: #3730a3; font-size: 1rem; margin-top: 0.25rem;">
+              <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e40af;">Medicamento Mais Utilizado</h4>
+              <p style="margin: 0; color: #3730a3; font-size: 0.9rem; margin-top: 0.25rem;">
                 <strong>${mostUsedMed.medication}</strong> foi utilizado em ${mostUsedMed.frequency} episódio(s), 
                 representando <strong>${Math.round((mostUsedMed.frequency / totalUsages) * 100)}%</strong> do total de usos registrados.
               </p>
@@ -1211,58 +1141,66 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
 
         <!-- Alerta de Segurança -->
         ${highRiskMeds > 0 ? `
-        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #ef4444; border-radius: 15px; padding: 1.5rem; margin-bottom: 1.5rem;">
-          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-            <span style="font-size: 2rem;">🚨</span>
-            <h4 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #dc2626;">Alerta Crítico - IA Detectou Risco Alto</h4>
+        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #ef4444; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.75rem;">
+            <span style="font-size: 1.5rem; margin-top: 0.125rem;">🚨</span>
+            <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #dc2626;">Alerta Crítico - IA Detectou Risco Alto</h4>
           </div>
-          <div style="color: #991b1b; font-size: 0.95rem; line-height: 1.6;">
+          <div style="color: #991b1b; font-size: 0.875rem; line-height: 1.5;">
             <p style="margin: 0 0 0.5rem 0;"><strong>🎯 Medicamentos de alto risco identificados:</strong> ${highRiskMeds} de ${reportData.rescueMedications.length}</p>
             <p style="margin: 0 0 0.5rem 0;"><strong>🧠 Recomendação IA:</strong> Revisão médica urgente recomendada. Considere protocolos de monitoramento mais rigorosos.</p>
             <p style="margin: 0;"><strong>⚡ Ação sugerida:</strong> Documentar efeitos colaterais e eficácia para discussão médica imediata.</p>
           </div>
         </div>` : mediumRiskMeds > 0 ? `
-        <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 2px solid #f59e0b; border-radius: 15px; padding: 1.5rem; margin-bottom: 1.5rem;">
-          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-            <span style="font-size: 2rem;">⚠️</span>
-            <h4 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #d97706;">Monitoramento Recomendado - Análise IA</h4>
+        <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.75rem;">
+            <span style="font-size: 1.5rem; margin-top: 0.125rem;">⚠️</span>
+            <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #d97706;">Monitoramento Recomendado - Análise IA</h4>
           </div>
-          <div style="color: #92400e; font-size: 0.95rem; line-height: 1.6;">
+          <div style="color: #92400e; font-size: 0.875rem; line-height: 1.5;">
             <p style="margin: 0 0 0.5rem 0;"><strong>🎯 Medicamentos requerem atenção:</strong> ${mediumRiskMeds} de ${reportData.rescueMedications.length}</p>
             <p style="margin: 0;"><strong>🧠 Recomendação IA:</strong> Acompanhamento médico regular e documentação detalhada de eficácia.</p>
           </div>
         </div>` : `
-        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #22c55e; border-radius: 15px; padding: 1.5rem; margin-bottom: 1.5rem;">
-          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-            <span style="font-size: 2rem;">✅</span>
-            <h4 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #16a34a;">Padrão Seguro Identificado - IA</h4>
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #22c55e; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.75rem;">
+            <span style="font-size: 1.5rem; margin-top: 0.125rem;">✅</span>
+            <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #16a34a;">Padrão Seguro Identificado - IA</h4>
           </div>
-          <div style="color: #15803d; font-size: 0.95rem;">
+          <div style="color: #15803d; font-size: 0.875rem;">
             <p style="margin: 0;"><strong>🧠 Análise IA:</strong> Uso de medicamentos dentro dos padrões de segurança identificados. Continue monitorando eficácia e possíveis efeitos.</p>
           </div>
         </div>`}
 
         <!-- Grid de Recomendações -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
-          <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 12px; padding: 1.5rem;">
-            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📊</div>
-            <h5 style="margin: 0 0 0.5rem 0; font-weight: 700; color: #334155;">Padrão de Uso</h5>
-            <p style="margin: 0; color: #475569; font-size: 0.9rem; line-height: 1.5;">Média de ${avgFrequency.toFixed(1)} usos por medicamento ${avgFrequency > 3 ? 'sugere uso frequente - considere revisão médica' : 'indica uso controlado'}</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.75rem;">
+          <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 10px; padding: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <span style="font-size: 1.25rem;">📊</span>
+              <h5 style="margin: 0; font-weight: 700; color: #334155; font-size: 0.95rem;">Padrão de Uso</h5>
+            </div>
+            <p style="margin: 0; color: #475569; font-size: 0.85rem; line-height: 1.4;">Média de ${avgFrequency.toFixed(1)} usos por medicamento ${avgFrequency > 3 ? 'sugere uso frequente - considere revisão médica' : 'indica uso controlado'}</p>
           </div>
-          <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 12px; padding: 1.5rem;">
-            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🎯</div>
-            <h5 style="margin: 0 0 0.5rem 0; font-weight: 700; color: #334155;">Perfil de Segurança</h5>
-            <p style="margin: 0; color: #475569; font-size: 0.9rem; line-height: 1.5;">Sistema identificou ${Math.round((lowRiskMeds / reportData.rescueMedications.length) * 100)}% dos medicamentos com perfil adequado de segurança</p>
+          <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 10px; padding: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <span style="font-size: 1.25rem;">🎯</span>
+              <h5 style="margin: 0; font-weight: 700; color: #334155; font-size: 0.95rem;">Perfil de Segurança</h5>
+            </div>
+            <p style="margin: 0; color: #475569; font-size: 0.85rem; line-height: 1.4;">Sistema identificou ${Math.round((lowRiskMeds / reportData.rescueMedications.length) * 100)}% dos medicamentos com perfil adequado de segurança</p>
           </div>
-          <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 12px; padding: 1.5rem;">
-            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⏰</div>
-            <h5 style="margin: 0 0 0.5rem 0; font-weight: 700; color: #334155;">Próxima Ação</h5>
-            <p style="margin: 0; color: #475569; font-size: 0.9rem; line-height: 1.5;">Agendar consulta médica para discussão dos padrões identificados nos próximos 15 dias</p>
+          <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 10px; padding: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <span style="font-size: 1.25rem;">⏰</span>
+              <h5 style="margin: 0; font-weight: 700; color: #334155; font-size: 0.95rem;">Próxima Ação</h5>
+            </div>
+            <p style="margin: 0; color: #475569; font-size: 0.85rem; line-height: 1.4;">Agendar consulta médica para discussão dos padrões identificados nos próximos 15 dias</p>
           </div>
-          <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 12px; padding: 1.5rem;">
-            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📱</div>
-            <h5 style="margin: 0 0 0.5rem 0; font-weight: 700; color: #334155;">Monitoramento Contínuo</h5>
-            <p style="margin: 0; color: #475569; font-size: 0.9rem; line-height: 1.5;">Continue registrando efeitos e contextos para melhorar a precisão da análise IA</p>
+          <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 10px; padding: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <span style="font-size: 1.25rem;">📱</span>
+              <h5 style="margin: 0; font-weight: 700; color: #334155; font-size: 0.95rem;">Monitoramento Contínuo</h5>
+            </div>
+            <p style="margin: 0; color: #475569; font-size: 0.85rem; line-height: 1.4;">Continue registrando efeitos e contextos para melhorar a precisão da análise IA</p>
           </div>
         </div>
       </div>
