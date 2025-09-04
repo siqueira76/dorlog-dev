@@ -1019,7 +1019,7 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
       <div style="text-align: center; margin-bottom: 2rem;">
         <div style="display: inline-flex; align-items: center; gap: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); margin-bottom: 0.75rem;">
           <span style="font-size: 1.25rem;">🧠</span>
-          <h2 style="margin: 0; font-size: 1.125rem; font-weight: 600;">Análise Inteligente de Medicamentos de Resgate</h2>
+          <h2 style="margin: 0; font-size: 1.125rem; font-weight: 600;">Medicamentos de Resgate</h2>
         </div>
         <p style="color: #64748b; font-size: 0.875rem; margin: 0; font-weight: 500;">Sistema de IA para análise de padrões de uso</p>
       </div>
@@ -1066,18 +1066,18 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
                 </div>
                 
                 <!-- Métricas do Medicamento -->
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
-                  <div style="background: white; border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid ${colors.border}; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                    <div style="font-size: 1.5rem; font-weight: 800; color: #3b82f6; margin-bottom: 0.25rem;">${med.frequency}</div>
-                    <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Episódios</div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
+                  <div style="background: white; border-radius: 10px; padding: 0.75rem; text-align: center; border: 1px solid ${colors.border}; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                    <div style="font-size: 1.25rem; font-weight: 800; color: #3b82f6; margin-bottom: 0.125rem;">${med.frequency}</div>
+                    <div style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Episódios</div>
                   </div>
-                  <div style="background: white; border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid ${colors.border}; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                    <div style="font-size: 1.5rem; font-weight: 800; color: #10b981; margin-bottom: 0.25rem;">${effectivenessScore}%</div>
-                    <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Score IA</div>
+                  <div style="background: white; border-radius: 10px; padding: 0.75rem; text-align: center; border: 1px solid ${colors.border}; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                    <div style="font-size: 1.25rem; font-weight: 800; color: #10b981; margin-bottom: 0.125rem;">${effectivenessScore}%</div>
+                    <div style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Score IA</div>
                   </div>
-                  <div style="background: white; border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid ${colors.border}; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                    <div style="font-size: 1.5rem; font-weight: 800; color: #8b5cf6; margin-bottom: 0.25rem;">${med.dates.length}</div>
-                    <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Registros</div>
+                  <div style="background: white; border-radius: 10px; padding: 0.75rem; text-align: center; border: 1px solid ${colors.border}; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                    <div style="font-size: 1.25rem; font-weight: 800; color: #8b5cf6; margin-bottom: 0.125rem;">${med.dates.length}</div>
+                    <div style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Registros</div>
                   </div>
                 </div>
                 
