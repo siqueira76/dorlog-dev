@@ -1329,6 +1329,186 @@ function generateEnhancedObservationsSection(reportData: EnhancedReportData): st
   `;
 }
 
+function generateEnhancedMedicationsSection(reportData: EnhancedReportData): string {
+  if (!reportData.medications || reportData.medications.length === 0) {
+    return `
+      <div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+          <span style="color: #10b981; font-size: 1.5rem;">💊</span>
+          <span>Medicamentos Atuais</span>
+        </h3>
+        
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #22c55e; border-radius: 12px; padding: 2rem; text-center;">
+          <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: #bbf7d0; border-radius: 50%; margin-bottom: 1rem;">
+            <span style="font-size: 2rem;">💊</span>
+          </div>
+          <h4 style="font-size: 1.1rem; font-weight: 600; color: #166534; margin-bottom: 0.5rem;">Nenhum medicamento cadastrado</h4>
+          <p style="color: #15803d; font-size: 0.9rem; margin: 0;">Cadastre seus medicamentos na seção correspondente do app para visualizar aqui.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; margin-bottom: 2rem;">
+      <h3 style="font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+        <span style="color: #10b981; font-size: 1.5rem;">💊</span>
+        <span>Medicamentos Atuais</span>
+        <span style="background: #dbeafe; color: #1d4ed8; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">${reportData.medications.length}</span>
+      </h3>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+        ${reportData.medications.map(med => {
+          // Validação e limpeza dos dados do medicamento
+          const medicationName = med.nome && typeof med.nome === 'string' && med.nome.trim().length > 0 
+            ? med.nome.trim() 
+            : 'Medicamento não identificado';
+          
+          const dosage = med.posologia && typeof med.posologia === 'string' && med.posologia.trim().length > 0
+            ? med.posologia.trim()
+            : 'Dosagem não especificada';
+            
+          const frequency = med.frequencia && typeof med.frequencia === 'string' && med.frequencia.trim().length > 0
+            ? med.frequencia.trim()
+            : 'Frequência não especificada';
+            
+          const prescribedBy = med.medico && typeof med.medico === 'string' && med.medico.trim().length > 0
+            ? med.medico.trim()
+            : null;
+
+          return `
+            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #86efac; border-radius: 12px; padding: 1.25rem; position: relative; overflow: hidden;">
+              
+              <!-- Header do Medicamento -->
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
+                  <div style="width: 40px; height: 40px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid #22c55e;">
+                    <span style="font-size: 1.25rem;">💊</span>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #166534; margin-bottom: 0.125rem; word-wrap: break-word;">${medicationName}</h4>
+                    <p style="margin: 0; color: #15803d; font-size: 0.8rem; font-weight: 500;">Medicamento de Uso Contínuo</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Informações de Dosagem -->
+              <div style="background: white; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #bbf7d0;">
+                <div style="margin-bottom: 0.75rem;">
+                  <div style="font-size: 0.8rem; font-weight: 600; color: #166534; margin-bottom: 0.25rem;">📋 Posologia:</div>
+                  <div style="font-size: 0.9rem; color: #374151; font-weight: 500;">${dosage}</div>
+                </div>
+                <div>
+                  <div style="font-size: 0.8rem; font-weight: 600; color: #166534; margin-bottom: 0.25rem;">⏰ Frequência:</div>
+                  <div style="font-size: 0.9rem; color: #374151; font-weight: 500;">${frequency}</div>
+                </div>
+              </div>
+              
+              ${prescribedBy ? `
+              <div style="border-top: 1px solid #bbf7d0; padding-top: 0.75rem;">
+                <div style="font-size: 0.8rem; font-weight: 600; color: #166534; margin-bottom: 0.25rem;">👨‍⚕️ Prescrito por:</div>
+                <div style="font-size: 0.85rem; color: #15803d; font-weight: 600; font-style: italic;">${prescribedBy}</div>
+              </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function generateEnhancedDoctorsSection(reportData: EnhancedReportData): string {
+  if (!reportData.doctors || reportData.doctors.length === 0) {
+    return `
+      <div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+          <span style="color: #3b82f6; font-size: 1.5rem;">👨‍⚕️</span>
+          <span>Equipe Médica</span>
+        </h3>
+        
+        <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 2rem; text-center;">
+          <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: #bfdbfe; border-radius: 50%; margin-bottom: 1rem;">
+            <span style="font-size: 2rem;">👨‍⚕️</span>
+          </div>
+          <h4 style="font-size: 1.1rem; font-weight: 600; color: #1e40af; margin-bottom: 0.5rem;">Nenhum médico cadastrado</h4>
+          <p style="color: #1d4ed8; font-size: 0.9rem; margin: 0;">Cadastre seus médicos na seção correspondente do app para visualizar aqui.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; margin-bottom: 2rem;">
+      <h3 style="font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+        <span style="color: #3b82f6; font-size: 1.5rem;">👨‍⚕️</span>
+        <span>Equipe Médica</span>
+        <span style="background: #fef3c7; color: #d97706; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">${reportData.doctors.length}</span>
+      </h3>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+        ${reportData.doctors.map(doctor => {
+          // Validação e limpeza dos dados do médico
+          const doctorName = doctor.nome && typeof doctor.nome === 'string' && doctor.nome.trim().length > 0 
+            ? doctor.nome.trim() 
+            : 'Nome não especificado';
+          
+          const specialty = doctor.especialidade && typeof doctor.especialidade === 'string' && doctor.especialidade.trim().length > 0
+            ? doctor.especialidade.trim()
+            : 'Especialidade não especificada';
+            
+          const crm = doctor.crm && typeof doctor.crm === 'string' && doctor.crm.trim().length > 0
+            ? doctor.crm.trim()
+            : 'CRM não informado';
+            
+          const contact = doctor.telefone && typeof doctor.telefone === 'string' && doctor.telefone.trim().length > 0
+            ? doctor.telefone.trim()
+            : doctor.email && typeof doctor.email === 'string' && doctor.email.trim().length > 0
+            ? doctor.email.trim()
+            : null;
+
+          return `
+            <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #60a5fa; border-radius: 12px; padding: 1.25rem; position: relative; overflow: hidden;">
+              
+              <!-- Header do Médico -->
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
+                  <div style="width: 40px; height: 40px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid #3b82f6;">
+                    <span style="font-size: 1.25rem;">👨‍⚕️</span>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e40af; margin-bottom: 0.125rem; word-wrap: break-word;">${doctorName}</h4>
+                    <p style="margin: 0; color: #1d4ed8; font-size: 0.8rem; font-weight: 500;">Profissional de Saúde</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Informações Profissionais -->
+              <div style="background: white; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #bfdbfe;">
+                <div style="margin-bottom: 0.75rem;">
+                  <div style="font-size: 0.8rem; font-weight: 600; color: #1e40af; margin-bottom: 0.25rem;">🏥 Especialidade:</div>
+                  <div style="font-size: 0.9rem; color: #374151; font-weight: 500;">${specialty}</div>
+                </div>
+                <div>
+                  <div style="font-size: 0.8rem; font-weight: 600; color: #1e40af; margin-bottom: 0.25rem;">📋 CRM:</div>
+                  <div style="font-size: 0.9rem; color: #374151; font-weight: 500;">${crm}</div>
+                </div>
+              </div>
+              
+              ${contact ? `
+              <div style="border-top: 1px solid #bfdbfe; padding-top: 0.75rem;">
+                <div style="font-size: 0.8rem; font-weight: 600; color: #1e40af; margin-bottom: 0.25rem;">📞 Contato:</div>
+                <div style="font-size: 0.85rem; color: #1d4ed8; font-weight: 600; font-style: italic;">${contact}</div>
+              </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
 function generateTraditionalSections(reportData: EnhancedReportData): string {
   // Seções tradicionais mantidas para compatibilidade
   return `
@@ -1336,40 +1516,8 @@ function generateTraditionalSections(reportData: EnhancedReportData): string {
     ${generateEnhancedPainPointsSection(reportData)}
     ${generateEnhancedPainEvolutionSection(reportData)}
     
-    <div class="section-enhanced">
-        <div class="section-title-enhanced">
-            <span class="section-icon">💊</span>
-            <span>Medicamentos e Médicos</span>
-        </div>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div>
-                <h4 class="text-lg font-semibold mb-4">Medicamentos Atuais (${reportData.medications.length})</h4>
-                <div class="space-y-2">
-                    ${reportData.medications.slice(0, 5).map(med => `
-                        <div class="border border-gray-200 rounded-lg p-3">
-                            <div class="font-medium">${med.nome}</div>
-                            <div class="text-sm text-gray-600">${med.posologia} - ${med.frequencia}</div>
-                            ${med.medico ? `<div class="text-xs text-gray-500">Prescrito por: ${med.medico}</div>` : ''}
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            
-            <div>
-                <h4 class="text-lg font-semibold mb-4">Equipe Médica (${reportData.doctors.length})</h4>
-                <div class="space-y-2">
-                    ${reportData.doctors.slice(0, 5).map(doctor => `
-                        <div class="border border-gray-200 rounded-lg p-3">
-                            <div class="font-medium">${doctor.nome}</div>
-                            <div class="text-sm text-gray-600">${doctor.especialidade}</div>
-                            <div class="text-xs text-gray-500">CRM: ${doctor.crm}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        </div>
-    </div>
+    ${generateEnhancedMedicationsSection(reportData)}
+    ${generateEnhancedDoctorsSection(reportData)}
     
     ${generateEnhancedObservationsSection(reportData)}
   `;
