@@ -235,7 +235,7 @@ export default function Profile() {
 
                   <div className="space-y-3 pt-2">
                     <Button
-                      onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_premium_dorlog', '_blank')}
+                      onClick={() => window.open(import.meta.env.VITE_STRIPE_CHECKOUT_URL || 'https://checkout.stripe.com/pay/cs_test_premium_dorlog', '_blank')}
                       size="lg"
                       className="w-full bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 hover:from-purple-700 hover:via-blue-700 hover:to-indigo-700 text-white font-bold text-base py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg"
                     >

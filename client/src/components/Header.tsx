@@ -47,7 +47,7 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
             ) : (
               // Usuário Gratuito - CTA elegante e informativo
               <Button
-                onClick={() => window.open('https://checkout.stripe.com/pay/cs_test_premium_dorlog', '_blank')}
+                onClick={() => window.open(import.meta.env.VITE_STRIPE_CHECKOUT_URL || 'https://checkout.stripe.com/pay/cs_test_premium_dorlog', '_blank')}
                 variant="outline"
                 size="sm"
                 className="group relative h-9 px-3 bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 hover:from-orange-100 hover:via-amber-100 hover:to-yellow-100 border border-orange-200/60 hover:border-orange-300 text-orange-800 hover:text-orange-900 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 active:scale-95"
