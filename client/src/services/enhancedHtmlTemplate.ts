@@ -1071,7 +1071,7 @@ function generateCrisesSection(reportData: EnhancedReportData): string {
         </div>
 
         <!-- Gatilhos Identificados -->
-        <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5;">
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5; margin-bottom: 1.5rem;">
           <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>⚡</span> Principais Gatilhos Identificados
           </h4>
@@ -1093,7 +1093,165 @@ function generateCrisesSection(reportData: EnhancedReportData): string {
           ` : ''}
         </div>
 
+        <!-- Medicamentos Utilizados nas Crises -->
+        ${generateCrisisMedicationsSubsection(reportData)}
+
       </div>
+    </div>
+  `;
+}
+
+function generateCrisisMedicationsSubsection(reportData: EnhancedReportData): string {
+  if (!reportData.rescueMedications || reportData.rescueMedications.length === 0) {
+    return `
+      <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5;">
+        <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>💊</span> Medicamentos Utilizados nas Crises
+        </h4>
+        
+        <div style="text-align: center; padding: 2rem; background: #fef2f2; border-radius: 10px; border: 1px solid #fecaca;">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">📝</div>
+          <h5 style="color: #7f1d1d; margin-bottom: 0.5rem; font-size: 1rem;">Nenhum Medicamento Registrado</h5>
+          <p style="color: #991b1b; font-size: 0.9rem; margin: 0;">
+            Para análise detalhada, registre os medicamentos utilizados durante episódios de crise no quiz emergencial.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  // Calcular estatísticas
+  const totalMedicationsUsed = reportData.rescueMedications.length;
+  const totalUsageEvents = reportData.rescueMedications.reduce((sum, med) => sum + med.frequency, 0);
+  const highRiskMeds = reportData.rescueMedications.filter(med => med.riskLevel === 'high').length;
+  const mostUsedMed = reportData.rescueMedications.sort((a, b) => b.frequency - a.frequency)[0];
+
+  return `
+    <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5;">
+      <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span>💊</span> Medicamentos Utilizados nas Crises
+      </h4>
+      
+      <!-- Estatísticas Resumidas -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+        <div style="background: #fef2f2; border-radius: 8px; padding: 0.75rem; text-align: center; border: 1px solid #fecaca;">
+          <div style="font-size: 1.25rem; font-weight: 800; color: #dc2626;">${totalMedicationsUsed}</div>
+          <div style="font-size: 0.7rem; color: #7f1d1d; font-weight: 600;">Medicamentos Diferentes</div>
+        </div>
+        <div style="background: #fef2f2; border-radius: 8px; padding: 0.75rem; text-align: center; border: 1px solid #fecaca;">
+          <div style="font-size: 1.25rem; font-weight: 800; color: #dc2626;">${totalUsageEvents}</div>
+          <div style="font-size: 0.7rem; color: #7f1d1d; font-weight: 600;">Usos Registrados</div>
+        </div>
+        ${highRiskMeds > 0 ? `
+        <div style="background: #fef2f2; border-radius: 8px; padding: 0.75rem; text-align: center; border: 1px solid #fecaca;">
+          <div style="font-size: 1.25rem; font-weight: 800; color: #dc2626;">${highRiskMeds}</div>
+          <div style="font-size: 0.7rem; color: #7f1d1d; font-weight: 600;">Alto Risco</div>
+        </div>
+        ` : ''}
+      </div>
+
+      <!-- Lista de Medicamentos -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+        ${reportData.rescueMedications.slice(0, 6).map(med => {
+          const riskColors = {
+            high: { bg: '#fef2f2', border: '#ef4444', accent: '#dc2626', icon: '🚨' },
+            medium: { bg: '#fffbeb', border: '#f59e0b', accent: '#d97706', icon: '⚠️' },
+            low: { bg: '#f0fdf4', border: '#22c55e', accent: '#16a34a', icon: '✅' }
+          };
+          const colors = riskColors[med.riskLevel as keyof typeof riskColors] || riskColors.low;
+          
+          const categoryLabels = {
+            prescribed: { text: 'Prescrito', icon: '📋' },
+            otc: { text: 'Sem Receita', icon: '🏪' },
+            unknown: { text: 'Não Identificado', icon: '❓' }
+          };
+          const category = categoryLabels[med.category as keyof typeof categoryLabels] || categoryLabels.unknown;
+          
+          return `
+            <div style="background: ${colors.bg}; border: 2px solid ${colors.border}; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              
+              <!-- Header do Medicamento -->
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div style="flex: 1;">
+                  <h5 style="margin: 0; font-size: 1rem; font-weight: 700; color: #1f2937; margin-bottom: 0.25rem;">
+                    ${med.medication || 'Medicamento não identificado'}
+                  </h5>
+                  <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: #6b7280;">
+                    <span>${category.icon}</span>
+                    <span>${category.text}</span>
+                  </div>
+                </div>
+                <div style="background: ${colors.bg}; border: 1px solid ${colors.border}; border-radius: 20px; padding: 0.25rem 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+                  <span style="font-size: 0.75rem;">${colors.icon}</span>
+                  <span style="font-weight: 600; color: ${colors.accent}; font-size: 0.7rem;">
+                    ${med.riskLevel === 'high' ? 'ALTO' : med.riskLevel === 'medium' ? 'MÉDIO' : 'BAIXO'}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Métricas -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+                <div style="background: white; border-radius: 6px; padding: 0.5rem; text-align: center; border: 1px solid ${colors.border};">
+                  <div style="font-size: 1rem; font-weight: 700; color: ${colors.accent};">${med.frequency}</div>
+                  <div style="font-size: 0.65rem; color: #6b7280;">Episódios</div>
+                </div>
+                <div style="background: white; border-radius: 6px; padding: 0.5rem; text-align: center; border: 1px solid ${colors.border};">
+                  <div style="font-size: 1rem; font-weight: 700; color: ${colors.accent};">${med.dates.length}</div>
+                  <div style="font-size: 0.65rem; color: #6b7280;">Datas</div>
+                </div>
+              </div>
+              
+              <!-- Datas de Uso -->
+              <div style="margin-bottom: 1rem;">
+                <div style="font-size: 0.75rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">📅 Últimos usos:</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                  ${med.dates.slice(0, 3).map(date => `
+                    <span style="background: white; border: 1px solid ${colors.border}; border-radius: 4px; padding: 0.2rem 0.4rem; font-size: 0.65rem; color: #374151; font-weight: 600;">
+                      ${new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </span>
+                  `).join('')}
+                  ${med.dates.length > 3 ? `
+                    <span style="background: #f3f4f6; border-radius: 4px; padding: 0.2rem 0.4rem; font-size: 0.65rem; color: #6b7280;">
+                      +${med.dates.length - 3}
+                    </span>
+                  ` : ''}
+                </div>
+              </div>
+              
+              <!-- Contexto (se disponível) -->
+              ${med.context && med.context.trim().length > 10 ? `
+              <div style="border-top: 1px solid ${colors.border}; padding-top: 0.75rem;">
+                <div style="font-size: 0.75rem; font-weight: 600; color: #374151; margin-bottom: 0.25rem;">💭 Contexto:</div>
+                <div style="font-size: 0.7rem; color: #4b5563; font-style: italic; line-height: 1.3;">
+                  "${med.context.length > 80 ? med.context.substring(0, 80) + '...' : med.context}"
+                </div>
+              </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      ${reportData.rescueMedications.length > 6 ? `
+      <div style="margin-top: 1rem; text-align: center; padding: 0.75rem; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca;">
+        <span style="font-size: 0.85rem; color: #7f1d1d; font-weight: 600;">
+          +${reportData.rescueMedications.length - 6} medicamento(s) adicional(is) registrado(s)
+        </span>
+      </div>
+      ` : ''}
+
+      ${mostUsedMed ? `
+      <div style="margin-top: 1.5rem; padding: 1rem; background: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <span style="font-size: 1rem;">🎯</span>
+          <span style="font-size: 0.9rem; font-weight: 700; color: #7f1d1d;">Medicamento Mais Utilizado</span>
+        </div>
+        <p style="font-size: 0.85rem; color: #7f1d1d; margin: 0;">
+          <strong>${mostUsedMed.medication}</strong> foi utilizado em ${mostUsedMed.frequency} episódio(s) de crise, sendo o mais frequente no período analisado.
+        </p>
+      </div>
+      ` : ''}
+      
     </div>
   `;
 }
