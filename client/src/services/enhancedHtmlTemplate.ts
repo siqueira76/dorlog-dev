@@ -1087,6 +1087,12 @@ function generateCrisesSection(reportData: EnhancedReportData): string {
       <!-- Medicamentos de Resgate -->
       ${medicationsContent}
       
+      <!-- NOVA SUBSEÇÃO 1: Sumário de Relatos Textuais -->
+      ${generateTextualReportsSection(reportData)}
+      
+      <!-- NOVA SUBSEÇÃO 2: Análise Inteligente de Crises -->
+      ${generateIntelligentCrisisAnalysisSection(reportData)}
+      
     </div>
   `;
 }
@@ -1214,6 +1220,269 @@ function generateMedicationsCards(reportData: EnhancedReportData): string {
         </p>
       </div>
       ` : ''}
+      
+    </div>
+  `;
+}
+
+// NOVA SUBSEÇÃO 1: Sumário de Relatos Textuais
+function generateTextualReportsSection(reportData: EnhancedReportData): string {
+  // Usar dados já processados do NLP para extrair informações sobre textos
+  const nlpData = reportData.nlpInsights;
+  
+  // Se não há insights NLP, não há textos para analisar
+  if (!nlpData || !nlpData.sentimentEvolution || nlpData.sentimentEvolution.length === 0) {
+    return `
+      <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>📝</span> Relatos dos Usuários Durante Crises
+        </h4>
+        
+        <div style="text-align: center; padding: 2rem; background: #fef2f2; border-radius: 10px; border: 1px solid #fecaca;">
+          <div style="font-size: 2.5rem; margin-bottom: 1rem;">📝</div>
+          <h5 style="color: #7f1d1d; margin-bottom: 0.5rem; font-size: 1rem;">Sem Relatos Textuais</h5>
+          <p style="color: #991b1b; font-size: 0.9rem; margin: 0;">
+            Nenhum texto foi registrado na pergunta "Quer descrever algo a mais?" durante as crises emergenciais.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Usar dados do sentiment evolution para estatísticas
+  const sentimentData = nlpData.sentimentEvolution;
+  const totalReports = sentimentData.length;
+  const totalQuizzes = reportData.crisisEpisodes || 0;
+  const responseRate = totalQuizzes > 0 ? Math.round((totalReports / totalQuizzes) * 100) : 0;
+  
+  // Estimar média de palavras baseado nos contextos (aproximação)
+  const averageWords = sentimentData.filter(s => s.context).length > 0
+    ? Math.round(sentimentData.reduce((sum, s) => sum + (s.context ? s.context.split(' ').length * 3 : 0), 0) / sentimentData.length)
+    : 15; // valor padrão estimado
+  
+  return `
+    <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+      <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span>📝</span> Relatos dos Usuários Durante Crises
+      </h4>
+      
+      <!-- Estatísticas de Relatos -->
+      <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; justify-content: center;">
+        <div style="background: #f8fafc; border-radius: 6px; padding: 0.75rem 1rem; text-align: center; border: 1px solid #e2e8f0; min-width: 120px;">
+          <div style="font-size: 1.25rem; font-weight: 700; color: #475569; margin-bottom: 0.125rem;">${totalReports}</div>
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Relatos Coletados</div>
+        </div>
+        <div style="background: #f8fafc; border-radius: 6px; padding: 0.75rem 1rem; text-align: center; border: 1px solid #e2e8f0; min-width: 120px;">
+          <div style="font-size: 1.25rem; font-weight: 700; color: #475569; margin-bottom: 0.125rem;">${responseRate}%</div>
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Taxa Resposta</div>
+        </div>
+      </div>
+      
+      <!-- Sumário Inteligente baseado em NLP -->
+      <div style="background: #fef9f3; border: 1px solid #fed7aa; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <h5 style="font-size: 0.9rem; font-weight: 700; color: #9a3412; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>🧠</span> Análise Inteligente dos Relatos
+        </h5>
+        <p style="font-size: 0.85rem; color: #9a3412; margin: 0; line-height: 1.4; font-style: italic;">
+          ${generateIntelligentSummary(nlpData)}
+        </p>
+      </div>
+      
+      <!-- Relatos Recentes baseados em sentiment evolution -->
+      <div style="margin-bottom: 1rem;">
+        <h5 style="font-size: 0.9rem; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">📅 Relatos Recentes Analisados:</h5>
+        <div style="space-y: 0.5rem;">
+          ${sentimentData.slice(0, 3).map(report => `
+            <div style="background: #f8fafc; border-left: 3px solid #dc2626; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem;">
+              <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.25rem;">
+                ${new Date(report.date).toLocaleDateString('pt-BR')} - Quiz Emergencial 
+                <span style="background: ${getSentimentColor(report.sentiment.label)}; color: white; padding: 0.125rem 0.375rem; border-radius: 10px; font-size: 0.7rem; margin-left: 0.5rem;">
+                  ${getSentimentEmoji(report.sentiment.label)} ${translateSentiment(report.sentiment.label)}
+                </span>
+              </div>
+              <p style="font-size: 0.8rem; color: #374151; margin: 0; line-height: 1.3;">
+                ${report.context ? `"${report.context}"` : 'Relato analisado com processamento de linguagem natural'}
+              </p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      
+      <!-- Estatísticas Adicionais -->
+      ${totalReports > 3 ? `
+      <div style="text-align: center; padding: 0.5rem;">
+        <span style="font-size: 0.8rem; color: #64748b; font-style: italic;">
+          Mostrando 3 de ${totalReports} relatos • Análise NLP ativa • Estimativa: ${averageWords} palavras/relato
+        </span>
+      </div>
+      ` : totalReports > 0 ? `
+      <div style="text-align: center; padding: 0.5rem;">
+        <span style="font-size: 0.8rem; color: #64748b; font-style: italic;">
+          ${totalReports} relato${totalReports !== 1 ? 's' : ''} analisado${totalReports !== 1 ? 's' : ''} • Análise NLP ativa
+        </span>
+      </div>
+      ` : ''}
+      
+    </div>
+  `;
+}
+
+// NOVA SUBSEÇÃO 2: Análise Inteligente de Crises
+function generateIntelligentCrisisAnalysisSection(reportData: EnhancedReportData): string {
+  const nlpData = reportData.nlpInsights;
+  
+  if (!nlpData || !nlpData.sentimentEvolution || nlpData.sentimentEvolution.length === 0) {
+    return `
+      <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>🧠</span> Análise Inteligente de Crises
+        </h4>
+        
+        <div style="text-align: center; padding: 2rem; background: #fef2f2; border-radius: 10px; border: 1px solid #fecaca;">
+          <div style="font-size: 2.5rem; margin-bottom: 1rem;">🧠</div>
+          <h5 style="color: #7f1d1d; margin-bottom: 0.5rem; font-size: 1rem;">Análise Indisponível</h5>
+          <p style="color: #991b1b; font-size: 0.9rem; margin: 0;">
+            Análise inteligente requer relatos textuais dos quizzes emergenciais.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Usar dados já processados do NLP
+  const sentimentData = nlpData.sentimentEvolution;
+  const urgencyData = nlpData.urgencyTimeline || [];
+  
+  // Calcular estatísticas de sentimento
+  const negativeCount = sentimentData.filter(s => s.sentiment.label === 'NEGATIVE').length;
+  const sentimentNegativePercentage = sentimentData.length > 0 
+    ? Math.round((negativeCount / sentimentData.length) * 100)
+    : 0;
+  
+  // Calcular média de urgência
+  const averageUrgency = urgencyData.length > 0
+    ? Math.round((urgencyData.reduce((sum, u) => sum + u.level, 0) / urgencyData.length) * 10) / 10
+    : 0;
+  
+  // Detectar padrões hospitalares baseado nas entidades médicas
+  const medicalEntities = nlpData.medicalEntities || { symptoms: [], medications: [], bodyParts: [], emotions: [] };
+  const hospitalTerms = medicalEntities.symptoms.filter(s => 
+    s.entity.toLowerCase().includes('hospital') || 
+    s.entity.toLowerCase().includes('emerg') ||
+    s.entity.toLowerCase().includes('pronto')
+  );
+  const hospitalVisits = hospitalTerms.length;
+  
+  // Contar alertas clínicos
+  const clinicalAlerts = nlpData.clinicalAlerts ? nlpData.clinicalAlerts.length : 0;
+  
+  // Dor média das crises
+  const emergencyPainData = reportData.painEvolution.filter(pain => pain.period === 'emergencial');
+  const averageCrisisPain = emergencyPainData.length > 0 
+    ? emergencyPainData.reduce((sum, pain) => sum + pain.level, 0) / emergencyPainData.length 
+    : 0;
+  
+  return `
+    <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+      <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span>🧠</span> Análise Inteligente de Crises
+      </h4>
+      
+      <!-- Métricas Avançadas -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+        <div style="background: #f8fafc; border-radius: 8px; padding: 0.75rem; text-align: center; border: 1px solid #e2e8f0;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🏥</div>
+          <div style="font-size: 1rem; font-weight: 700; color: #dc2626; margin-bottom: 0.125rem;">${hospitalVisits}</div>
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Visitas Hospitalares</div>
+        </div>
+        
+        <div style="background: #f8fafc; border-radius: 8px; padding: 0.75rem; text-align: center; border: 1px solid #e2e8f0;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">😔</div>
+          <div style="font-size: 1rem; font-weight: 700; color: #dc2626; margin-bottom: 0.125rem;">${sentimentNegativePercentage}%</div>
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Sentimento Negativo</div>
+        </div>
+        
+        <div style="background: #f8fafc; border-radius: 8px; padding: 0.75rem; text-align: center; border: 1px solid #e2e8f0;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📈</div>
+          <div style="font-size: 1rem; font-weight: 700; color: #dc2626; margin-bottom: 0.125rem;">${averageCrisisPain.toFixed(1)}</div>
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Dor Média Crises</div>
+        </div>
+        
+        <div style="background: #f8fafc; border-radius: 8px; padding: 0.75rem; text-align: center; border: 1px solid #e2e8f0;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⚠️</div>
+          <div style="font-size: 1rem; font-weight: 700; color: #dc2626; margin-bottom: 0.125rem;">${averageUrgency}</div>
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Urgência Média</div>
+        </div>
+      </div>
+      
+      ${hospitalVisits > 0 ? `
+      <!-- Contexto Hospitalar -->
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <h5 style="font-size: 0.9rem; font-weight: 700; color: #7f1d1d; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>🏥</span> Contexto Hospitalar Detectado
+        </h5>
+        <p style="font-size: 0.8rem; color: #7f1d1d; margin: 0; line-height: 1.3;">
+          Foram identificadas <strong>${hospitalVisits}</strong> menção${hospitalVisits !== 1 ? 'ões' : ''} a contextos hospitalares nos relatos de crise, 
+          indicando situações que requereram atendimento médico emergencial.
+        </p>
+      </div>
+      ` : ''}
+      
+      ${medicationMentions > 0 ? `
+      <!-- Medicações Detectadas -->
+      <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <h5 style="font-size: 0.9rem; font-weight: 700; color: #0c4a6e; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>💊</span> Medicações Mencionadas
+        </h5>
+        <p style="font-size: 0.8rem; color: #0c4a6e; margin: 0; line-height: 1.3;">
+          <strong>${medicationMentions}</strong> relato${medicationMentions !== 1 ? 's' : ''} mencionam medicamentos utilizados durante as crises, 
+          fornecendo insights sobre as estratégias de manejo da dor.
+        </p>
+      </div>
+      ` : ''}
+      
+      ${clinicalAlerts > 0 || sentimentNegativePercentage > 70 || averageUrgency > 6 ? `
+      <!-- Insights Comportamentais -->
+      <div style="background: #f5f3ff; border: 1px solid #c4b5fd; border-radius: 8px; padding: 1rem;">
+        <h5 style="font-size: 0.9rem; font-weight: 700; color: #5b21b6; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>🔍</span> Insights Comportamentais Detectados
+        </h5>
+        <div style="space-y: 0.5rem;">
+          ${sentimentNegativePercentage > 70 ? `
+          <div style="display: flex; align-items: start; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8rem; color: #7c3aed;">🔸</span>
+            <span style="font-size: 0.8rem; color: #5b21b6; line-height: 1.3;">
+              <strong>Alto Impacto Emocional:</strong> ${sentimentNegativePercentage}% dos relatos processados pela IA indicam carga emocional negativa intensa, evidenciando impacto psicológico significativo.
+            </span>
+          </div>
+          ` : ''}
+          
+          ${averageUrgency > 6 ? `
+          <div style="display: flex; align-items: start; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8rem; color: #7c3aed;">🔸</span>
+            <span style="font-size: 0.8rem; color: #5b21b6; line-height: 1.3;">
+              <strong>Alta Urgência Detectada:</strong> Nível de urgência médio de ${averageUrgency}/10 indica situações críticas recorrentes que requerem atenção médica.
+            </span>
+          </div>
+          ` : ''}
+          
+          ${clinicalAlerts > 0 ? `
+          <div style="display: flex; align-items: start; gap: 0.5rem;">
+            <span style="font-size: 0.8rem; color: #7c3aed;">🔸</span>
+            <span style="font-size: 0.8rem; color: #5b21b6; line-height: 1.3;">
+              <strong>Alertas Clínicos:</strong> Sistema de IA identificou ${clinicalAlerts} alerta${clinicalAlerts !== 1 ? 's' : ''} clínico${clinicalAlerts !== 1 ? 's' : ''} nos relatos analisados.
+            </span>
+          </div>
+          ` : ''}
+        </div>
+      </div>
+      ` : `
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem;">
+        <p style="font-size: 0.8rem; color: #64748b; margin: 0; text-align: center; font-style: italic;">
+          📊 Análise inteligente baseada em ${sentimentData.length} relato${sentimentData.length !== 1 ? 's' : ''} processado${sentimentData.length !== 1 ? 's' : ''} por NLP
+        </p>
+      </div>
+      `}
       
     </div>
   `;
