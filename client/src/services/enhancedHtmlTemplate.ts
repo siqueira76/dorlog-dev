@@ -42,11 +42,6 @@ ${getEnhancedReportCSS()}
         <div class="content">
             ${generateExecutiveSummary(reportData)}
             ${generateQuizIntelligentSummarySection(reportData)}
-            ${generateSleepPainInsightsSection(reportData)}
-            ${generateVisualizationsSection(reportData)}
-            ${generatePatternAnalysisSection(reportData)}
-            ${generatePredictiveAlertsSection(reportData)}
-            ${generateClinicalRecommendationsSection(reportData)}
             ${generateTraditionalSections(reportData)}
             ${generateEnhancedFooter(reportId, reportData)}
         </div>
@@ -924,6 +919,7 @@ function generateQuizIntelligentSummarySection(reportData: EnhancedReportData): 
   `;
 }
 
+/* SEÇÃO REMOVIDA - generateSleepPainInsightsSection
 function generateSleepPainInsightsSection(reportData: EnhancedReportData): string {
   const sleepPainInsights = reportData.sleepPainInsights;
   
@@ -1090,7 +1086,9 @@ function getSimpleRelationshipDescription(correlation: any, patterns: any): stri
   
   return `Continue cuidando do seu sono - é fundamental para o bem-estar e controle da dor.`;
 }
+*/
 
+/* SEÇÃO REMOVIDA - generateVisualizationsSection
 function generateVisualizationsSection(reportData: EnhancedReportData): string {
   const visualData = reportData.visualizationData;
   
@@ -1163,7 +1161,9 @@ function generateVisualizationsSection(reportData: EnhancedReportData): string {
     </div>
   `;
 }
+*/
 
+/* SEÇÃO REMOVIDA - generatePredictiveAlertsSection
 function generatePredictiveAlertsSection(reportData: EnhancedReportData): string {
   const alerts = reportData.smartSummary?.predictiveAlerts || [];
   
@@ -1213,7 +1213,9 @@ function generatePredictiveAlertsSection(reportData: EnhancedReportData): string
     </div>
   `;
 }
+*/
 
+/* SEÇÃO REMOVIDA - generatePatternAnalysisSection
 function generatePatternAnalysisSection(reportData: EnhancedReportData): string {
   const patterns = reportData.patternInsights;
   
@@ -1264,7 +1266,9 @@ function generatePatternAnalysisSection(reportData: EnhancedReportData): string 
     </div>
   `;
 }
+*/
 
+/* SEÇÃO REMOVIDA - generateClinicalRecommendationsSection
 function generateClinicalRecommendationsSection(reportData: EnhancedReportData): string {
   const recommendations = reportData.smartSummary?.clinicalRecommendations || [];
   const keyFindings = reportData.smartSummary?.keyFindings || [];
@@ -1308,6 +1312,7 @@ function generateClinicalRecommendationsSection(reportData: EnhancedReportData):
     </div>
   `;
 }
+*/
 
 // Seções Enhanced adaptadas do template padrão com IA integrada
 function generateCrisesSection(reportData: EnhancedReportData): string {
