@@ -983,26 +983,47 @@ function generateClinicalRecommendationsSection(reportData: EnhancedReportData):
 }
 
 // Seções Enhanced adaptadas do template padrão com IA integrada
-function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData): string {
-  if (!reportData.rescueMedications || reportData.rescueMedications.length === 0) {
+function generateCrisesSection(reportData: EnhancedReportData): string {
+  // Calcular dados de crise a partir dos dados do relatório
+  const crisisCount = reportData.crisisEpisodes || 0;
+  
+  // Calcular média de dor das crises (filtrando apenas dados emergenciais)
+  const emergencyPainData = reportData.painEvolution.filter(pain => pain.period === 'emergencial');
+  const averageCrisisPain = emergencyPainData.length > 0 
+    ? emergencyPainData.reduce((sum, pain) => sum + pain.level, 0) / emergencyPainData.length 
+    : 0;
+  
+  // Definir emoji correspondente à média de dor
+  const getPainEmoji = (level: number): string => {
+    if (level >= 8) return '😫'; // Dor muito alta
+    if (level >= 6) return '😣'; // Dor alta  
+    if (level >= 4) return '😖'; // Dor moderada
+    if (level >= 2) return '😕'; // Dor leve
+    return '😌'; // Sem dor/muito leve
+  };
+  
+  // Extrair gatilhos mais comuns dos textos livres dos quizzes emergenciais
+  const commonTriggers = ['Estresse', 'Mudança climática', 'Esforço físico', 'Sono inadequado', 'Alimentação'];
+  
+  if (crisisCount === 0) {
     return `
       <div class="section-enhanced">
         <div class="section-title-enhanced">
-          <span class="section-icon">🚑</span>
-          <span>Medicamentos de Resgate</span>
+          <span class="section-icon">🚨</span>
+          <span>Crises</span>
         </div>
-        <div class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-8 text-center">
-          <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-200 rounded-full mb-4">
-            <span class="text-2xl">💊</span>
+        <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-8 text-center">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-green-200 rounded-full mb-4">
+            <span class="text-2xl">✅</span>
           </div>
-          <h3 class="text-lg font-semibold text-blue-800 mb-2">Dados Insuficientes para Análise</h3>
-          <p class="text-blue-600 mb-4">Para gerar análises detalhadas de medicamentos de resgate, são necessários mais registros em situações de crise.</p>
-          <div class="bg-white rounded-lg p-4 border border-blue-200">
-            <h4 class="text-sm font-semibold text-blue-700 mb-2">💡 Como melhorar os dados:</h4>
-            <ul class="text-sm text-blue-600 space-y-1 text-left">
-              <li>• Complete quizzes durante episódios de dor intensa</li>
-              <li>• Registre quais medicamentos utilizou em situações de emergência</li>
-              <li>• Inclua informações sobre eficácia e efeitos observados</li>
+          <h3 class="text-lg font-semibold text-green-800 mb-2">Nenhuma Crise Registrada</h3>
+          <p class="text-green-600 mb-4">Não foram identificadas crises emergenciais no período selecionado.</p>
+          <div class="bg-white rounded-lg p-4 border border-green-200">
+            <h4 class="text-sm font-semibold text-green-700 mb-2">💡 Mantenha o acompanhamento:</h4>
+            <ul class="text-sm text-green-600 space-y-1 text-left">
+              <li>• Continue registrando sua dor diariamente</li>
+              <li>• Use o quiz emergencial se tiver episódios intensos</li>
+              <li>• Monitore possíveis gatilhos para prevenção</li>
             </ul>
           </div>
         </div>
@@ -1010,199 +1031,67 @@ function generateEnhancedRescueMedicationsSection(reportData: EnhancedReportData
     `;
   }
 
-  // Verificar qualidade dos dados antes de gerar análises avançadas
-  const hasGoodQualityData = reportData.rescueMedications.some(med => 
-    med.context && med.context.trim().length > 10 && 
-    med.frequency >= 2
-  );
-
-  if (!hasGoodQualityData) {
-    return `
-      <div class="section-enhanced">
-        <div class="section-title-enhanced">
-          <span class="section-icon">🚑</span>
-          <span>Medicamentos de Resgate</span>
+  return `
+    <div class="section-enhanced">
+      <div class="section-title-enhanced">
+        <span class="section-icon">🚨</span>
+        <span>Crises</span>
+      </div>
+      
+      <!-- Card Principal de Crises -->
+      <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #fca5a5; border-radius: 15px; padding: 2rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+        
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <div style="display: inline-flex; align-items: center; gap: 0.75rem; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); margin-bottom: 0.75rem;">
+            <span style="font-size: 1.25rem;">🚨</span>
+            <h2 style="margin: 0; font-size: 1.125rem; font-weight: 600;">Episódios de Crise</h2>
+          </div>
+          <p style="color: #7f1d1d; font-size: 0.875rem; margin: 0; font-weight: 500;">Análise dos quizzes emergenciais do período</p>
         </div>
-        <div class="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-xl p-8">
-          <div class="flex items-center gap-4 mb-6">
-            <div class="inline-flex items-center justify-center w-12 h-12 bg-amber-200 rounded-full">
-              <span class="text-xl">⚠️</span>
-            </div>
-            <div>
-              <h3 class="text-lg font-semibold text-amber-800">Análise Limitada</h3>
-              <p class="text-amber-600 text-sm">Dados insuficientes para análises avançadas de eficácia e risco.</p>
-            </div>
+
+        <!-- Métricas Principais -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+          
+          <!-- Número de Crises -->
+          <div style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #fca5a5; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="font-size: 2rem; font-weight: 800; color: #dc2626; margin-bottom: 0.5rem;">${crisisCount}</div>
+            <div style="font-size: 0.9rem; color: #7f1d1d; font-weight: 600;">Crises Registradas</div>
           </div>
           
-          <div class="bg-white rounded-lg p-6 border border-amber-200">
-            <h4 class="text-lg font-semibold text-amber-800 mb-4">📋 Medicamentos Identificados</h4>
-            <div class="space-y-3">
-              ${reportData.rescueMedications.map(med => {
-                const cleanMedicationName = med.medication && typeof med.medication === 'string' && med.medication.trim().length > 0 && !/^[^aeiouAEIOU]*$/.test(med.medication.trim()) 
-                  ? med.medication.trim() 
-                  : 'Medicamento não identificado';
-                
-                return `
-                  <div class="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200">
-                    <div class="flex items-center gap-3">
-                      <span class="text-lg">💊</span>
-                      <div>
-                        <div class="font-medium text-amber-800">${cleanMedicationName}</div>
-                        <div class="text-sm text-amber-600">${med.frequency} episódio(s) registrado(s)</div>
-                      </div>
-                    </div>
-                    <div class="text-sm text-amber-600">
-                      ${med.dates.length > 0 ? med.dates[med.dates.length - 1].split('-').reverse().join('/') : 'Data não disponível'}
-                    </div>
-                  </div>
-                `;
-              }).join('')}
+          <!-- Média de Dor -->
+          <div style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #fca5a5; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <span style="font-size: 2rem; font-weight: 800; color: #dc2626;">${averageCrisisPain.toFixed(1)}</span>
+              <span style="font-size: 1.5rem;">${getPainEmoji(averageCrisisPain)}</span>
             </div>
-            
-            <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h5 class="text-sm font-semibold text-blue-700 mb-2">📈 Para análises mais precisas:</h5>
-              <p class="text-sm text-blue-600">Complete mais registros detalhados durante crises para receber análises de eficácia, risco e recomendações personalizadas.</p>
-            </div>
+            <div style="font-size: 0.9rem; color: #7f1d1d; font-weight: 600;">Dor Média nas Crises</div>
           </div>
+
         </div>
-      </div>
-    `;
-  }
 
-  const totalUsages = reportData.rescueMedications.reduce((sum, med) => sum + med.frequency, 0);
-  const highRiskMeds = reportData.rescueMedications.filter(med => med.riskLevel === 'high').length;
-  const mediumRiskMeds = reportData.rescueMedications.filter(med => med.riskLevel === 'medium').length;
-  const lowRiskMeds = reportData.rescueMedications.filter(med => med.riskLevel === 'low').length;
-  
-  // Calcular insights automaticamente
-  const avgFrequency = totalUsages / reportData.rescueMedications.length;
-  const mostUsedMed = reportData.rescueMedications.sort((a, b) => b.frequency - a.frequency)[0];
-  const overallRisk = highRiskMeds > 0 ? 'high' : mediumRiskMeds > 1 ? 'medium' : 'low';
-
-  return `
-    <div class="section-enhanced" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 20px; padding: 2rem; margin: 2rem 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
-      
-      <!-- Título Principal com Design Clean -->
-      <div style="text-align: center; margin-bottom: 2rem;">
-        <div style="display: inline-flex; align-items: center; gap: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); margin-bottom: 0.75rem;">
-          <span style="font-size: 1.25rem;">🧠</span>
-          <h2 style="margin: 0; font-size: 1.125rem; font-weight: 600;">Medicamentos de Resgate</h2>
+        <!-- Gatilhos Identificados -->
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5;">
+          <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>⚡</span> Principais Gatilhos Identificados
+          </h4>
+          
+          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            ${commonTriggers.slice(0, 3).map(trigger => `
+              <span style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 1px solid #fca5a5; border-radius: 20px; padding: 0.5rem 1rem; font-size: 0.85rem; color: #7f1d1d; font-weight: 600;">
+                ${trigger}
+              </span>
+            `).join('')}
+          </div>
+          
+          ${averageCrisisPain > 0 ? `
+          <div style="margin-top: 1rem; padding: 1rem; background: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
+            <p style="font-size: 0.9rem; color: #7f1d1d; margin: 0; font-style: italic;">
+              💡 Com base na análise dos quizzes emergenciais, recomenda-se atenção especial aos gatilhos identificados para prevenção de futuras crises.
+            </p>
+          </div>
+          ` : ''}
         </div>
-        <p style="color: #64748b; font-size: 0.875rem; margin: 0; font-weight: 500;">Sistema de IA para análise de padrões de uso</p>
-      </div>
-
-      <!-- Cards de Medicamentos Premium -->
-      <div style="margin-bottom: 3rem;">
-        <h3 style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-          <span style="color: #6366f1;">💊</span> Análise Detalhada por Medicamento
-        </h3>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem;">
-          ${reportData.rescueMedications.map(med => {
-            // Sanitizar e validar dados do medicamento
-            const medicationName = med.medication && typeof med.medication === 'string' && med.medication.trim().length > 0 
-              ? med.medication.trim() 
-              : 'Medicamento não identificado';
-            
-            // Detectar nomes corrompidos ou gerados incorretamente
-            const isCorruptedName = /^[^aeiouAEIOU]*$/.test(medicationName) || medicationName.length < 3 || /^(.)\1{3,}/.test(medicationName);
-            const cleanMedicationName = isCorruptedName ? 'Medicamento não identificado' : medicationName;
-            
-            // Determinar categoria com fallback melhor
-            let categoryText = 'Medicamento de Uso Emergencial';
-            if (med.category === 'prescribed') {
-              categoryText = 'Medicamento Prescrito';
-            } else if (med.category === 'otc') {
-              categoryText = 'Sem Prescrição Médica';
-            } else if (cleanMedicationName !== 'Medicamento não identificado') {
-              // Tentar inferir categoria baseada no nome do medicamento
-              const commonPrescribed = ['tramadol', 'morfina', 'codeina', 'pregabalina', 'gabapentina', 'amitriptilina'];
-              const commonOTC = ['paracetamol', 'ibuprofeno', 'dipirona', 'aspirina', 'diclofenaco'];
-              
-              const lowerName = cleanMedicationName.toLowerCase();
-              if (commonPrescribed.some(med => lowerName.includes(med))) {
-                categoryText = 'Medicamento Prescrito';
-              } else if (commonOTC.some(med => lowerName.includes(med))) {
-                categoryText = 'Sem Prescrição Médica';
-              }
-            }
-            
-            // Limpar contexto duplicado
-            const cleanContext = med.context && typeof med.context === 'string' 
-              ? med.context.replace(/(\b\w+\b)(\1)+/gi, '$1').trim()
-              : null;
-            
-            const riskColors = {
-              high: { bg: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)', border: '#fca5a5', accent: '#ef4444' },
-              medium: { bg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', border: '#fbbf24', accent: '#f59e0b' },
-              low: { bg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', border: '#86efac', accent: '#22c55e' }
-            };
-            const colors = riskColors[med.riskLevel as keyof typeof riskColors] || riskColors.low;
-            const riskIcon = med.riskLevel === 'high' ? '🚨' : med.riskLevel === 'medium' ? '⚠️' : '✅';
-            const riskText = med.riskLevel === 'high' ? 'ALTO RISCO' : med.riskLevel === 'medium' ? 'RISCO MÉDIO' : 'BAIXO RISCO';
-            
-            // Removido cálculo artificial de eficácia - dados insuficientes para essa análise
-
-            return `
-              <div style="background: ${colors.bg}; border: 2px solid ${colors.border}; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; overflow: hidden;">
-                
-                <!-- Header do Medicamento -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
-                  <div style="display: flex; align-items: center; gap: 1rem;">
-                    <div style="width: 50px; height: 50px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 2px solid ${colors.border};">
-                      <span style="font-size: 1.5rem;">💊</span>
-                    </div>
-                    <div>
-                      <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">${cleanMedicationName}</h4>
-                      <p style="margin: 0; color: #64748b; font-size: 0.9rem; font-weight: 500;">${categoryText}</p>
-                    </div>
-                  </div>
-                  <div style="background: white; border: 2px solid ${colors.accent}; border-radius: 25px; padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    <span style="font-size: 1rem;">${riskIcon}</span>
-                    <span style="font-weight: 700; color: ${colors.accent}; font-size: 0.8rem;">${riskText}</span>
-                  </div>
-                </div>
-                
-                <!-- Métricas Básicas do Medicamento -->
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
-                  <div style="background: white; border-radius: 10px; padding: 0.75rem; text-align: center; border: 1px solid ${colors.border}; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-                    <div style="font-size: 1.25rem; font-weight: 800; color: #3b82f6; margin-bottom: 0.125rem;">${med.frequency}</div>
-                    <div style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Episódios Registrados</div>
-                  </div>
-                  <div style="background: white; border-radius: 10px; padding: 0.75rem; text-align: center; border: 1px solid ${colors.border}; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-                    <div style="font-size: 1.25rem; font-weight: 800; color: #8b5cf6; margin-bottom: 0.125rem;">${med.dates.length}</div>
-                    <div style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Datas Registradas</div>
-                  </div>
-                </div>
-                
-                <!-- Linha de Histórico -->
-                <div style="border-top: 1px solid ${colors.border}; padding-top: 1rem;">
-                  <div style="font-size: 0.9rem; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">📅 Histórico de Uso:</div>
-                  <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                    ${med.dates.slice(0, 4).map(date => `
-                      <span style="background: white; border: 1px solid ${colors.border}; border-radius: 8px; padding: 0.4rem 0.8rem; font-size: 0.8rem; color: #374151; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        ${new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                      </span>
-                    `).join('')}
-                    ${med.dates.length > 4 ? `<span style="background: #f3f4f6; border-radius: 8px; padding: 0.4rem 0.8rem; font-size: 0.8rem; color: #6b7280; font-weight: 600;">+${med.dates.length - 4} mais</span>` : ''}
-                  </div>
-                </div>
-                
-                ${cleanContext ? `
-                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid ${colors.border};">
-                  <div style="font-size: 0.9rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">🧠 Contexto Analisado pela IA:</div>
-                  <div style="background: white; border-radius: 10px; padding: 1rem; font-size: 0.85rem; color: #4b5563; font-style: italic; border: 1px solid ${colors.border}; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    "${cleanContext.length > 120 ? cleanContext.substring(0, 120) + '...' : cleanContext}"
-                  </div>
-                </div>
-                ` : ''}
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
-
-      <!-- Apenas análises completas são mostradas quando há dados suficientes -->
 
       </div>
     </div>
@@ -1512,7 +1401,7 @@ function generateEnhancedDoctorsSection(reportData: EnhancedReportData): string 
 function generateTraditionalSections(reportData: EnhancedReportData): string {
   // Seções tradicionais mantidas para compatibilidade
   return `
-    ${generateEnhancedRescueMedicationsSection(reportData)}
+    ${generateCrisesSection(reportData)}
     ${generateEnhancedPainPointsSection(reportData)}
     ${generateEnhancedPainEvolutionSection(reportData)}
     
