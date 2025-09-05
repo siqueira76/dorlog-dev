@@ -2674,7 +2674,13 @@ function extractEmotionalStates(observations: string) {
   const triggers = ['Ansiedade noturna', 'Preocupação com dor'];
   
   if (!observations) {
-    return { distribution: defaultStates, triggers, totalEntries: 0 };
+    return { 
+      distribution: defaultStates, 
+      triggers, 
+      totalEntries: 0,
+      predominant: 'Dados sendo coletados dos questionários...',
+      summary: 'Responda mais questionários para uma análise completa'
+    };
   }
   
   // Analisar padrões emocionais das observações
@@ -2688,16 +2694,41 @@ function extractEmotionalStates(observations: string) {
   const sad = (observations.match(/triste|deprimido|desanimado|melancólico/gi) || []).length;
   
   const total = calm + anxious + happy + sad || 1;
+  const distribution = {
+    calm: Math.round((calm / total) * 100),
+    anxious: Math.round((anxious / total) * 100),
+    happy: Math.round((happy / total) * 100),
+    sad: Math.round((sad / total) * 100)
+  };
+  
+  // Determinar estado emocional predominante
+  const emotions = [
+    { name: 'Calmo/Tranquilo', value: distribution.calm, emoji: '😌' },
+    { name: 'Ansioso', value: distribution.anxious, emoji: '😰' },
+    { name: 'Feliz', value: distribution.happy, emoji: '😊' },
+    { name: 'Triste', value: distribution.sad, emoji: '😔' }
+  ];
+  
+  const predominantEmotion = emotions.reduce((prev, current) => 
+    current.value > prev.value ? current : prev
+  );
+  
+  // Gerar resumo humanizado
+  let summary = '';
+  if (predominantEmotion.value >= 50) {
+    summary = `Na maioria das vezes você se sente ${predominantEmotion.name.toLowerCase()} à noite`;
+  } else if (predominantEmotion.value >= 35) {
+    summary = `Você tende a se sentir mais ${predominantEmotion.name.toLowerCase()} no período noturno`;
+  } else {
+    summary = `Seus sentimentos noturnos variam entre diferentes estados emocionais`;
+  }
   
   return {
-    distribution: {
-      calm: Math.round((calm / total) * 100),
-      anxious: Math.round((anxious / total) * 100),
-      happy: Math.round((happy / total) * 100),
-      sad: Math.round((sad / total) * 100)
-    },
+    distribution,
     triggers,
-    totalEntries
+    totalEntries,
+    predominant: `${predominantEmotion.emoji} ${predominantEmotion.name}`,
+    summary
   };
 }
 
@@ -2708,7 +2739,9 @@ function extractEvacuationData(observations: string) {
       frequency: 0, 
       consistency: 'Não informado', 
       healthScore: 50,
-      painReduction: 15
+      painReduction: 15,
+      humanizedStatus: 'Dados sendo coletados',
+      explanation: 'Continue respondendo os questionários para análise completa'
     };
   }
   
@@ -2723,22 +2756,37 @@ function extractEvacuationData(observations: string) {
   let consistency = 'Regular';
   let healthScore = 75;
   let painReduction = 25;
+  let humanizedStatus = '';
+  let explanation = '';
   
   if (irregular > regular) {
     consistency = 'Irregular';
     healthScore = 40;
     painReduction = 5;
+    humanizedStatus = 'Precisa de atenção';
+    explanation = 'Irregularidade intestinal pode intensificar a dor. Considere ajustar alimentação e hidratação';
   } else if (regular > 0) {
     consistency = 'Boa';
     healthScore = 85;
     painReduction = 35;
+    humanizedStatus = 'Funcionando bem';
+    explanation = 'Boa regularidade intestinal está contribuindo para reduzir sua dor';
+  } else if (frequency > 0) {
+    healthScore = 75;
+    humanizedStatus = 'Dentro da normalidade';
+    explanation = 'Padrão intestinal regular ajuda no controle da dor';
+  } else {
+    humanizedStatus = 'Dados insuficientes';
+    explanation = 'Continue respondendo para análise mais precisa';
   }
   
   return {
     frequency,
     consistency,
     healthScore,
-    painReduction
+    painReduction,
+    humanizedStatus,
+    explanation
   };
 }
 
@@ -2829,19 +2877,22 @@ function generateMorningNightCard(quizAnalysis: any): string {
       </div>
       
       <div class="quiz-metric">
-        <div class="quiz-metric-label">Estado Emocional Noturno:</div>
-        <div style="font-size: 0.8rem; color: #64748b; line-height: 1.4;">
-          └ ${morning.emotionalStates.calm}% Calmo • ${morning.emotionalStates.anxious}% Ansioso • ${morning.emotionalStates.happy}% Feliz • ${morning.emotionalStates.sad}% Triste
+        <div class="quiz-metric-label">Estado Emocional Predominante:</div>
+        <div class="quiz-metric-main">
+          ${quizAnalysis.emotional.predominant}
+        </div>
+        <div style="font-size: 0.8rem; color: #64748b; line-height: 1.4; margin-top: 0.5rem;">
+          ${quizAnalysis.emotional.summary}
         </div>
       </div>
       
       <div class="quiz-metric">
         <div class="quiz-metric-label">Saúde Digestiva:</div>
         <div class="quiz-metric-main">
-          ${evacuation.consistency} ${digestiveEmoji}
+          ${evacuation.humanizedStatus} ${digestiveEmoji}
         </div>
-        <div style="font-size: 0.8rem; color: #64748b;">
-          └ ${evacuation.frequency} registros de evacuação analisados
+        <div style="font-size: 0.8rem; color: #64748b; line-height: 1.4; margin-top: 0.5rem;">
+          ${evacuation.explanation}
         </div>
       </div>
       
@@ -2856,7 +2907,7 @@ function generateMorningNightCard(quizAnalysis: any): string {
       </div>
       
       <div class="quiz-insight">
-        💡 Insight: Evacuação ${evacuation.consistency.toLowerCase()} reduz dor em ${evacuation.painReduction}%
+        💡 Insight: ${evacuation.explanation}
       </div>
     </div>
   `;
