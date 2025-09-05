@@ -1122,20 +1122,20 @@ function generateMedicationsCards(reportData: EnhancedReportData): string {
         <span>💊</span> Medicamentos Utilizados nas Crises
       </h4>
       
-      <!-- Estatísticas Resumidas -->
-      <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-        <div style="background: #f8fafc; border-radius: 8px; padding: 1rem; text-align: center; border: 1px solid #e2e8f0; min-width: 140px;">
-          <div style="font-size: 1.5rem; font-weight: 700; color: #475569; margin-bottom: 0.25rem;">${totalMedicationsUsed}</div>
-          <div style="font-size: 0.8rem; color: #64748b; font-weight: 500;">Medicamentos Diferentes</div>
+      <!-- Estatísticas Resumidas Compactas -->
+      <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; justify-content: center;">
+        <div style="background: #f8fafc; border-radius: 6px; padding: 0.75rem 1rem; text-align: center; border: 1px solid #e2e8f0; min-width: 120px;">
+          <div style="font-size: 1.25rem; font-weight: 700; color: #475569; margin-bottom: 0.125rem;">${totalMedicationsUsed}</div>
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Medicamentos</div>
         </div>
-        <div style="background: #f8fafc; border-radius: 8px; padding: 1rem; text-align: center; border: 1px solid #e2e8f0; min-width: 140px;">
-          <div style="font-size: 1.5rem; font-weight: 700; color: #475569; margin-bottom: 0.25rem;">${totalUsageEvents}</div>
-          <div style="font-size: 0.8rem; color: #64748b; font-weight: 500;">Usos Registrados</div>
+        <div style="background: #f8fafc; border-radius: 6px; padding: 0.75rem 1rem; text-align: center; border: 1px solid #e2e8f0; min-width: 120px;">
+          <div style="font-size: 1.25rem; font-weight: 700; color: #475569; margin-bottom: 0.125rem;">${totalUsageEvents}</div>
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Usos Total</div>
         </div>
       </div>
 
-      <!-- Lista de Medicamentos -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; max-width: 100%;">
+      <!-- Lista de Medicamentos Responsiva -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem; max-width: 100%;">
         ${reportData.rescueMedications.slice(0, 6).map(med => {
           const categoryLabels = {
             prescribed: { text: 'Prescrito', icon: '📋' },
@@ -1145,48 +1145,48 @@ function generateMedicationsCards(reportData: EnhancedReportData): string {
           const category = categoryLabels[med.category as keyof typeof categoryLabels] || categoryLabels.unknown;
           
           return `
-            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s ease;">
+            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
               
-              <!-- Header do Medicamento -->
-              <div style="margin-bottom: 1rem;">
-                <h5 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.3;">
-                  ${med.medication || 'Medicamento não identificado'}
-                </h5>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <span style="font-size: 0.8rem;">${category.icon}</span>
-                  <span style="font-size: 0.8rem; color: #64748b; font-weight: 500;">${category.text}</span>
+              <!-- Header Compacto -->
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                <div style="flex: 1; min-width: 0;">
+                  <h5 style="margin: 0; font-size: 0.95rem; font-weight: 600; color: #1e293b; margin-bottom: 0.25rem; line-height: 1.2; word-wrap: break-word;">
+                    ${med.medication || 'Medicamento não identificado'}
+                  </h5>
+                  <div style="display: flex; align-items: center; gap: 0.375rem;">
+                    <span style="font-size: 0.75rem;">${category.icon}</span>
+                    <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">${category.text}</span>
+                  </div>
+                </div>
+                <!-- Badge de Episódios Inline -->
+                <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fca5a5; border-radius: 20px; padding: 0.25rem 0.75rem; margin-left: 0.5rem; white-space: nowrap;">
+                  <span style="font-size: 0.85rem; font-weight: 700; color: #dc2626;">${med.frequency}</span>
+                  <span style="font-size: 0.7rem; color: #7f1d1d; margin-left: 0.25rem;">usos</span>
                 </div>
               </div>
               
-              <!-- Métrica Principal -->
-              <div style="background: #f8fafc; border-radius: 8px; padding: 0.75rem; text-align: center; margin-bottom: 1rem; border: 1px solid #f1f5f9;">
-                <div style="font-size: 1.5rem; font-weight: 700; color: #475569; margin-bottom: 0.25rem;">${med.frequency}</div>
-                <div style="font-size: 0.8rem; color: #64748b; font-weight: 500;">Episódios de Uso</div>
-              </div>
-              
-              <!-- Datas de Uso -->
-              <div style="margin-bottom: 1rem;">
-                <div style="font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">📅 Últimos registros:</div>
+              <!-- Datas Compactas -->
+              <div style="margin-bottom: 0.75rem;">
+                <div style="font-size: 0.75rem; font-weight: 600; color: #374151; margin-bottom: 0.375rem;">📅 Registros recentes:</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
-                  ${med.dates.slice(0, 4).map(date => `
-                    <span style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.7rem; color: #475569; font-weight: 500;">
+                  ${med.dates.slice(0, 3).map(date => `
+                    <span style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0.125rem 0.375rem; font-size: 0.7rem; color: #475569; font-weight: 500;">
                       ${new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                     </span>
                   `).join('')}
-                  ${med.dates.length > 4 ? `
-                    <span style="background: #f8fafc; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.7rem; color: #64748b; font-weight: 500;">
-                      +${med.dates.length - 4}
+                  ${med.dates.length > 3 ? `
+                    <span style="background: #f8fafc; border-radius: 4px; padding: 0.125rem 0.375rem; font-size: 0.7rem; color: #64748b; font-weight: 500;">
+                      +${med.dates.length - 3}
                     </span>
                   ` : ''}
                 </div>
               </div>
               
-              <!-- Contexto (se disponível) -->
+              <!-- Contexto Compacto -->
               ${med.context && med.context.trim().length > 10 ? `
-              <div style="border-top: 1px solid #f1f5f9; padding-top: 1rem;">
-                <div style="font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">💭 Observações:</div>
-                <div style="font-size: 0.8rem; color: #64748b; line-height: 1.4; font-style: italic;">
-                  "${med.context.length > 100 ? med.context.substring(0, 100) + '...' : med.context}"
+              <div style="border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
+                <div style="font-size: 0.75rem; color: #64748b; line-height: 1.3; font-style: italic;">
+                  💭 "${med.context.length > 60 ? med.context.substring(0, 60) + '...' : med.context}"
                 </div>
               </div>
               ` : ''}
@@ -1196,21 +1196,21 @@ function generateMedicationsCards(reportData: EnhancedReportData): string {
       </div>
 
       ${reportData.rescueMedications.length > 6 ? `
-      <div style="margin-top: 1rem; text-align: center; padding: 0.75rem; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca;">
-        <span style="font-size: 0.85rem; color: #7f1d1d; font-weight: 600;">
-          +${reportData.rescueMedications.length - 6} medicamento(s) adicional(is) registrado(s)
+      <div style="margin-top: 0.75rem; text-align: center; padding: 0.5rem; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca;">
+        <span style="font-size: 0.8rem; color: #7f1d1d; font-weight: 600;">
+          +${reportData.rescueMedications.length - 6} medicamento(s) adicional(is)
         </span>
       </div>
       ` : ''}
 
       ${mostUsedMed ? `
-      <div style="margin-top: 1.5rem; padding: 1rem; background: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-          <span style="font-size: 1rem;">🎯</span>
-          <span style="font-size: 0.9rem; font-weight: 700; color: #7f1d1d;">Medicamento Mais Utilizado</span>
+      <div style="margin-top: 1rem; padding: 0.75rem; background: #fef2f2; border-radius: 6px; border-left: 3px solid #dc2626;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+          <span style="font-size: 0.9rem;">🎯</span>
+          <span style="font-size: 0.85rem; font-weight: 700; color: #7f1d1d;">Mais Utilizado</span>
         </div>
-        <p style="font-size: 0.85rem; color: #7f1d1d; margin: 0;">
-          <strong>${mostUsedMed.medication}</strong> foi utilizado em ${mostUsedMed.frequency} episódio(s) de crise, sendo o mais frequente no período analisado.
+        <p style="font-size: 0.8rem; color: #7f1d1d; margin: 0; line-height: 1.3;">
+          <strong>${mostUsedMed.medication}</strong> - ${mostUsedMed.frequency} episódio(s)
         </p>
       </div>
       ` : ''}
