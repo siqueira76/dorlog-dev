@@ -83,6 +83,40 @@ export interface EnhancedReportData extends ReportData {
     correlationTrend: Array<{ period: string; correlation: number }>;
     riskHeatmap: Array<{ day: string; hour: number; riskLevel: number }>;
   };
+  textSummaries?: {
+    matinal?: {
+      summary: string;
+      averageSentiment: string;
+      textCount: number;
+      averageLength: number;
+      morningQuality?: string;
+      energyLevel?: string;
+    };
+    noturno?: {
+      summary: string;
+      averageSentiment: string;
+      textCount: number;
+      averageLength: number;
+      keyPatterns?: string[];
+      reflectionDepth?: string;
+    };
+    emergencial?: {
+      summary: string;
+      averageSentiment: string;
+      textCount: number;
+      averageLength: number;
+      averageUrgency: number;
+      commonTriggers?: string[];
+      interventionMentions?: number;
+    };
+    combined?: {
+      summary: string;
+      totalTexts: number;
+      totalDays: number;
+      clinicalRecommendations?: string[];
+      timelineInsights?: any;
+    };
+  };
 }
 
 /**
@@ -129,6 +163,10 @@ export class EnhancedReportAnalysisService {
       // 5. Preparar dados para visualizações sono-dor
       console.log('📊 Preparando dados de visualização sono-dor...');
       enhanced.visualizationData = this.prepareVisualizationData(enhanced);
+      
+      // 5. Processamento de textos categorizados com NLP
+      console.log('📝 Processando textos categorizados com NLP...');
+      enhanced.textSummaries = await this.processTextsByCategory(reportData);
       
       console.log('✅ Análise enhanced sono-dor finalizada!');
       return enhanced;
@@ -251,6 +289,316 @@ export class EnhancedReportAnalysisService {
     }));
   }
   
+  /**
+   * Processa textos categorizados usando NLP
+   */
+  private static async processTextsByCategory(reportData: ReportData): Promise<any> {
+    try {
+      // Importar o serviço de extração de textos com contexto
+      const { EnhancedUnifiedReportService } = await import('./enhancedUnifiedReportService');
+      
+      // Extrair textos com contexto temporal e de quiz
+      const textsWithContext = await EnhancedUnifiedReportService.extractTextResponsesWithContext(reportData);
+      
+      if (!textsWithContext || textsWithContext.length === 0) {
+        console.log('📝 Nenhum texto encontrado para processamento NLP');
+        return {};
+      }
+      
+      console.log(`📝 Processando ${textsWithContext.length} texto(s) categorizados...`);
+      
+      // Categorizar textos por tipo de quiz
+      const categorized = {
+        matinal: textsWithContext.filter(t => t.quizType === 'matinal'),
+        noturno: textsWithContext.filter(t => t.quizType === 'noturno'),
+        emergencial: textsWithContext.filter(t => t.quizType === 'emergencial')
+      };
+      
+      const textSummaries: any = {};
+      
+      // Processar cada categoria
+      for (const [category, texts] of Object.entries(categorized)) {
+        if (texts.length > 0) {
+          console.log(`📝 Processando categoria ${category}: ${texts.length} texto(s)`);
+          textSummaries[category] = await this.processCategoryTexts(texts, category);
+        }
+      }
+      
+      // Processar análise longitudinal combinada
+      if (textsWithContext.length >= 2) {
+        console.log('📝 Processando análise longitudinal combinada...');
+        textSummaries.combined = await this.processLongitudinalInsights(textsWithContext);
+      }
+      
+      console.log(`✅ Processamento NLP concluído: ${Object.keys(textSummaries).length} categoria(s)`);
+      return textSummaries;
+      
+    } catch (error) {
+      console.error('❌ Erro no processamento de textos categorizados:', error);
+      return {};
+    }
+  }
+
+  /**
+   * Processa textos de uma categoria específica
+   */
+  private static async processCategoryTexts(texts: any[], category: string): Promise<any> {
+    try {
+      // Importar o serviço NLP
+      const { NLPAnalysisService } = await import('./nlpAnalysisService');
+      const nlpService = new NLPAnalysisService();
+      
+      // Combinar todos os textos da categoria
+      const combinedText = texts.map(t => t.text).join('. ');
+      
+      // Analisar com NLP
+      await nlpService.initialize();
+      const analysis = await nlpService.analyzeText(combinedText);
+      
+      // Extrair insights específicos da categoria
+      let categoryInsights = {};
+      
+      if (category === 'matinal') {
+        categoryInsights = this.extractMorningInsights(texts, analysis);
+      } else if (category === 'noturno') {
+        categoryInsights = this.extractEveningInsights(texts, analysis);
+      } else if (category === 'emergencial') {
+        categoryInsights = this.extractCrisisInsights(texts, analysis);
+      }
+      
+      return {
+        summary: analysis.summary?.summary || this.generateFallbackSummary(combinedText),
+        averageSentiment: analysis.sentiment.label.toLowerCase(),
+        textCount: texts.length,
+        averageLength: Math.round(combinedText.length / texts.length),
+        urgencyLevel: analysis.urgencyLevel || 5,
+        ...categoryInsights
+      };
+      
+    } catch (error) {
+      console.error(`❌ Erro no processamento da categoria ${category}:`, error);
+      
+      // Fallback sem NLP
+      const combinedText = texts.map(t => t.text).join('. ');
+      return {
+        summary: this.generateFallbackSummary(combinedText),
+        averageSentiment: 'neutro',
+        textCount: texts.length,
+        averageLength: Math.round(combinedText.length / texts.length)
+      };
+    }
+  }
+
+  /**
+   * Extrai insights específicos dos textos matinais
+   */
+  private static extractMorningInsights(texts: any[], analysis: any): any {
+    // Palavras-chave relacionadas a manhãs
+    const morningKeywords = ['sono', 'despertar', 'manhã', 'acordar', 'descanso'];
+    const hasmorningContext = texts.some(t => 
+      morningKeywords.some(keyword => t.text.toLowerCase().includes(keyword))
+    );
+    
+    return {
+      morningQuality: hasmorningContext ? 'Mencionou qualidade do sono' : null,
+      energyLevel: analysis.sentiment.label === 'POSITIVE' ? 'alta' : 'baixa'
+    };
+  }
+
+  /**
+   * Extrai insights específicos dos textos noturnos
+   */
+  private static extractEveningInsights(texts: any[], analysis: any): any {
+    // Identificar padrões nos textos noturnos
+    const patterns = this.identifyTextPatterns(texts.map(t => t.text));
+    
+    return {
+      keyPatterns: patterns.slice(0, 3),
+      reflectionDepth: analysis.summary ? 'Alta' : 'Baixa'
+    };
+  }
+
+  /**
+   * Extrai insights específicos dos textos de crise
+   */
+  private static extractCrisisInsights(texts: any[], analysis: any): any {
+    // Identificar gatilhos comuns
+    const triggerWords = ['estresse', 'dor', 'ansiedade', 'preocupação', 'trabalho', 'tempo'];
+    const triggers = triggerWords.filter(trigger =>
+      texts.some(t => t.text.toLowerCase().includes(trigger))
+    );
+    
+    return {
+      commonTriggers: triggers,
+      averageUrgency: analysis.urgencyLevel || 7,
+      interventionMentions: texts.filter(t => 
+        t.text.toLowerCase().includes('medicamento') || 
+        t.text.toLowerCase().includes('remédio')
+      ).length
+    };
+  }
+
+  /**
+   * Processa insights longitudinais de todos os textos
+   */
+  private static async processLongitudinalInsights(allTexts: any[]): Promise<any> {
+    try {
+      // Analisar evolução temporal
+      const timelineAnalysis = this.analyzeTextEvolution(allTexts);
+      
+      // Combinar textos para análise geral
+      const allCombined = allTexts.map(t => t.text).join('. ');
+      
+      // Gerar recomendações clínicas baseadas nos padrões
+      const clinicalRecommendations = this.generateClinicalRecommendations(allTexts);
+      
+      return {
+        summary: this.generateLongitudinalSummary(timelineAnalysis),
+        totalTexts: allTexts.length,
+        totalDays: new Set(allTexts.map(t => t.date)).size,
+        clinicalRecommendations: clinicalRecommendations.slice(0, 3),
+        timelineInsights: timelineAnalysis
+      };
+      
+    } catch (error) {
+      console.error('❌ Erro na análise longitudinal:', error);
+      return {
+        summary: 'Análise longitudinal não disponível no momento.',
+        totalTexts: allTexts.length,
+        totalDays: new Set(allTexts.map(t => t.date)).size
+      };
+    }
+  }
+
+  /**
+   * Identifica padrões nos textos
+   */
+  private static identifyTextPatterns(texts: string[]): string[] {
+    const patterns = [];
+    
+    // Padrões de frequência de palavras
+    const wordCount: { [key: string]: number } = {};
+    texts.forEach(text => {
+      const words = text.toLowerCase().split(/\s+/);
+      words.forEach(word => {
+        if (word.length > 3) {
+          wordCount[word] = (wordCount[word] || 0) + 1;
+        }
+      });
+    });
+    
+    // Extrair palavras mais frequentes
+    const frequentWords = Object.entries(wordCount)
+      .filter(([word, count]) => count >= 2)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 3)
+      .map(([word]) => word);
+      
+    patterns.push(...frequentWords);
+    
+    return patterns;
+  }
+
+  /**
+   * Analisa evolução temporal dos textos
+   */
+  private static analyzeTextEvolution(texts: any[]): any {
+    const sortedTexts = texts.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    
+    return {
+      firstEntry: sortedTexts[0]?.date,
+      lastEntry: sortedTexts[sortedTexts.length - 1]?.date,
+      trend: sortedTexts.length > 5 ? 'Registro consistente' : 'Registro esporádico',
+      averageTextLength: sortedTexts.reduce((sum, t) => sum + t.text.length, 0) / sortedTexts.length
+    };
+  }
+
+  /**
+   * Gera recomendações clínicas baseadas nos textos
+   */
+  private static generateClinicalRecommendations(texts: any[]): string[] {
+    const recommendations = [];
+    
+    // Analisar frequência de menções médicas
+    const medicalMentions = texts.filter(t => 
+      t.text.toLowerCase().includes('medicamento') || 
+      t.text.toLowerCase().includes('médico') ||
+      t.text.toLowerCase().includes('tratamento')
+    ).length;
+    
+    if (medicalMentions >= 2) {
+      recommendations.push('Discutir eficácia atual do tratamento');
+    }
+    
+    // Analisar menções de sono
+    const sleepMentions = texts.filter(t =>
+      t.text.toLowerCase().includes('sono') ||
+      t.text.toLowerCase().includes('dormir')
+    ).length;
+    
+    if (sleepMentions >= 2) {
+      recommendations.push('Avaliar qualidade e higiene do sono');
+    }
+    
+    // Analisar menções de estresse/ansiedade
+    const stressMentions = texts.filter(t =>
+      t.text.toLowerCase().includes('estresse') ||
+      t.text.toLowerCase().includes('ansiedade') ||
+      t.text.toLowerCase().includes('preocupação')
+    ).length;
+    
+    if (stressMentions >= 2) {
+      recommendations.push('Considerar estratégias de manejo do estresse');
+    }
+    
+    if (recommendations.length === 0) {
+      recommendations.push('Manter registro regular para melhor acompanhamento');
+    }
+    
+    return recommendations;
+  }
+
+  /**
+   * Gera resumo longitudinal baseado na análise temporal
+   */
+  private static generateLongitudinalSummary(timelineAnalysis: any): string {
+    const { trend, averageTextLength } = timelineAnalysis;
+    
+    let summary = `Durante o período analisado, observou-se ${trend.toLowerCase()}. `;
+    
+    if (averageTextLength > 100) {
+      summary += 'Os relatos são detalhados, indicando boa reflexão sobre os sintomas. ';
+    } else if (averageTextLength > 50) {
+      summary += 'Os relatos são concisos mas informativos. ';
+    } else {
+      summary += 'Os relatos são breves, poderia ser útil expandir as observações. ';
+    }
+    
+    summary += 'Continue registrando para melhor compreensão dos padrões de saúde.';
+    
+    return summary;
+  }
+
+  /**
+   * Gera resumo básico quando NLP falha
+   */
+  private static generateFallbackSummary(text: string): string {
+    // Pegar as primeiras frases mais relevantes
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    const medicalKeywords = ['dor', 'sintoma', 'medicamento', 'sono', 'humor', 'crise'];
+    
+    // Priorizar frases com palavras médicas
+    const relevantSentences = sentences.filter(sentence => 
+      medicalKeywords.some(keyword => sentence.toLowerCase().includes(keyword))
+    );
+    
+    if (relevantSentences.length > 0) {
+      return relevantSentences.slice(0, 2).join('. ').substring(0, 200) + '...';
+    }
+    
+    return text.substring(0, 150) + '...';
+  }
+
   /**
    * Prepara dados para visualizações
    */

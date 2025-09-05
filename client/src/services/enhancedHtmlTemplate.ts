@@ -51,9 +51,11 @@ ${getEnhancedReportCSS()}
         // Dados reais da análise para os gráficos
         window.CHART_DATA = ${JSON.stringify(reportData.visualizationData || {})};
         window.REPORT_DATA = ${JSON.stringify({
-          nlpInsights: reportData.nlpInsights ? {
-            totalSentimentAnalysis: reportData.nlpInsights.sentimentEvolution?.length || 0,
-            avgUrgency: reportData.nlpInsights.urgencyTimeline?.reduce((acc, item) => acc + item.level, 0) / (reportData.nlpInsights.urgencyTimeline?.length || 1) || 0
+          textSummaries: reportData.textSummaries ? {
+            matinalCount: reportData.textSummaries.matinal?.textCount || 0,
+            noturnoCount: reportData.textSummaries.noturno?.textCount || 0,
+            emergencialCount: reportData.textSummaries.emergencial?.textCount || 0,
+            combinedTexts: reportData.textSummaries.combined?.totalTexts || 0
           } : {},
           painEvolution: reportData.painEvolution?.slice(0, 10) || []
         })};
@@ -1560,10 +1562,10 @@ function generateMedicationsCards(reportData: EnhancedReportData): string {
 // NOVA SUBSEÇÃO 1: Sumário de Relatos Textuais
 function generateTextualReportsSection(reportData: EnhancedReportData): string {
   // Usar dados já processados do NLP para extrair informações sobre textos
-  const nlpData = reportData.nlpInsights;
+  const textData = reportData.textSummaries;
   
-  // Se não há insights NLP, não há textos para analisar
-  if (!nlpData || !nlpData.sentimentEvolution || nlpData.sentimentEvolution.length === 0) {
+  // Se não há dados de texto, não há textos para analisar
+  if (!textData || Object.keys(textData).length === 0) {
     return `
       <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
         <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
@@ -1616,7 +1618,7 @@ function generateTextualReportsSection(reportData: EnhancedReportData): string {
           <span>🧠</span> Análise Inteligente dos Relatos
         </h5>
         <p style="font-size: 0.85rem; color: #9a3412; margin: 0; line-height: 1.4; font-style: italic;">
-          ${generateIntelligentSummary(nlpData)}
+          Sistema de análise inteligente processou os relatos pessoais para identificar padrões e insights relevantes.
         </p>
       </div>
       
@@ -1628,8 +1630,8 @@ function generateTextualReportsSection(reportData: EnhancedReportData): string {
             <div style="background: #f8fafc; border-left: 3px solid #dc2626; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem;">
               <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.25rem;">
                 ${new Date(report.date).toLocaleDateString('pt-BR')} - Quiz Emergencial 
-                <span style="background: ${getSentimentColor(report.sentiment.label)}; color: white; padding: 0.125rem 0.375rem; border-radius: 10px; font-size: 0.7rem; margin-left: 0.5rem;">
-                  ${getSentimentEmoji(report.sentiment.label)} ${translateSentiment(report.sentiment.label)}
+                <span style="background: #dc2626; color: white; padding: 0.125rem 0.375rem; border-radius: 10px; font-size: 0.7rem; margin-left: 0.5rem;">
+                  🔍 Analisado
                 </span>
               </div>
               <p style="font-size: 0.8rem; color: #374151; margin: 0; line-height: 1.3;">
@@ -1661,9 +1663,9 @@ function generateTextualReportsSection(reportData: EnhancedReportData): string {
 
 // NOVA SUBSEÇÃO 2: Análise Inteligente de Crises
 function generateIntelligentCrisisAnalysisSection(reportData: EnhancedReportData): string {
-  const nlpData = reportData.nlpInsights;
+  const textData = reportData.textSummaries;
   
-  if (!nlpData || !nlpData.sentimentEvolution || nlpData.sentimentEvolution.length === 0) {
+  if (!textData || Object.keys(textData).length === 0) {
     return `
       <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
         <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
@@ -1760,18 +1762,6 @@ function generateIntelligentCrisisAnalysisSection(reportData: EnhancedReportData
       </div>
       ` : ''}
       
-      ${medicationMentions > 0 ? `
-      <!-- Medicações Detectadas -->
-      <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-        <h5 style="font-size: 0.9rem; font-weight: 700; color: #0c4a6e; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-          <span>💊</span> Medicações Mencionadas
-        </h5>
-        <p style="font-size: 0.8rem; color: #0c4a6e; margin: 0; line-height: 1.3;">
-          <strong>${medicationMentions}</strong> relato${medicationMentions !== 1 ? 's' : ''} mencionam medicamentos utilizados durante as crises, 
-          fornecendo insights sobre as estratégias de manejo da dor.
-        </p>
-      </div>
-      ` : ''}
       
       ${clinicalAlerts > 0 || sentimentNegativePercentage > 70 || averageUrgency > 6 ? `
       <!-- Insights Comportamentais -->
@@ -1853,6 +1843,254 @@ function generateEnhancedPainPointsSection(reportData: EnhancedReportData): stri
             </div>
           </div>
         `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function generateQuizTextSummarySection(reportData: EnhancedReportData): string {
+  // Extrair textos categorizados dos quizzes se disponíveis
+  const textSummaries = reportData.textSummaries || {};
+  
+  // Verificar se temos conteúdo suficiente
+  const hasContent = Object.values(textSummaries).some((summary: any) => 
+    summary && summary.summary && summary.summary.length > 10
+  );
+  
+  if (!hasContent) {
+    return `
+      <div class="section-enhanced">
+        <div class="section-title-enhanced">
+          <span class="section-icon">💭</span>
+          <span>Resumo Inteligente dos Relatos Pessoais</span>
+        </div>
+        <div class="bg-gray-50 border rounded-lg p-6 text-center">
+          <p class="text-gray-600">Nenhum texto livre encontrado nos questionários do período analisado.</p>
+          <p class="text-sm text-gray-500 mt-2">Esta seção aparecerá quando você responder às perguntas abertas dos quizzes diários.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="section-enhanced">
+      <div class="section-title-enhanced">
+        <span class="section-icon">💭</span>
+        <span>Resumo Inteligente dos Relatos Pessoais</span>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        ${generateMorningSentimentsCard(textSummaries.matinal)}
+        ${generateEveningReflectionsCard(textSummaries.noturno)}
+        ${generateCrisisContextCard(textSummaries.emergencial)}
+        ${generateLongitudinalInsightsCard(textSummaries.combined)}
+      </div>
+    </div>
+  `;
+}
+
+function generateMorningSentimentsCard(matinalData?: any): string {
+  if (!matinalData || !matinalData.summary) {
+    return `
+      <div class="bg-gradient-to-br from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-4">
+        <div class="flex items-center space-x-2 mb-3">
+          <span class="text-2xl">🌅</span>
+          <h3 class="text-lg font-semibold text-orange-800">Sentimentos Matinais</h3>
+        </div>
+        <div class="text-gray-600 text-sm">
+          <p>Nenhum relato matinal registrado no período.</p>
+          <p class="mt-1 text-xs">Responda às perguntas abertas do quiz matinal para ver insights aqui.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  const sentiment = matinalData.averageSentiment || 'neutro';
+  const sentimentColor = sentiment === 'positive' ? 'text-green-600' : 
+                        sentiment === 'negative' ? 'text-red-600' : 'text-blue-600';
+  const sentimentIcon = sentiment === 'positive' ? '😊' : 
+                       sentiment === 'negative' ? '😔' : '😐';
+
+  return `
+    <div class="bg-gradient-to-br from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-4">
+      <div class="flex items-center space-x-2 mb-3">
+        <span class="text-2xl">🌅</span>
+        <h3 class="text-lg font-semibold text-orange-800">Sentimentos Matinais</h3>
+      </div>
+      
+      <div class="space-y-3">
+        <div class="bg-white bg-opacity-50 rounded-lg p-3">
+          <p class="text-sm text-gray-700 leading-relaxed">${matinalData.summary}</p>
+        </div>
+        
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-gray-600">
+            <span class="${sentimentColor} font-medium">${sentimentIcon} Tendência ${sentiment === 'positive' ? 'positiva' : sentiment === 'negative' ? 'negativa' : 'neutra'}</span>
+          </div>
+          <div class="text-xs text-gray-500">
+            ${matinalData.textCount || 0} registro(s)
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function generateEveningReflectionsCard(noturnoData?: any): string {
+  if (!noturnoData || !noturnoData.summary) {
+    return `
+      <div class="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4">
+        <div class="flex items-center space-x-2 mb-3">
+          <span class="text-2xl">🌙</span>
+          <h3 class="text-lg font-semibold text-indigo-800">Reflexões Noturnas</h3>
+        </div>
+        <div class="text-gray-600 text-sm">
+          <p>Nenhuma reflexão noturna registrada no período.</p>
+          <p class="mt-1 text-xs">Complete os quizzes noturnos para ver insights sobre seus dias.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4">
+      <div class="flex items-center space-x-2 mb-3">
+        <span class="text-2xl">🌙</span>
+        <h3 class="text-lg font-semibold text-indigo-800">Reflexões Noturnas</h3>
+      </div>
+      
+      <div class="space-y-3">
+        <div class="bg-white bg-opacity-50 rounded-lg p-3">
+          <p class="text-sm text-gray-700 leading-relaxed">${noturnoData.summary}</p>
+        </div>
+        
+        ${noturnoData.keyPatterns && noturnoData.keyPatterns.length > 0 ? `
+        <div class="bg-white bg-opacity-30 rounded-lg p-2">
+          <p class="text-xs font-medium text-indigo-700 mb-1">Padrões Identificados:</p>
+          <div class="flex flex-wrap gap-1">
+            ${noturnoData.keyPatterns.slice(0, 3).map((pattern: string) => 
+              `<span class="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded">${pattern}</span>`
+            ).join('')}
+          </div>
+        </div>
+        ` : ''}
+        
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-gray-600">
+            💭 Análise de ${noturnoData.textCount || 0} dia(s)
+          </div>
+          <div class="text-xs text-gray-500">
+            ${noturnoData.averageLength || 0} chars médios
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function generateCrisisContextCard(emergencialData?: any): string {
+  if (!emergencialData || !emergencialData.summary) {
+    return `
+      <div class="bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 rounded-lg p-4">
+        <div class="flex items-center space-x-2 mb-3">
+          <span class="text-2xl">🚨</span>
+          <h3 class="text-lg font-semibold text-red-800">Contextos de Crise</h3>
+        </div>
+        <div class="text-gray-600 text-sm">
+          <p>Nenhuma crise com contexto detalhado registrada.</p>
+          <p class="mt-1 text-xs">Esta seção mostrará insights sobre situações de emergência quando ocorrerem.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  const urgencyLevel = emergencialData.averageUrgency || 5;
+  const urgencyColor = urgencyLevel >= 8 ? 'text-red-600' : 
+                      urgencyLevel >= 6 ? 'text-orange-600' : 'text-yellow-600';
+
+  return `
+    <div class="bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 rounded-lg p-4">
+      <div class="flex items-center space-x-2 mb-3">
+        <span class="text-2xl">🚨</span>
+        <h3 class="text-lg font-semibold text-red-800">Contextos de Crise</h3>
+      </div>
+      
+      <div class="space-y-3">
+        <div class="bg-white bg-opacity-50 rounded-lg p-3">
+          <p class="text-sm text-gray-700 leading-relaxed">${emergencialData.summary}</p>
+        </div>
+        
+        ${emergencialData.commonTriggers && emergencialData.commonTriggers.length > 0 ? `
+        <div class="bg-red-100 bg-opacity-50 rounded-lg p-2">
+          <p class="text-xs font-medium text-red-700 mb-1">Gatilhos Identificados:</p>
+          <div class="flex flex-wrap gap-1">
+            ${emergencialData.commonTriggers.slice(0, 3).map((trigger: string) => 
+              `<span class="bg-red-200 text-red-800 text-xs px-2 py-1 rounded">${trigger}</span>`
+            ).join('')}
+          </div>
+        </div>
+        ` : ''}
+        
+        <div class="flex items-center justify-between">
+          <div class="text-xs ${urgencyColor} font-medium">
+            ⚠️ Urgência média: ${urgencyLevel.toFixed(1)}/10
+          </div>
+          <div class="text-xs text-gray-500">
+            ${emergencialData.textCount || 0} episódio(s)
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function generateLongitudinalInsightsCard(combinedData?: any): string {
+  if (!combinedData || !combinedData.summary) {
+    return `
+      <div class="bg-gradient-to-br from-green-50 to-teal-50 border border-green-200 rounded-lg p-4">
+        <div class="flex items-center space-x-2 mb-3">
+          <span class="text-2xl">🧠</span>
+          <h3 class="text-lg font-semibold text-green-800">Insights Longitudinais</h3>
+        </div>
+        <div class="text-gray-600 text-sm">
+          <p>Dados insuficientes para análise longitudinal.</p>
+          <p class="mt-1 text-xs">Continue registrando seus questionários para ver tendências ao longo do tempo.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="bg-gradient-to-br from-green-50 to-teal-50 border border-green-200 rounded-lg p-4">
+      <div class="flex items-center space-x-2 mb-3">
+        <span class="text-2xl">🧠</span>
+        <h3 class="text-lg font-semibold text-green-800">Insights Longitudinais</h3>
+      </div>
+      
+      <div class="space-y-3">
+        <div class="bg-white bg-opacity-50 rounded-lg p-3">
+          <p class="text-sm text-gray-700 leading-relaxed">${combinedData.summary}</p>
+        </div>
+        
+        ${combinedData.clinicalRecommendations && combinedData.clinicalRecommendations.length > 0 ? `
+        <div class="bg-green-100 bg-opacity-50 rounded-lg p-2">
+          <p class="text-xs font-medium text-green-700 mb-1">💡 Para Discussão Médica:</p>
+          <ul class="text-xs text-green-700 space-y-1">
+            ${combinedData.clinicalRecommendations.slice(0, 2).map((rec: string) => 
+              `<li>• ${rec}</li>`
+            ).join('')}
+          </ul>
+        </div>
+        ` : ''}
+        
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-green-700 font-medium">
+            📊 Análise de ${combinedData.totalDays || 0} dias
+          </div>
+          <div class="text-xs text-gray-500">
+            ${combinedData.totalTexts || 0} texto(s) processados
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -2192,7 +2430,7 @@ function generateEnhancedDoctorsSection(reportData: EnhancedReportData): string 
 function generateTraditionalSections(reportData: EnhancedReportData): string {
   // Seções tradicionais mantidas para compatibilidade
   return `
-    ${generateEnhancedPainEvolutionSection(reportData)}
+    ${generateQuizTextSummarySection(reportData)}
     
     ${generateEnhancedMedicationsSection(reportData)}
     ${generateEnhancedDoctorsSection(reportData)}
@@ -2232,7 +2470,7 @@ function generateEnhancedFooter(reportId: string, reportData: EnhancedReportData
             <p><strong>Relatório ID:</strong> ${reportId}</p>
             <p><strong>Tecnologia:</strong> DorLog Enhanced v2.0 com IA</p>
             <p><strong>Gerado em:</strong> ${new Date().toLocaleString('pt-BR')}</p>
-            <p><strong>Dados processados:</strong> ${reportData.totalDays} dias | ${reportData.nlpInsights?.sentimentEvolution.length || 0} análises NLP</p>
+            <p><strong>Dados processados:</strong> ${reportData.totalDays} dias | ${reportData.textSummaries ? Object.values(reportData.textSummaries).reduce((sum, cat: any) => sum + (cat?.textCount || 0), 0) : 0} textos analisados</p>
         </div>
     </div>
   `;
