@@ -384,6 +384,112 @@ function getEnhancedReportCSS(): string {
         .trend-improving { background: var(--success); }
         .trend-worsening { background: var(--danger); }
         .trend-stable { background: var(--info); }
+        
+        /* Sleep-Pain Summary Styles */
+        .sleep-quality-summary, .pain-summary, .relationship-summary {
+            padding: 1rem 0;
+        }
+        
+        .big-metric {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        
+        .metric-emoji {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+            display: block;
+        }
+        
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            display: block;
+            margin-top: 0.25rem;
+        }
+        
+        .secondary-metrics {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 1rem;
+        }
+        
+        .metric-item {
+            text-align: center;
+        }
+        
+        .metric-count {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary);
+            display: block;
+        }
+        
+        .metric-desc {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+        }
+        
+        .trend-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background: var(--gray-50);
+            border-radius: 0.5rem;
+        }
+        
+        .trend-emoji {
+            font-size: 1.25rem;
+        }
+        
+        .trend-text {
+            font-size: 0.875rem;
+            color: var(--gray-700);
+        }
+        
+        .relationship-text {
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: var(--gray-700);
+            margin-bottom: 1rem;
+        }
+        
+        .critical-days-alert, .good-news {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+        }
+        
+        .critical-days-alert {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+        }
+        
+        .good-news {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .alert-emoji, .good-emoji {
+            font-size: 1rem;
+        }
+        
+        .alert-text, .good-text {
+            font-size: 0.875rem;
+            color: var(--gray-700);
+        }
 
         .urgency-level {
             display: flex;
@@ -718,63 +824,134 @@ function generateSleepPainInsightsSection(reportData: EnhancedReportData): strin
         <div class="nlp-insights">
             <div class="insight-card">
                 <div class="insight-header">
-                    <span class="insight-title">💤 Correlação Sono-Dor</span>
-                    <span class="sentiment-indicator ${correlationClass}">
-                        ${correlation.significance.toLowerCase()}
-                    </span>
+                    <span class="insight-title">😴 Como Você Dormiu</span>
                 </div>
-                <p>${correlation.description}</p>
-                <div class="mt-3">
-                    <div class="text-sm text-gray-600 mb-1">Correlação: ${correlation.correlation.toFixed(2)} (${correlation.sampleSize} dias)</div>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="${correlationClass} w-full rounded-full h-2 urgency-fill" style="width: ${Math.abs(correlation.correlation) * 100}%"></div>
+                <div class="sleep-quality-summary">
+                    <div class="big-metric">
+                        <span class="metric-emoji">${getSleepQualityEmoji(patterns.averageQuality)}</span>
+                        <span class="metric-value">${patterns.averageQuality.toFixed(1)}/10</span>
+                        <span class="metric-label">Qualidade média do sono</span>
+                    </div>
+                    <div class="secondary-metrics">
+                        <div class="metric-item">
+                            <span class="metric-count">${patterns.poorSleepDays}</span>
+                            <span class="metric-desc">dias com sono ruim</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-count">${correlation.sampleSize}</span>
+                            <span class="metric-desc">dias analisados</span>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <div class="insight-card">
                 <div class="insight-header">
-                    <span class="insight-title">📈 Tendência Dor Matinal</span>
+                    <span class="insight-title">🌅 Sua Dor Matinal</span>
                 </div>
-                <div class="urgency-level ${trendClass}">
-                    <div class="urgency-bar">
-                        <div class="urgency-fill" style="width: ${trend.confidence * 100}%"></div>
+                <div class="pain-summary">
+                    <div class="big-metric">
+                        <span class="metric-emoji">${getPainLevelEmoji(getAverageMorningPain(reportData))}</span>
+                        <span class="metric-value">${getAverageMorningPain(reportData).toFixed(1)}/10</span>
+                        <span class="metric-label">Dor média ao acordar</span>
                     </div>
-                    <span class="text-sm font-medium">${trend.direction}</span>
-                </div>
-                <p class="text-sm text-gray-600">
-                    ${trend.description}
-                </p>
-                <div class="mt-2 text-xs text-gray-500">
-                    Confiança: ${Math.round(trend.confidence * 100)}%
+                    <div class="trend-indicator">
+                        <span class="trend-emoji">${getTrendEmoji(trend.direction)}</span>
+                        <span class="trend-text">${getTrendDescription(trend.direction)}</span>
+                    </div>
                 </div>
             </div>
             
             <div class="insight-card">
                 <div class="insight-header">
-                    <span class="insight-title">⚠️ Padrões de Risco</span>
+                    <span class="insight-title">🔍 Relação Sono-Dor</span>
                 </div>
-                <div class="space-y-2">
-                    <div class="flex justify-between">
-                        <span>Qualidade Média do Sono:</span>
-                        <span class="font-medium">${patterns.averageQuality.toFixed(1)}/10</span>
+                <div class="relationship-summary">
+                    <p class="relationship-text">${getSimpleRelationshipDescription(correlation, patterns)}</p>
+                    ${patterns.criticalDays > 0 ? `
+                    <div class="critical-days-alert">
+                        <span class="alert-emoji">⚠️</span>
+                        <span class="alert-text">${patterns.criticalDays} dias com sono ruim e dor alta</span>
                     </div>
-                    <div class="flex justify-between">
-                        <span>Dias com Sono Ruim:</span>
-                        <span class="font-medium">${patterns.poorSleepDays}</span>
+                    ` : `
+                    <div class="good-news">
+                        <span class="good-emoji">✅</span>
+                        <span class="good-text">Nenhum dia crítico identificado</span>
                     </div>
-                    <div class="flex justify-between">
-                        <span>Dias Críticos:</span>
-                        <span class="font-medium ${patterns.criticalDays > 0 ? 'text-red-600' : 'text-green-600'}">${patterns.criticalDays}</span>
-                    </div>
-                    <div class="text-xs text-gray-600 mt-2">
-                        ${patterns.recoveryPattern.description}
-                    </div>
+                    `}
                 </div>
             </div>
         </div>
     </div>
   `;
+}
+
+// Funções helper para emojis e descrições simplificadas
+function getSleepQualityEmoji(quality: number): string {
+  if (quality >= 8) return '😴'; // Excelente
+  if (quality >= 6) return '😌'; // Bom
+  if (quality >= 4) return '😐'; // Regular
+  if (quality >= 2) return '😴'; // Ruim
+  return '😵'; // Muito ruim
+}
+
+function getPainLevelEmoji(painLevel: number): string {
+  if (painLevel <= 2) return '😊'; // Muito baixa
+  if (painLevel <= 4) return '🙂'; // Baixa
+  if (painLevel <= 6) return '😐'; // Moderada
+  if (painLevel <= 8) return '😟'; // Alta
+  return '😣'; // Muito alta
+}
+
+function getTrendEmoji(direction: string): string {
+  switch (direction) {
+    case 'IMPROVING': return '📈';
+    case 'WORSENING': return '📉';
+    default: return '➡️';
+  }
+}
+
+function getTrendDescription(direction: string): string {
+  switch (direction) {
+    case 'IMPROVING': return 'Sua dor está melhorando';
+    case 'WORSENING': return 'Sua dor está piorando';
+    default: return 'Sua dor está estável';
+  }
+}
+
+function getAverageMorningPain(reportData: EnhancedReportData): number {
+  if (!reportData.painEvolution || reportData.painEvolution.length === 0) {
+    return 0;
+  }
+  
+  const morningPain = reportData.painEvolution.filter(p => p.period === 'morning' || p.period === 'matinal');
+  if (morningPain.length === 0) {
+    // Se não há dados específicos matinais, usar média geral
+    const totalPain = reportData.painEvolution.reduce((sum, p) => sum + p.level, 0);
+    return totalPain / reportData.painEvolution.length;
+  }
+  
+  const totalMorningPain = morningPain.reduce((sum, p) => sum + p.level, 0);
+  return totalMorningPain / morningPain.length;
+}
+
+function getSimpleRelationshipDescription(correlation: any, patterns: any): string {
+  const hasGoodSleep = patterns.averageQuality >= 6;
+  const hasPoorSleepDays = patterns.poorSleepDays > 0;
+  
+  if (patterns.criticalDays > 0) {
+    return `Nos dias em que você dormiu mal, a dor matinal foi mais intensa. Melhorar o sono pode ajudar a reduzir a dor.`;
+  }
+  
+  if (hasGoodSleep && !hasPoorSleepDays) {
+    return `Parabéns! Você tem mantido uma boa qualidade do sono, o que pode estar ajudando no controle da dor.`;
+  }
+  
+  if (hasPoorSleepDays) {
+    return `Você teve alguns dias com sono ruim. Priorizar o descanso pode ajudar no controle da dor matinal.`;
+  }
+  
+  return `Continue cuidando do seu sono - é fundamental para o bem-estar e controle da dor.`;
 }
 
 function generateVisualizationsSection(reportData: EnhancedReportData): string {
