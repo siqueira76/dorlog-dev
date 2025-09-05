@@ -40,7 +40,6 @@ ${getEnhancedReportCSS()}
         ${generateEnhancedHeader(userEmail, periodsText, reportData)}
         
         <div class="content">
-            ${generateExecutiveSummary(reportData)}
             ${generateQuizIntelligentSummarySection(reportData)}
             ${generateTraditionalSections(reportData)}
             ${generateEnhancedFooter(reportId, reportData)}
@@ -779,6 +778,14 @@ function getEnhancedReportCSS(): string {
             border-top: 1px solid var(--border);
         }
 
+        /* Mobile-Optimized Cards Grid */
+        .mobile-optimized-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .container {
@@ -800,6 +807,67 @@ function getEnhancedReportCSS(): string {
             
             .nlp-insights {
                 grid-template-columns: 1fr;
+            }
+
+            /* Enhanced mobile experience for cards grid */
+            .mobile-optimized-cards-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+                margin-bottom: 1.5rem;
+            }
+
+            /* Mobile-optimized card styling */
+            .mobile-optimized-cards-grid > div {
+                min-height: auto;
+                padding: 1rem !important;
+            }
+
+            /* Better mobile typography for cards */
+            .mobile-optimized-cards-grid h3 {
+                font-size: 1rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+
+            .mobile-optimized-cards-grid .text-sm {
+                font-size: 0.85rem !important;
+                line-height: 1.4 !important;
+            }
+
+            .mobile-optimized-cards-grid .text-xs {
+                font-size: 0.75rem !important;
+                line-height: 1.3 !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .mobile-optimized-cards-grid {
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+            }
+
+            .mobile-optimized-cards-grid > div {
+                padding: 0.75rem !important;
+                border-radius: 0.5rem !important;
+            }
+
+            /* Extra small mobile optimization */
+            .mobile-optimized-cards-grid h3 {
+                font-size: 0.9rem !important;
+            }
+
+            /* Improve card content spacing on very small screens */
+            .mobile-optimized-cards-grid .space-y-3 > * + * {
+                margin-top: 0.5rem !important;
+            }
+
+            /* Optimize button and badge layouts */
+            .mobile-optimized-cards-grid .flex-wrap {
+                justify-content: flex-start !important;
+            }
+
+            .mobile-optimized-cards-grid .flex-wrap > * {
+                margin-right: 0.25rem !important;
+                margin-bottom: 0.25rem !important;
             }
         }
 
@@ -1879,7 +1947,7 @@ function generateQuizTextSummarySection(reportData: EnhancedReportData): string 
         <span>Resumo Inteligente dos Relatos Pessoais</span>
       </div>
       
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="mobile-optimized-cards-grid">
         ${generateMorningSentimentsCard(textSummaries.matinal)}
         ${generateEveningReflectionsCard(textSummaries.noturno)}
         ${generateCrisisContextCard(textSummaries.emergencial)}
@@ -2505,8 +2573,6 @@ function generateTraditionalSections(reportData: EnhancedReportData): string {
     
     ${generateEnhancedMedicationsSection(reportData)}
     ${generateEnhancedDoctorsSection(reportData)}
-    
-    ${generateEnhancedObservationsSection(reportData)}
   `;
 }
 
