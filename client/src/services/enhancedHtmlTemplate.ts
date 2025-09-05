@@ -41,7 +41,7 @@ ${getEnhancedReportCSS()}
         
         <div class="content">
             ${generateExecutiveSummary(reportData)}
-            ${generateNLPInsightsSection(reportData)}
+            ${generateSleepPainInsightsSection(reportData)}
             ${generateVisualizationsSection(reportData)}
             ${generatePatternAnalysisSection(reportData)}
             ${generatePredictiveAlertsSection(reportData)}
@@ -374,6 +374,16 @@ function getEnhancedReportCSS(): string {
         .sentiment-positive { background: var(--sentiment-positive); }
         .sentiment-negative { background: var(--sentiment-negative); }
         .sentiment-neutral { background: var(--sentiment-neutral); }
+        
+        /* Sleep-Pain Correlation Classes */
+        .correlation-high { background: var(--success); }
+        .correlation-medium { background: var(--warning); }
+        .correlation-low { background: var(--gray-400); }
+        
+        /* Trend Classes */
+        .trend-improving { background: var(--success); }
+        .trend-worsening { background: var(--danger); }
+        .trend-stable { background: var(--info); }
 
         .urgency-level {
             display: flex;
@@ -671,91 +681,94 @@ function generateExecutiveSummary(reportData: EnhancedReportData): string {
   `;
 }
 
-function generateNLPInsightsSection(reportData: EnhancedReportData): string {
-  const nlpInsights = reportData.nlpInsights;
+function generateSleepPainInsightsSection(reportData: EnhancedReportData): string {
+  const sleepPainInsights = reportData.sleepPainInsights;
   
-  if (!nlpInsights) {
+  if (!sleepPainInsights) {
     return `
       <div class="section-enhanced">
           <div class="section-title-enhanced">
-              <span class="section-icon">🧠</span>
-              <span>Análise de Linguagem Natural</span>
+              <span class="section-icon">😴</span>
+              <span>Análise Sono-Dor Matinal</span>
           </div>
           <p class="text-gray-500 text-center py-8">
-              Análise NLP não disponível - textos insuficientes ou em processamento
+              Análise sono-dor não disponível - dados insuficientes para correlação
           </p>
       </div>
     `;
   }
   
-  const sentiment = nlpInsights.overallSentiment;
-  const sentimentClass = sentiment.label === 'POSITIVE' ? 'sentiment-positive' :
-                        sentiment.label === 'NEGATIVE' ? 'sentiment-negative' : 'sentiment-neutral';
+  const correlation = sleepPainInsights.correlationAnalysis;
+  const trend = sleepPainInsights.morningPainTrend;
+  const patterns = sleepPainInsights.sleepQualityPatterns;
   
-  const urgencyLevel = Math.max(...(nlpInsights.urgencyTimeline.map(u => u.level) || [0]));
-  const urgencyClass = urgencyLevel > 7 ? 'urgency-critical' :
-                      urgencyLevel > 5 ? 'urgency-high' :
-                      urgencyLevel > 3 ? 'urgency-medium' : 'urgency-low';
+  const correlationClass = correlation.significance === 'HIGH' ? 'correlation-high' :
+                          correlation.significance === 'MEDIUM' ? 'correlation-medium' : 'correlation-low';
+  
+  const trendClass = trend.direction === 'IMPROVING' ? 'trend-improving' :
+                    trend.direction === 'WORSENING' ? 'trend-worsening' : 'trend-stable';
   
   return `
     <div class="section-enhanced">
         <div class="section-title-enhanced">
-            <span class="section-icon">🧠</span>
-            <span>Análise de Linguagem Natural</span>
+            <span class="section-icon">😴</span>
+            <span>Análise Sono-Dor Matinal</span>
         </div>
         
         <div class="nlp-insights">
             <div class="insight-card">
                 <div class="insight-header">
-                    <span class="insight-title">Sentimento Geral</span>
-                    <span class="sentiment-indicator ${sentimentClass}">
-                        ${sentiment.label.toLowerCase()}
+                    <span class="insight-title">💤 Correlação Sono-Dor</span>
+                    <span class="sentiment-indicator ${correlationClass}">
+                        ${correlation.significance.toLowerCase()}
                     </span>
                 </div>
-                <p>Análise de ${nlpInsights.sentimentEvolution.length} textos revelou padrão emocional ${sentiment.label.toLowerCase()} com confiança ${sentiment.confidence.toLowerCase()}.</p>
+                <p>${correlation.description}</p>
                 <div class="mt-3">
-                    <div class="text-sm text-gray-600 mb-1">Score: ${Math.round(sentiment.score * 100)}/100</div>
+                    <div class="text-sm text-gray-600 mb-1">Correlação: ${correlation.correlation.toFixed(2)} (${correlation.sampleSize} dias)</div>
                     <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="${sentimentClass.replace('sentiment', 'urgency')} w-full rounded-full h-2 urgency-fill" style="width: ${sentiment.score * 100}%"></div>
+                        <div class="${correlationClass} w-full rounded-full h-2 urgency-fill" style="width: ${Math.abs(correlation.correlation) * 100}%"></div>
                     </div>
                 </div>
             </div>
             
             <div class="insight-card">
                 <div class="insight-header">
-                    <span class="insight-title">Nível de Urgência</span>
+                    <span class="insight-title">📈 Tendência Dor Matinal</span>
                 </div>
-                <div class="urgency-level ${urgencyClass}">
+                <div class="urgency-level ${trendClass}">
                     <div class="urgency-bar">
-                        <div class="urgency-fill" style="width: ${urgencyLevel * 10}%"></div>
+                        <div class="urgency-fill" style="width: ${trend.confidence * 100}%"></div>
                     </div>
-                    <span class="text-sm font-medium">${urgencyLevel}/10</span>
+                    <span class="text-sm font-medium">${trend.direction}</span>
                 </div>
                 <p class="text-sm text-gray-600">
-                    Baseado na análise semântica de ${nlpInsights.urgencyTimeline.length} relatos
+                    ${trend.description}
                 </p>
+                <div class="mt-2 text-xs text-gray-500">
+                    Confiança: ${Math.round(trend.confidence * 100)}%
+                </div>
             </div>
             
             <div class="insight-card">
                 <div class="insight-header">
-                    <span class="insight-title">Entidades Identificadas</span>
+                    <span class="insight-title">⚠️ Padrões de Risco</span>
                 </div>
                 <div class="space-y-2">
                     <div class="flex justify-between">
-                        <span>Sintomas:</span>
-                        <span class="font-medium">${nlpInsights.medicalEntities.symptoms.length}</span>
+                        <span>Qualidade Média do Sono:</span>
+                        <span class="font-medium">${patterns.averageQuality.toFixed(1)}/10</span>
                     </div>
                     <div class="flex justify-between">
-                        <span>Medicamentos:</span>
-                        <span class="font-medium">${nlpInsights.medicalEntities.medications.length}</span>
+                        <span>Dias com Sono Ruim:</span>
+                        <span class="font-medium">${patterns.poorSleepDays}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span>Partes do Corpo:</span>
-                        <span class="font-medium">${nlpInsights.medicalEntities.bodyParts.length}</span>
+                        <span>Dias Críticos:</span>
+                        <span class="font-medium ${patterns.criticalDays > 0 ? 'text-red-600' : 'text-green-600'}">${patterns.criticalDays}</span>
                     </div>
-                    <div class="flex justify-between">
-                        <span>Estados Emocionais:</span>
-                        <span class="font-medium">${nlpInsights.medicalEntities.emotions.length}</span>
+                    <div class="text-xs text-gray-600 mt-2">
+                        ${patterns.recoveryPattern.description}
                     </div>
                 </div>
             </div>
