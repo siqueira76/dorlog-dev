@@ -1031,6 +1031,9 @@ function generateCrisesSection(reportData: EnhancedReportData): string {
     `;
   }
 
+  // Integrar medicamentos diretamente
+  const medicationsContent = generateMedicationsCards(reportData);
+  
   return `
     <div class="section-enhanced">
       <div class="section-title-enhanced">
@@ -1038,73 +1041,60 @@ function generateCrisesSection(reportData: EnhancedReportData): string {
         <span>Crises</span>
       </div>
       
-      <!-- Card Principal de Crises -->
-      <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #fca5a5; border-radius: 15px; padding: 2rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+      <!-- Métricas Principais -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
         
-        <!-- Header -->
-        <div style="text-align: center; margin-bottom: 2rem;">
-          <div style="display: inline-flex; align-items: center; gap: 0.75rem; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); margin-bottom: 0.75rem;">
-            <span style="font-size: 1.25rem;">🚨</span>
-            <h2 style="margin: 0; font-size: 1.125rem; font-weight: 600;">Episódios de Crise</h2>
-          </div>
-          <p style="color: #7f1d1d; font-size: 0.875rem; margin: 0; font-weight: 500;">Análise dos quizzes emergenciais do período</p>
+        <!-- Número de Crises -->
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #fca5a5; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <div style="font-size: 2rem; font-weight: 800; color: #dc2626; margin-bottom: 0.5rem;">${crisisCount}</div>
+          <div style="font-size: 0.9rem; color: #7f1d1d; font-weight: 600;">Crises Registradas</div>
         </div>
-
-        <!-- Métricas Principais -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-          
-          <!-- Número de Crises -->
-          <div style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #fca5a5; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-            <div style="font-size: 2rem; font-weight: 800; color: #dc2626; margin-bottom: 0.5rem;">${crisisCount}</div>
-            <div style="font-size: 0.9rem; color: #7f1d1d; font-weight: 600;">Crises Registradas</div>
+        
+        <!-- Média de Dor -->
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #fca5a5; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span style="font-size: 2rem; font-weight: 800; color: #dc2626;">${averageCrisisPain.toFixed(1)}</span>
+            <span style="font-size: 1.5rem;">${getPainEmoji(averageCrisisPain)}</span>
           </div>
-          
-          <!-- Média de Dor -->
-          <div style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #fca5a5; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-              <span style="font-size: 2rem; font-weight: 800; color: #dc2626;">${averageCrisisPain.toFixed(1)}</span>
-              <span style="font-size: 1.5rem;">${getPainEmoji(averageCrisisPain)}</span>
-            </div>
-            <div style="font-size: 0.9rem; color: #7f1d1d; font-weight: 600;">Dor Média nas Crises</div>
-          </div>
-
+          <div style="font-size: 0.9rem; color: #7f1d1d; font-weight: 600;">Dor Média nas Crises</div>
         </div>
-
-        <!-- Gatilhos Identificados -->
-        <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5; margin-bottom: 1.5rem;">
-          <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-            <span>⚡</span> Principais Gatilhos Identificados
-          </h4>
-          
-          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-            ${commonTriggers.slice(0, 3).map(trigger => `
-              <span style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 1px solid #fca5a5; border-radius: 20px; padding: 0.5rem 1rem; font-size: 0.85rem; color: #7f1d1d; font-weight: 600;">
-                ${trigger}
-              </span>
-            `).join('')}
-          </div>
-          
-          ${averageCrisisPain > 0 ? `
-          <div style="margin-top: 1rem; padding: 1rem; background: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
-            <p style="font-size: 0.9rem; color: #7f1d1d; margin: 0; font-style: italic;">
-              💡 Com base na análise dos quizzes emergenciais, recomenda-se atenção especial aos gatilhos identificados para prevenção de futuras crises.
-            </p>
-          </div>
-          ` : ''}
-        </div>
-
-        <!-- Medicamentos Utilizados nas Crises -->
-        ${generateCrisisMedicationsSubsection(reportData)}
 
       </div>
+
+      <!-- Gatilhos Identificados -->
+      <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>⚡</span> Principais Gatilhos Identificados
+        </h4>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          ${commonTriggers.slice(0, 3).map(trigger => `
+            <span style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 1px solid #fca5a5; border-radius: 20px; padding: 0.5rem 1rem; font-size: 0.85rem; color: #7f1d1d; font-weight: 600;">
+              ${trigger}
+            </span>
+          `).join('')}
+        </div>
+        
+        ${averageCrisisPain > 0 ? `
+        <div style="margin-top: 1rem; padding: 1rem; background: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
+          <p style="font-size: 0.9rem; color: #7f1d1d; margin: 0; font-style: italic;">
+            💡 Com base na análise dos quizzes emergenciais, recomenda-se atenção especial aos gatilhos identificados para prevenção de futuras crises.
+          </p>
+        </div>
+        ` : ''}
+      </div>
+
+      <!-- Medicamentos de Resgate -->
+      ${medicationsContent}
+      
     </div>
   `;
 }
 
-function generateCrisisMedicationsSubsection(reportData: EnhancedReportData): string {
+function generateMedicationsCards(reportData: EnhancedReportData): string {
   if (!reportData.rescueMedications || reportData.rescueMedications.length === 0) {
     return `
-      <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5;">
+      <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
         <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
           <span>💊</span> Medicamentos Utilizados nas Crises
         </h4>
@@ -1127,7 +1117,7 @@ function generateCrisisMedicationsSubsection(reportData: EnhancedReportData): st
   const mostUsedMed = reportData.rescueMedications.sort((a, b) => b.frequency - a.frequency)[0];
 
   return `
-    <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5;">
+    <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #fca5a5; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
       <h4 style="font-size: 1.1rem; font-weight: 700; color: #7f1d1d; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
         <span>💊</span> Medicamentos Utilizados nas Crises
       </h4>
