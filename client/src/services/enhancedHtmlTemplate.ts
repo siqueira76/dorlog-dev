@@ -2192,7 +2192,6 @@ function generateEnhancedDoctorsSection(reportData: EnhancedReportData): string 
 function generateTraditionalSections(reportData: EnhancedReportData): string {
   // Seções tradicionais mantidas para compatibilidade
   return `
-    ${generateEnhancedPainPointsSection(reportData)}
     ${generateEnhancedPainEvolutionSection(reportData)}
     
     ${generateEnhancedMedicationsSection(reportData)}
