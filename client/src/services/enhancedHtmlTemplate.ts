@@ -1920,24 +1920,43 @@ function generateQuizTextSummarySection(reportData: EnhancedReportData): string 
   // Extrair textos categorizados dos quizzes se disponíveis
   const textSummaries = reportData.textSummaries || {};
   
-  // Verificar se temos conteúdo suficiente
-  const hasContent = Object.values(textSummaries).some((summary: any) => 
-    summary && summary.summary && summary.summary.length > 10
+  // Verificar se temos conteúdo real de texto livre (não apenas dados estruturados)
+  const hasRealTextContent = Object.values(textSummaries).some((summary: any) => 
+    summary && summary.summary && summary.summary.length > 10 && 
+    summary.textCount && summary.textCount > 0
   );
   
-  if (!hasContent) {
-    return `
-      <div class="section-enhanced">
-        <div class="section-title-enhanced">
-          <span class="section-icon">💭</span>
-          <span>Resumo Inteligente dos Relatos Pessoais</span>
-        </div>
-        <div class="bg-gray-50 border rounded-lg p-6 text-center">
-          <p class="text-gray-600">Nenhum texto livre encontrado nos questionários do período analisado.</p>
-          <p class="text-sm text-gray-500 mt-2">Esta seção aparecerá quando você responder às perguntas abertas dos quizzes diários.</p>
-        </div>
-      </div>
-    `;
+  // Se não há textos livres reais, não exibir a seção
+  if (!hasRealTextContent) {
+    return '';
+  }
+
+  // Coletar apenas cartões com conteúdo válido
+  const validCards = [];
+  
+  if (textSummaries.matinal && textSummaries.matinal.summary && textSummaries.matinal.textCount > 0) {
+    validCards.push(generateMorningSentimentsCard(textSummaries.matinal));
+  }
+  
+  if (textSummaries.noturno && textSummaries.noturno.summary && textSummaries.noturno.textCount > 0) {
+    validCards.push(generateEveningReflectionsCard(textSummaries.noturno));
+  }
+  
+  if (textSummaries.emergencial && textSummaries.emergencial.summary && textSummaries.emergencial.textCount > 0) {
+    validCards.push(generateCrisisContextCard(textSummaries.emergencial));
+  }
+  
+  if (textSummaries.geral && textSummaries.geral.summary && textSummaries.geral.textCount > 0) {
+    validCards.push(generateGeneralInsightsCard(textSummaries.geral));
+  }
+  
+  if (textSummaries.combined && textSummaries.combined.summary && textSummaries.combined.totalTexts > 0) {
+    validCards.push(generateLongitudinalInsightsCard(textSummaries.combined));
+  }
+
+  // Se não há cartões válidos, não exibir a seção
+  if (validCards.length === 0) {
+    return '';
   }
 
   return `
@@ -1948,11 +1967,7 @@ function generateQuizTextSummarySection(reportData: EnhancedReportData): string 
       </div>
       
       <div class="mobile-optimized-cards-grid">
-        ${generateMorningSentimentsCard(textSummaries.matinal)}
-        ${generateEveningReflectionsCard(textSummaries.noturno)}
-        ${generateCrisisContextCard(textSummaries.emergencial)}
-        ${generateGeneralInsightsCard(textSummaries.geral)}
-        ${generateLongitudinalInsightsCard(textSummaries.combined)}
+        ${validCards.join('')}
       </div>
     </div>
   `;
