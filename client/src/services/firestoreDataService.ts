@@ -343,6 +343,38 @@ export async function fetchUserReportData(userId: string, periods: string[]): Pr
                         });
                       }
                       
+                      // NOVO: Processar pergunta 4 do quiz noturno (estado emocional)
+                      if (questionId === '4' && quiz.tipo === 'noturno') {
+                        // Pode ser estado emocional ou qualidade do sono - vamos capturar
+                        if (typeof answer === 'string' || Array.isArray(answer)) {
+                          console.log(`🧠 Estado emocional/sono encontrado (P4): "${answer}" em ${dayKey}`);
+                          // Adicionar aos dados para análise posterior
+                          if (!reportData.observations) reportData.observations = '';
+                          reportData.observations += `[${dayKey}] Estado emocional/sono: ${JSON.stringify(answer)}; `;
+                        }
+                      }
+                      
+                      // NOVO: Processar pergunta 8 do quiz noturno (evacuação intestinal)
+                      if (questionId === '8' && quiz.tipo === 'noturno') {
+                        // Pode ser texto livre ou resposta específica sobre evacuação
+                        if (typeof answer === 'string' && answer.trim().length > 0) {
+                          console.log(`💩 Informação sobre evacuação encontrada (P8): "${answer}" em ${dayKey}`);
+                          // Adicionar aos dados para análise posterior
+                          if (!reportData.observations) reportData.observations = '';
+                          reportData.observations += `[${dayKey}] Evacuação/Info adicional: ${answer}; `;
+                        }
+                      }
+                      
+                      // NOVO: Processar pergunta 9 do quiz noturno (humor/estado emocional com emojis)
+                      if (questionId === '9' && quiz.tipo === 'noturno') {
+                        if (typeof answer === 'string' || Array.isArray(answer)) {
+                          console.log(`😊 Humor/estado emocional encontrado (P9): "${answer}" em ${dayKey}`);
+                          // Adicionar aos dados para análise posterior
+                          if (!reportData.observations) reportData.observations = '';
+                          reportData.observations += `[${dayKey}] Humor: ${JSON.stringify(answer)}; `;
+                        }
+                      }
+                      
                       // NOVO: Extrair medicamentos de resgate da pergunta 2 (emergencial)
                       if (questionId === '2' && quiz.tipo === 'emergencial' && typeof answer === 'string' && answer.trim().length > 0) {
                         console.log(`💊 Medicamento de resgate encontrado: "${answer}" em ${dayKey}`);
