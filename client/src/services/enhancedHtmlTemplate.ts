@@ -1883,6 +1883,7 @@ function generateQuizTextSummarySection(reportData: EnhancedReportData): string 
         ${generateMorningSentimentsCard(textSummaries.matinal)}
         ${generateEveningReflectionsCard(textSummaries.noturno)}
         ${generateCrisisContextCard(textSummaries.emergencial)}
+        ${generateGeneralInsightsCard(textSummaries.geral)}
         ${generateLongitudinalInsightsCard(textSummaries.combined)}
       </div>
     </div>
@@ -2037,6 +2038,76 @@ function generateCrisisContextCard(emergencialData?: any): string {
           </div>
           <div class="text-xs text-gray-500">
             ${emergencialData.textCount || 0} episódio(s)
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function generateGeneralInsightsCard(geralData?: any): string {
+  if (!geralData || !geralData.summary) {
+    return `
+      <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4">
+        <div class="flex items-center space-x-2 mb-3">
+          <span class="text-2xl">📝</span>
+          <h3 class="text-lg font-semibold text-purple-800">Relatos Gerais</h3>
+        </div>
+        <div class="text-gray-600 text-sm">
+          <p>Nenhum relato geral ou contexto adicional encontrado.</p>
+          <p class="mt-1 text-xs">Esta seção aparecerá quando houver observações adicionais ou contextos de dor registrados.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  const sentiment = geralData.averageSentiment || 'neutro';
+  const sentimentColor = sentiment === 'positive' ? 'text-green-600' : 
+                        sentiment === 'negative' ? 'text-red-600' : 'text-purple-600';
+  const sentimentIcon = sentiment === 'positive' ? '😊' : 
+                       sentiment === 'negative' ? '😔' : '😐';
+
+  return `
+    <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4">
+      <div class="flex items-center space-x-2 mb-3">
+        <span class="text-2xl">📝</span>
+        <h3 class="text-lg font-semibold text-purple-800">Relatos Gerais</h3>
+      </div>
+      
+      <div class="space-y-3">
+        <div class="bg-white bg-opacity-50 rounded-lg p-3">
+          <p class="text-sm text-gray-700 leading-relaxed">${geralData.summary}</p>
+        </div>
+        
+        ${geralData.contentTypes && geralData.contentTypes.length > 0 ? `
+        <div class="bg-purple-100 bg-opacity-50 rounded-lg p-2">
+          <p class="text-xs font-medium text-purple-700 mb-1">📋 Fontes de dados:</p>
+          <div class="flex flex-wrap gap-1">
+            ${geralData.contentTypes.map((type: string) => 
+              `<span class="bg-purple-200 text-purple-800 text-xs px-2 py-1 rounded">${type}</span>`
+            ).join('')}
+          </div>
+        </div>
+        ` : ''}
+        
+        ${geralData.themeDistribution ? `
+        <div class="bg-indigo-100 bg-opacity-50 rounded-lg p-2">
+          <p class="text-xs font-medium text-indigo-700 mb-1">🎯 Temas principais:</p>
+          <div class="text-xs text-indigo-700">
+            ${geralData.mainFocus === 'saúde' ? '🏥 Foco em saúde' : 
+              geralData.mainFocus === 'emocional' ? '💭 Foco emocional' : 
+              geralData.mainFocus === 'cotidiano' ? '📅 Foco no cotidiano' : '🔍 Análise geral'}
+            • Qualidade: ${geralData.contextRichness || 'moderada'}
+          </div>
+        </div>
+        ` : ''}
+        
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-gray-600">
+            <span class="${sentimentColor} font-medium">${sentimentIcon} Tendência ${sentiment === 'positive' ? 'positiva' : sentiment === 'negative' ? 'negativa' : 'neutra'}</span>
+          </div>
+          <div class="text-xs text-gray-500">
+            ${geralData.textCount || 0} registro(s)
           </div>
         </div>
       </div>

@@ -307,12 +307,21 @@ export class EnhancedReportAnalysisService {
       
       console.log(`📝 Processando ${textsWithContext.length} texto(s) categorizados...`);
       
-      // Categorizar textos por tipo de quiz
+      // Categorizar textos por tipo de quiz (expandido para incluir fallbacks)
       const categorized = {
         matinal: textsWithContext.filter(t => t.quizType === 'matinal'),
         noturno: textsWithContext.filter(t => t.quizType === 'noturno'),
-        emergencial: textsWithContext.filter(t => t.quizType === 'emergencial')
+        emergencial: textsWithContext.filter(t => t.quizType === 'emergencial'),
+        geral: textsWithContext.filter(t => ['observacoes', 'painEvolution', 'textualResponses'].includes(t.quizType))
       };
+      
+      console.log('📊 Distribuição de textos por categoria:', {
+        matinal: categorized.matinal.length,
+        noturno: categorized.noturno.length, 
+        emergencial: categorized.emergencial.length,
+        geral: categorized.geral.length,
+        total: textsWithContext.length
+      });
       
       const textSummaries: any = {};
       
@@ -364,6 +373,8 @@ export class EnhancedReportAnalysisService {
         categoryInsights = this.extractEveningInsights(texts, analysis);
       } else if (category === 'emergencial') {
         categoryInsights = this.extractCrisisInsights(texts, analysis);
+      } else if (category === 'geral') {
+        categoryInsights = this.extractGeneralInsights(texts, analysis);
       }
       
       return {
@@ -435,6 +446,50 @@ export class EnhancedReportAnalysisService {
         t.text.toLowerCase().includes('medicamento') || 
         t.text.toLowerCase().includes('remédio')
       ).length
+    };
+  }
+
+  /**
+   * Extrai insights específicos dos textos gerais (observações, contextos de dor, etc.)
+   */
+  private static extractGeneralInsights(texts: any[], analysis: any): any {
+    // Identificar tipos de conteúdo
+    const contentTypes = [];
+    const hasObservations = texts.some(t => t.quizType === 'observacoes');
+    const hasPainContext = texts.some(t => t.quizType === 'painEvolution'); 
+    const hasTextualResponses = texts.some(t => t.quizType === 'textualResponses');
+
+    if (hasObservations) contentTypes.push('observações gerais');
+    if (hasPainContext) contentTypes.push('contextos de dor');
+    if (hasTextualResponses) contentTypes.push('respostas textuais');
+
+    // Identificar temas principais através de palavras-chave
+    const healthKeywords = ['dor', 'sono', 'medicamento', 'médico', 'tratamento', 'sintoma', 'melhora', 'piora'];
+    const emotionalKeywords = ['ansioso', 'preocupado', 'triste', 'feliz', 'nervoso', 'calmo', 'estressado'];
+    const dailyKeywords = ['trabalho', 'casa', 'família', 'rotina', 'atividade'];
+
+    const healthMentions = healthKeywords.filter(kw => 
+      texts.some(t => t.text.toLowerCase().includes(kw))
+    ).length;
+    
+    const emotionalMentions = emotionalKeywords.filter(kw => 
+      texts.some(t => t.text.toLowerCase().includes(kw))
+    ).length;
+
+    const dailyMentions = dailyKeywords.filter(kw => 
+      texts.some(t => t.text.toLowerCase().includes(kw))
+    ).length;
+
+    return {
+      contentTypes,
+      themeDistribution: {
+        saude: healthMentions,
+        emocional: emotionalMentions,
+        cotidiano: dailyMentions
+      },
+      mainFocus: healthMentions > emotionalMentions && healthMentions > dailyMentions ? 'saúde' :
+                 emotionalMentions > dailyMentions ? 'emocional' : 'cotidiano',
+      contextRichness: texts.reduce((sum, t) => sum + t.text.length, 0) / texts.length > 100 ? 'alta' : 'moderada'
     };
   }
 
