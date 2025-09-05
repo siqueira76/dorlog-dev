@@ -1884,30 +1884,46 @@ function generateEnhancedPainEvolutionSection(reportData: EnhancedReportData): s
     dailyAverages[record.date].count++;
   });
 
-  const chartItems = Object.entries(dailyAverages)
+  // Obter últimos 14 dias e ordenar
+  const chartData = Object.entries(dailyAverages)
     .sort(([a], [b]) => a.localeCompare(b))
     .slice(-14) // Últimos 14 dias
-    .map(([date, data]) => {
-      const average = data.sum / data.count;
-      const percentage = (average / 10) * 100;
-      const formattedDate = new Date(date).toLocaleDateString('pt-BR', { 
+    .map(([date, data]) => ({
+      date,
+      average: data.sum / data.count,
+      count: data.count,
+      formattedDate: new Date(date).toLocaleDateString('pt-BR', { 
         day: '2-digit', 
         month: '2-digit' 
-      });
-      
-      return `
-        <div class="flex items-center space-x-3 py-2">
-          <div class="w-12 text-sm text-gray-600">${formattedDate}</div>
-          <div class="flex-1 bg-gray-200 rounded-full h-6 relative">
-            <div class="bg-gradient-to-r from-green-400 to-red-500 h-6 rounded-full transition-all duration-300" 
-                 style="width: ${percentage}%"></div>
-            <div class="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-800">
-              ${average.toFixed(1)}
-            </div>
-          </div>
+      })
+    }));
+
+  // Encontrar valores máximo e médio para estatísticas
+  const maxPain = Math.max(...chartData.map(d => d.average));
+  const avgPain = chartData.reduce((sum, d) => sum + d.average, 0) / chartData.length;
+  const totalRecords = chartData.reduce((sum, d) => sum + d.count, 0);
+
+  // Gerar barras do gráfico
+  const chartBars = chartData.map((data, index) => {
+    const percentage = (data.average / 10) * 100;
+    const barColor = data.average >= 8 ? '#ef4444' : 
+                     data.average >= 6 ? '#f59e0b' : 
+                     data.average >= 4 ? '#eab308' : '#10b981';
+    
+    return `
+      <div class="flex flex-col items-center space-y-2" style="flex: 1; min-width: 40px;">
+        <div class="text-xs font-medium text-gray-600">${data.average.toFixed(1)}</div>
+        <div class="bg-gray-200 rounded-full" style="width: 20px; height: 100px; position: relative;">
+          <div 
+            class="rounded-full transition-all duration-500 ease-out" 
+            style="width: 100%; background-color: ${barColor}; position: absolute; bottom: 0; height: ${percentage}%"
+            title="Dor: ${data.average.toFixed(1)}/10 em ${data.formattedDate}"
+          ></div>
         </div>
-      `;
-    }).join('');
+        <div class="text-xs text-gray-500 transform rotate-45 origin-bottom-left w-8 text-center">${data.formattedDate}</div>
+      </div>
+    `;
+  }).join('');
 
   return `
     <div class="section-enhanced">
@@ -1916,8 +1932,61 @@ function generateEnhancedPainEvolutionSection(reportData: EnhancedReportData): s
         <span>Evolução da Dor (Últimos 14 dias)</span>
       </div>
       
-      <div class="bg-white border border-gray-200 rounded-lg p-4 space-y-2">
-        ${chartItems}
+      <!-- Estatísticas resumo -->
+      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div class="text-2xl font-bold text-blue-600">${avgPain.toFixed(1)}</div>
+            <div class="text-sm text-gray-600">Média Geral</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-red-600">${maxPain.toFixed(1)}</div>
+            <div class="text-sm text-gray-600">Pico Máximo</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-gray-600">${totalRecords}</div>
+            <div class="text-sm text-gray-600">Registros</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfico de barras -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <div class="mb-4">
+          <h4 class="text-lg font-semibold text-gray-800 mb-2">Gráfico de Intensidade</h4>
+          <div class="flex items-center space-x-4 text-xs">
+            <div class="flex items-center space-x-1">
+              <div class="w-3 h-3 bg-green-500 rounded"></div>
+              <span>Leve (0-3)</span>
+            </div>
+            <div class="flex items-center space-x-1">
+              <div class="w-3 h-3 bg-yellow-500 rounded"></div>
+              <span>Moderada (4-6)</span>
+            </div>
+            <div class="flex items-center space-x-1">
+              <div class="w-3 h-3 bg-orange-500 rounded"></div>
+              <span>Intensa (6-8)</span>
+            </div>
+            <div class="flex items-center space-x-1">
+              <div class="w-3 h-3 bg-red-500 rounded"></div>
+              <span>Severa (8-10)</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex items-end justify-between space-x-1 px-2" style="height: 150px;">
+          ${chartBars}
+        </div>
+        
+        <div class="mt-4 text-center">
+          <p class="text-sm text-gray-600">
+            💡 <strong>Insight:</strong> 
+            ${avgPain <= 3 ? 'Sua dor está bem controlada no período analisado!' :
+              avgPain <= 5 ? 'Dor moderada - continue monitorando e seguindo o tratamento.' :
+              avgPain <= 7 ? 'Períodos de dor intensa identificados - considere ajustes no tratamento.' :
+              'Níveis altos de dor detectados - importante discutir com seu médico.'}
+          </p>
+        </div>
       </div>
     </div>
   `;
@@ -2123,7 +2192,6 @@ function generateEnhancedDoctorsSection(reportData: EnhancedReportData): string 
 function generateTraditionalSections(reportData: EnhancedReportData): string {
   // Seções tradicionais mantidas para compatibilidade
   return `
-    ${generateCrisesSection(reportData)}
     ${generateEnhancedPainPointsSection(reportData)}
     ${generateEnhancedPainEvolutionSection(reportData)}
     
