@@ -1133,33 +1133,20 @@ function generateCrisisMedicationsSubsection(reportData: EnhancedReportData): st
       </h4>
       
       <!-- Estatísticas Resumidas -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
-        <div style="background: #fef2f2; border-radius: 8px; padding: 0.75rem; text-align: center; border: 1px solid #fecaca;">
-          <div style="font-size: 1.25rem; font-weight: 800; color: #dc2626;">${totalMedicationsUsed}</div>
-          <div style="font-size: 0.7rem; color: #7f1d1d; font-weight: 600;">Medicamentos Diferentes</div>
+      <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <div style="background: #f8fafc; border-radius: 8px; padding: 1rem; text-align: center; border: 1px solid #e2e8f0; min-width: 140px;">
+          <div style="font-size: 1.5rem; font-weight: 700; color: #475569; margin-bottom: 0.25rem;">${totalMedicationsUsed}</div>
+          <div style="font-size: 0.8rem; color: #64748b; font-weight: 500;">Medicamentos Diferentes</div>
         </div>
-        <div style="background: #fef2f2; border-radius: 8px; padding: 0.75rem; text-align: center; border: 1px solid #fecaca;">
-          <div style="font-size: 1.25rem; font-weight: 800; color: #dc2626;">${totalUsageEvents}</div>
-          <div style="font-size: 0.7rem; color: #7f1d1d; font-weight: 600;">Usos Registrados</div>
+        <div style="background: #f8fafc; border-radius: 8px; padding: 1rem; text-align: center; border: 1px solid #e2e8f0; min-width: 140px;">
+          <div style="font-size: 1.5rem; font-weight: 700; color: #475569; margin-bottom: 0.25rem;">${totalUsageEvents}</div>
+          <div style="font-size: 0.8rem; color: #64748b; font-weight: 500;">Usos Registrados</div>
         </div>
-        ${highRiskMeds > 0 ? `
-        <div style="background: #fef2f2; border-radius: 8px; padding: 0.75rem; text-align: center; border: 1px solid #fecaca;">
-          <div style="font-size: 1.25rem; font-weight: 800; color: #dc2626;">${highRiskMeds}</div>
-          <div style="font-size: 0.7rem; color: #7f1d1d; font-weight: 600;">Alto Risco</div>
-        </div>
-        ` : ''}
       </div>
 
       <!-- Lista de Medicamentos -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; max-width: 100%;">
         ${reportData.rescueMedications.slice(0, 6).map(med => {
-          const riskColors = {
-            high: { bg: '#fef2f2', border: '#ef4444', accent: '#dc2626', icon: '🚨' },
-            medium: { bg: '#fffbeb', border: '#f59e0b', accent: '#d97706', icon: '⚠️' },
-            low: { bg: '#f0fdf4', border: '#22c55e', accent: '#16a34a', icon: '✅' }
-          };
-          const colors = riskColors[med.riskLevel as keyof typeof riskColors] || riskColors.low;
-          
           const categoryLabels = {
             prescribed: { text: 'Prescrito', icon: '📋' },
             otc: { text: 'Sem Receita', icon: '🏪' },
@@ -1168,51 +1155,37 @@ function generateCrisisMedicationsSubsection(reportData: EnhancedReportData): st
           const category = categoryLabels[med.category as keyof typeof categoryLabels] || categoryLabels.unknown;
           
           return `
-            <div style="background: ${colors.bg}; border: 2px solid ${colors.border}; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s ease;">
               
               <!-- Header do Medicamento -->
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                <div style="flex: 1;">
-                  <h5 style="margin: 0; font-size: 1rem; font-weight: 700; color: #1f2937; margin-bottom: 0.25rem;">
-                    ${med.medication || 'Medicamento não identificado'}
-                  </h5>
-                  <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: #6b7280;">
-                    <span>${category.icon}</span>
-                    <span>${category.text}</span>
-                  </div>
-                </div>
-                <div style="background: ${colors.bg}; border: 1px solid ${colors.border}; border-radius: 20px; padding: 0.25rem 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
-                  <span style="font-size: 0.75rem;">${colors.icon}</span>
-                  <span style="font-weight: 600; color: ${colors.accent}; font-size: 0.7rem;">
-                    ${med.riskLevel === 'high' ? 'ALTO' : med.riskLevel === 'medium' ? 'MÉDIO' : 'BAIXO'}
-                  </span>
+              <div style="margin-bottom: 1rem;">
+                <h5 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.3;">
+                  ${med.medication || 'Medicamento não identificado'}
+                </h5>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 0.8rem;">${category.icon}</span>
+                  <span style="font-size: 0.8rem; color: #64748b; font-weight: 500;">${category.text}</span>
                 </div>
               </div>
               
-              <!-- Métricas -->
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
-                <div style="background: white; border-radius: 6px; padding: 0.5rem; text-align: center; border: 1px solid ${colors.border};">
-                  <div style="font-size: 1rem; font-weight: 700; color: ${colors.accent};">${med.frequency}</div>
-                  <div style="font-size: 0.65rem; color: #6b7280;">Episódios</div>
-                </div>
-                <div style="background: white; border-radius: 6px; padding: 0.5rem; text-align: center; border: 1px solid ${colors.border};">
-                  <div style="font-size: 1rem; font-weight: 700; color: ${colors.accent};">${med.dates.length}</div>
-                  <div style="font-size: 0.65rem; color: #6b7280;">Datas</div>
-                </div>
+              <!-- Métrica Principal -->
+              <div style="background: #f8fafc; border-radius: 8px; padding: 0.75rem; text-align: center; margin-bottom: 1rem; border: 1px solid #f1f5f9;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: #475569; margin-bottom: 0.25rem;">${med.frequency}</div>
+                <div style="font-size: 0.8rem; color: #64748b; font-weight: 500;">Episódios de Uso</div>
               </div>
               
               <!-- Datas de Uso -->
               <div style="margin-bottom: 1rem;">
-                <div style="font-size: 0.75rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">📅 Últimos usos:</div>
+                <div style="font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">📅 Últimos registros:</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
-                  ${med.dates.slice(0, 3).map(date => `
-                    <span style="background: white; border: 1px solid ${colors.border}; border-radius: 4px; padding: 0.2rem 0.4rem; font-size: 0.65rem; color: #374151; font-weight: 600;">
+                  ${med.dates.slice(0, 4).map(date => `
+                    <span style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.7rem; color: #475569; font-weight: 500;">
                       ${new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                     </span>
                   `).join('')}
-                  ${med.dates.length > 3 ? `
-                    <span style="background: #f3f4f6; border-radius: 4px; padding: 0.2rem 0.4rem; font-size: 0.65rem; color: #6b7280;">
-                      +${med.dates.length - 3}
+                  ${med.dates.length > 4 ? `
+                    <span style="background: #f8fafc; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.7rem; color: #64748b; font-weight: 500;">
+                      +${med.dates.length - 4}
                     </span>
                   ` : ''}
                 </div>
@@ -1220,10 +1193,10 @@ function generateCrisisMedicationsSubsection(reportData: EnhancedReportData): st
               
               <!-- Contexto (se disponível) -->
               ${med.context && med.context.trim().length > 10 ? `
-              <div style="border-top: 1px solid ${colors.border}; padding-top: 0.75rem;">
-                <div style="font-size: 0.75rem; font-weight: 600; color: #374151; margin-bottom: 0.25rem;">💭 Contexto:</div>
-                <div style="font-size: 0.7rem; color: #4b5563; font-style: italic; line-height: 1.3;">
-                  "${med.context.length > 80 ? med.context.substring(0, 80) + '...' : med.context}"
+              <div style="border-top: 1px solid #f1f5f9; padding-top: 1rem;">
+                <div style="font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">💭 Observações:</div>
+                <div style="font-size: 0.8rem; color: #64748b; line-height: 1.4; font-style: italic;">
+                  "${med.context.length > 100 ? med.context.substring(0, 100) + '...' : med.context}"
                 </div>
               </div>
               ` : ''}
