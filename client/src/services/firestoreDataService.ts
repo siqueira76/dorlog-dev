@@ -257,6 +257,195 @@ function normalizeQuizData(quizzes: any): any[] {
 }
 
 /**
+ * Mapeamento semântico das perguntas dos quizzes baseado em conteúdo e tipo
+ */
+function getQuestionSemanticType(questionId: string, quizType: string, answer: any): string {
+  // Análise por tipo de resposta e contexto
+  if (typeof answer === 'number' && answer >= 0 && answer <= 10) {
+    return 'eva_scale'; // Escala de dor EVA
+  }
+  
+  if (Array.isArray(answer)) {
+    // Verificar se contém pontos anatômicos
+    const anatomicalPoints = ['Cabeça', 'Pescoço', 'Ombros', 'Costas', 'Braços', 'Pernas', 'Abdômen', 'Músculos', 'Articulações'];
+    const hasAnatomicalPoints = answer.some(item => 
+      anatomicalPoints.some(point => item.includes(point))
+    );
+    
+    if (hasAnatomicalPoints) {
+      return 'pain_locations';
+    }
+    
+    // Verificar se contém sintomas
+    const symptoms = ['Dor de cabeça', 'Fadiga', 'Náusea', 'Ansiedade', 'Irritabilidade'];
+    const hasSymptoms = answer.some(item => 
+      symptoms.some(symptom => item.includes(symptom))
+    );
+    
+    if (hasSymptoms) {
+      return 'symptoms';
+    }
+    
+    // Verificar se contém atividades
+    const activities = ['Exercícios', 'Trabalho', 'Descanso', 'Socialização'];
+    const hasActivities = answer.some(item => 
+      activities.some(activity => item.includes(activity))
+    );
+    
+    if (hasActivities) {
+      return 'activities';
+    }
+    
+    return 'multiple_choice';
+  }
+  
+  if (typeof answer === 'string' && answer.trim().length > 0) {
+    // Análise contextual para medicamentos de resgate
+    if (quizType === 'emergencial' && questionId === '2') {
+      return 'rescue_medication';
+    }
+    
+    // Análise de texto livre por contexto da pergunta
+    const lowerAnswer = answer.toLowerCase();
+    
+    if (lowerAnswer.includes('medicamento') || lowerAnswer.includes('remédio') || 
+        ['paracetamol', 'ibuprofeno', 'dipirona', 'tramadol', 'morfina', 'dimorf'].some(med => lowerAnswer.includes(med))) {
+      return 'medication_text';
+    }
+    
+    if (lowerAnswer.includes('sono') || lowerAnswer.includes('dormi') || lowerAnswer.includes('insônia')) {
+      return 'sleep_quality';
+    }
+    
+    if (lowerAnswer.includes('humor') || lowerAnswer.includes('sentimento') || 
+        ['ansioso', 'triste', 'feliz', 'irritado', 'calmo'].some(emotion => lowerAnswer.includes(emotion))) {
+      return 'emotional_state';
+    }
+    
+    if (lowerAnswer.includes('evacuação') || lowerAnswer.includes('intestinal') || lowerAnswer.includes('fezes')) {
+      return 'bowel_movement';
+    }
+    
+    return 'free_text';
+  }
+  
+  return 'unknown';
+}
+
+/**
+ * Processa quizzes usando mapeamento semântico em vez de IDs hardcoded
+ */
+function processQuizzesWithSemanticMapping(
+  quizzes: any[], 
+  dayKey: string, 
+  reportData: any,
+  counters: { totalPainSum: number; totalPainCount: number; crisisCount: number }
+) {
+  quizzes.forEach((quiz: any) => {
+    console.log(`🔍 Auditoria: Processando quiz ${quiz.tipo} para ${dayKey}`);
+    
+    // Processar respostas com mapeamento semântico
+    if (quiz.respostas && typeof quiz.respostas === 'object') {
+      Object.entries(quiz.respostas).forEach(([questionId, answer]) => {
+        const semanticType = getQuestionSemanticType(questionId, quiz.tipo, answer);
+        
+        console.log(`📊 Auditoria: P${questionId} (${quiz.tipo}) -> Tipo: ${semanticType}, Valor: ${JSON.stringify(answer)}`);
+        
+        switch (semanticType) {
+          case 'eva_scale':
+            counters.totalPainSum += answer as number;
+            counters.totalPainCount++;
+            reportData.painEvolution.push({
+              date: dayKey,
+              level: answer as number,
+              period: quiz.tipo || 'não especificado'
+            });
+            console.log(`🎯 Dor EVA processada: ${answer}/10 (${quiz.tipo})`);
+            break;
+            
+          case 'pain_locations':
+            (answer as string[]).forEach((location: string) => {
+              const existingPoint = reportData.painPoints.find(p => p.local === location);
+              if (existingPoint) {
+                existingPoint.occurrences++;
+              } else {
+                reportData.painPoints.push({
+                  local: location,
+                  occurrences: 1
+                });
+              }
+            });
+            console.log(`📍 Pontos de dor processados: ${(answer as string[]).join(', ')}`);
+            break;
+            
+          case 'rescue_medication':
+            // Armazenar dados brutos para análise posterior
+            (reportData as any).rawMedicationTexts = (reportData as any).rawMedicationTexts || [];
+            (reportData as any).rawMedicationTexts.push({
+              text: answer as string,
+              date: dayKey,
+              quizType: quiz.tipo
+            });
+            console.log(`💊 Medicamento de resgate: "${answer}"`);
+            break;
+            
+          case 'sleep_quality':
+            if (!reportData.observations) reportData.observations = '';
+            reportData.observations += `[${dayKey}] Qualidade do sono: ${answer}; `;
+            console.log(`😴 Qualidade do sono registrada: "${answer}"`);
+            break;
+            
+          case 'emotional_state':
+            if (!reportData.observations) reportData.observations = '';
+            reportData.observations += `[${dayKey}] Estado emocional: ${JSON.stringify(answer)}; `;
+            console.log(`😊 Estado emocional registrado: "${answer}"`);
+            break;
+            
+          case 'bowel_movement':
+            if (!reportData.observations) reportData.observations = '';
+            reportData.observations += `[${dayKey}] Evacuação intestinal: ${answer}; `;
+            console.log(`💩 Informação intestinal: "${answer}"`);
+            break;
+            
+          case 'symptoms':
+            // Processar sintomas como observações estruturadas
+            if (!reportData.observations) reportData.observations = '';
+            reportData.observations += `[${dayKey}] Sintomas: ${(answer as string[]).join(', ')}; `;
+            console.log(`🔬 Sintomas processados: ${(answer as string[]).join(', ')}`);
+            break;
+            
+          case 'activities':
+            // Processar atividades como observações
+            if (!reportData.observations) reportData.observations = '';
+            reportData.observations += `[${dayKey}] Atividades: ${(answer as string[]).join(', ')}; `;
+            console.log(`🏃 Atividades processadas: ${(answer as string[]).join(', ')}`);
+            break;
+            
+          case 'free_text':
+          case 'medication_text':
+            // Capturar todos os textos livres
+            if (!reportData.observations) reportData.observations = '';
+            reportData.observations += `[${dayKey}] Observação livre: ${answer}; `;
+            console.log(`📝 Texto livre capturado: "${answer}"`);
+            break;
+            
+          case 'multiple_choice':
+            // Processar outras escolhas múltiplas
+            if (!reportData.observations) reportData.observations = '';
+            reportData.observations += `[${dayKey}] Seleções: ${(answer as string[]).join(', ')}; `;
+            console.log(`☑️ Escolhas múltiplas: ${(answer as string[]).join(', ')}`);
+            break;
+            
+          default:
+            console.warn(`⚠️ Tipo semântico não reconhecido: ${semanticType} para pergunta ${questionId}`);
+            break;
+        }
+      });
+    }
+  });
+}
+
+/**
  * Busca dados reais do usuário no Firestore para geração de relatórios
  * CORRIGIDO: Implementa busca híbrida para resolver incompatibilidade de usuarioId
  */
@@ -317,110 +506,19 @@ export async function fetchUserReportData(userId: string, periods: string[]): Pr
               const dayKey = docDate.toISOString().split('T')[0];
               validDays.add(dayKey);
               
-              // Processar quizzes com normalização
+              // Processar quizzes com normalização melhorada
               const normalizedQuizzes = normalizeQuizData(data.quizzes);
               if (normalizedQuizzes.length > 0) {
                 console.log(`📝 Processando ${normalizedQuizzes.length} quiz(es) para ${dayKey}`);
-                normalizedQuizzes.forEach((quiz: any) => {
-                  // Contar crises
-                  if (quiz.tipo === 'emergencial') {
-                    crisisCount++;
-                  }
-
-                  // Processar respostas (estrutura corrigida para object em vez de array)
-                  if (quiz.respostas && typeof quiz.respostas === 'object') {
-                    Object.entries(quiz.respostas).forEach(([questionId, answer]) => {
-                      // Processar escala EVA (questões 1 e 2 geralmente são EVA scale)
-                      if ((questionId === '1' || questionId === '2') && typeof answer === 'number') {
-                        totalPainSum += answer;
-                        totalPainCount++;
-                        
-                        // Adicionar à evolução da dor
-                        reportData.painEvolution.push({
-                          date: dayKey,
-                          level: answer,
-                          period: quiz.tipo || 'não especificado'
-                        });
-                      }
-                      
-                      // NOVO: Processar pergunta 4 do quiz noturno (estado emocional)
-                      if (questionId === '4' && quiz.tipo === 'noturno') {
-                        // Pode ser estado emocional ou qualidade do sono - vamos capturar
-                        if (typeof answer === 'string' || Array.isArray(answer)) {
-                          console.log(`🧠 Estado emocional/sono encontrado (P4): "${answer}" em ${dayKey}`);
-                          // Adicionar aos dados para análise posterior
-                          if (!reportData.observations) reportData.observations = '';
-                          reportData.observations += `[${dayKey}] Estado emocional/sono: ${JSON.stringify(answer)}; `;
-                        }
-                      }
-                      
-                      // NOVO: Processar pergunta 8 do quiz noturno (evacuação intestinal)
-                      if (questionId === '8' && quiz.tipo === 'noturno') {
-                        // Pode ser texto livre ou resposta específica sobre evacuação
-                        if (typeof answer === 'string' && answer.trim().length > 0) {
-                          console.log(`💩 Informação sobre evacuação encontrada (P8): "${answer}" em ${dayKey}`);
-                          // Adicionar aos dados para análise posterior
-                          if (!reportData.observations) reportData.observations = '';
-                          reportData.observations += `[${dayKey}] Evacuação/Info adicional: ${answer}; `;
-                        }
-                      }
-                      
-                      // NOVO: Processar pergunta 9 do quiz noturno (humor/estado emocional com emojis)
-                      if (questionId === '9' && quiz.tipo === 'noturno') {
-                        if (typeof answer === 'string' || Array.isArray(answer)) {
-                          console.log(`😊 Humor/estado emocional encontrado (P9): "${answer}" em ${dayKey}`);
-                          // Adicionar aos dados para análise posterior
-                          if (!reportData.observations) reportData.observations = '';
-                          reportData.observations += `[${dayKey}] Humor: ${JSON.stringify(answer)}; `;
-                        }
-                      }
-                      
-                      // NOVO: Extrair medicamentos de resgate da pergunta 2 (emergencial)
-                      if (questionId === '2' && quiz.tipo === 'emergencial' && typeof answer === 'string' && answer.trim().length > 0) {
-                        console.log(`💊 Medicamento de resgate encontrado: "${answer}" em ${dayKey}`);
-                        
-                        // Armazenar texto para análise posterior
-                        if (!reportData.rescueMedications.find(m => m.medication === 'ANÁLISE_PENDENTE')) {
-                          reportData.rescueMedications.push({
-                            medication: 'ANÁLISE_PENDENTE',
-                            frequency: 0,
-                            dates: [],
-                            context: '',
-                            category: 'unknown',
-                            riskLevel: 'low'
-                          });
-                        }
-                        
-                        // Armazenar dados brutos para análise posterior
-                        (reportData as any).rawMedicationTexts = (reportData as any).rawMedicationTexts || [];
-                        (reportData as any).rawMedicationTexts.push({
-                          text: answer,
-                          date: dayKey,
-                          quizType: quiz.tipo
-                        });
-                      }
-                      
-                      // Mapear pontos de dor (questões checkbox, principalmente questão 2 em emergencial)
-                      if (Array.isArray(answer)) {
-                        answer.forEach((item: string) => {
-                          // Verificar se é local anatômico (pontos de dor)
-                          const anatomicalPoints = ['Cabeça', 'Pescoço', 'Ombros', 'Costas', 'Braços', 'Pernas', 'Abdômen', 'Músculos', 'Articulações'];
-                          if (anatomicalPoints.some(point => item.includes(point))) {
-                            const existingPoint = reportData.painPoints.find(p => p.local === item);
-                            if (existingPoint) {
-                              existingPoint.occurrences++;
-                            } else {
-                              reportData.painPoints.push({
-                                local: item || 'Local não especificado',
-                                occurrences: 1
-                              });
-                            }
-                          }
-                        });
-                      }
-                    });
-                  }
-                });
+                const counters = { totalPainSum, totalPainCount, crisisCount };
+                processQuizzesWithSemanticMapping(normalizedQuizzes, dayKey, reportData, counters);
+                
+                // Atualizar os valores dos contadores
+                totalPainSum = counters.totalPainSum;
+                totalPainCount = counters.totalPainCount;
+                
+                // Atualizar contadores
+                crisisCount += normalizedQuizzes.filter(q => q.tipo === 'emergencial').length;
               }
             }
           }
