@@ -260,14 +260,36 @@ function normalizeQuizData(quizzes: any): any[] {
  * Mapeamento semântico das perguntas dos quizzes baseado em conteúdo e tipo
  */
 function getQuestionSemanticType(questionId: string, quizType: string, answer: any): string {
+  console.log(`🔭 DEBUG: Analisando Q${questionId} (${quizType}): ${JSON.stringify(answer)} [${typeof answer}]`);
+  
+  // Tratar respostas de evacuação (sim/não)
+  if (typeof answer === 'string') {
+    const lowerAnswer = answer.toLowerCase().trim();
+    
+    // Detecção específica de evacuação
+    if (lowerAnswer === 'sim' || lowerAnswer === 'não' || 
+        lowerAnswer === 'yes' || lowerAnswer === 'no') {
+      // Verificar contexto da pergunta para evacuação (geralmente P8 em quiz noturno)
+      if ((questionId === '8' && quizType === 'noturno') || 
+          lowerAnswer.includes('evacua') || lowerAnswer.includes('intestinal')) {
+        return 'bowel_movement';
+      }
+    }
+  }
+  
   // Análise por tipo de resposta e contexto
   if (typeof answer === 'number' && answer >= 0 && answer <= 10) {
+    // CORREÇÃO: P2 emergencial é medicamento, não EVA
+    if (quizType === 'emergencial' && questionId === '2') {
+      console.log(`⚠️ AVISO: P2 emergencial como número - pode ser erro nos dados`);
+      return 'unknown';
+    }
     return 'eva_scale'; // Escala de dor EVA
   }
   
   if (Array.isArray(answer)) {
     // Verificar se contém pontos anatômicos
-    const anatomicalPoints = ['Cabeça', 'Pescoço', 'Ombros', 'Costas', 'Braços', 'Pernas', 'Abdômen', 'Músculos', 'Articulações'];
+    const anatomicalPoints = ['Cabeça', 'Pescoço', 'Ombros', 'Costas', 'Braços', 'Pernas', 'Abdômen', 'Músculos', 'Articulações', 'Outro local'];
     const hasAnatomicalPoints = answer.some(item => 
       anatomicalPoints.some(point => item.includes(point))
     );
@@ -277,7 +299,7 @@ function getQuestionSemanticType(questionId: string, quizType: string, answer: a
     }
     
     // Verificar se contém sintomas
-    const symptoms = ['Dor de cabeça', 'Fadiga', 'Náusea', 'Ansiedade', 'Irritabilidade'];
+    const symptoms = ['Dor de cabeça', 'Fadiga', 'Náusea', 'Ansiedade', 'Irritabilidade', 'Depressivo', 'Sensibilidade'];
     const hasSymptoms = answer.some(item => 
       symptoms.some(symptom => item.includes(symptom))
     );
@@ -287,7 +309,7 @@ function getQuestionSemanticType(questionId: string, quizType: string, answer: a
     }
     
     // Verificar se contém atividades
-    const activities = ['Exercícios', 'Trabalho', 'Descanso', 'Socialização'];
+    const activities = ['Exercícios', 'Trabalho', 'Descanso', 'Socialização', 'Tarefas domésticas'];
     const hasActivities = answer.some(item => 
       activities.some(activity => item.includes(activity))
     );
@@ -296,39 +318,56 @@ function getQuestionSemanticType(questionId: string, quizType: string, answer: a
       return 'activities';
     }
     
+    // Verificar se contém estados emocionais
+    const emotions = ['Ansioso', 'Triste', 'Irritado', 'Calmo', 'Feliz', 'Depressivo'];
+    const hasEmotions = answer.some(item => 
+      emotions.some(emotion => item.includes(emotion))
+    );
+    
+    if (hasEmotions) {
+      return 'emotional_state';
+    }
+    
     return 'multiple_choice';
   }
   
   if (typeof answer === 'string' && answer.trim().length > 0) {
+    const lowerAnswer = answer.toLowerCase();
+    
     // Análise contextual para medicamentos de resgate
     if (quizType === 'emergencial' && questionId === '2') {
       return 'rescue_medication';
     }
     
-    // Análise de texto livre por contexto da pergunta
-    const lowerAnswer = answer.toLowerCase();
-    
+    // Detecção melhorada de medicamentos
+    const medications = ['paracetamol', 'ibuprofeno', 'dipirona', 'tramadol', 'morfina', 'dimorf', 'aspirina', 'naproxeno'];
     if (lowerAnswer.includes('medicamento') || lowerAnswer.includes('remédio') || 
-        ['paracetamol', 'ibuprofeno', 'dipirona', 'tramadol', 'morfina', 'dimorf'].some(med => lowerAnswer.includes(med))) {
+        medications.some(med => lowerAnswer.includes(med))) {
       return 'medication_text';
     }
     
-    if (lowerAnswer.includes('sono') || lowerAnswer.includes('dormi') || lowerAnswer.includes('insônia')) {
+    // Detecção de qualidade do sono
+    if (lowerAnswer.includes('sono') || lowerAnswer.includes('dormi') || lowerAnswer.includes('insônia') ||
+        lowerAnswer.includes('cansado') || lowerAnswer.includes('exausto')) {
       return 'sleep_quality';
     }
     
-    if (lowerAnswer.includes('humor') || lowerAnswer.includes('sentimento') || 
-        ['ansioso', 'triste', 'feliz', 'irritado', 'calmo'].some(emotion => lowerAnswer.includes(emotion))) {
+    // Detecção de estado emocional
+    const emotionalWords = ['humor', 'sentimento', 'ansioso', 'triste', 'feliz', 'irritado', 'calmo', 'depressivo', 'bem', 'mal'];
+    if (emotionalWords.some(word => lowerAnswer.includes(word))) {
       return 'emotional_state';
     }
     
-    if (lowerAnswer.includes('evacuação') || lowerAnswer.includes('intestinal') || lowerAnswer.includes('fezes')) {
+    // Detecção de evacuação/saúde digestiva
+    if (lowerAnswer.includes('evacuação') || lowerAnswer.includes('intestinal') || lowerAnswer.includes('fezes') ||
+        lowerAnswer.includes('constipação') || lowerAnswer.includes('diarreia')) {
       return 'bowel_movement';
     }
     
     return 'free_text';
   }
   
+  console.log(`⚠️ WARN: Tipo de resposta não reconhecido para Q${questionId}: ${typeof answer}`);
   return 'unknown';
 }
 
@@ -350,6 +389,11 @@ function processQuizzesWithSemanticMapping(
         const semanticType = getQuestionSemanticType(questionId, quiz.tipo, answer);
         
         console.log(`📊 Auditoria: P${questionId} (${quiz.tipo}) -> Tipo: ${semanticType}, Valor: ${JSON.stringify(answer)}`);
+        
+        // Log adicional para casos problemáticos
+        if (semanticType === 'unknown') {
+          console.warn(`⚠️ ALERTA: Pergunta não processada - Q${questionId} (${quiz.tipo}): ${JSON.stringify(answer)}`);
+        }
         
         switch (semanticType) {
           case 'eva_scale':
@@ -379,14 +423,43 @@ function processQuizzesWithSemanticMapping(
             break;
             
           case 'rescue_medication':
-            // Armazenar dados brutos para análise posterior
-            (reportData as any).rawMedicationTexts = (reportData as any).rawMedicationTexts || [];
-            (reportData as any).rawMedicationTexts.push({
-              text: answer as string,
-              date: dayKey,
-              quizType: quiz.tipo
-            });
-            console.log(`💊 Medicamento de resgate: "${answer}"`);
+            const medicationText = (answer as string).toLowerCase();
+            
+            // Lista de medicamentos conhecidos para validação
+            const knownMedications = [
+              'paracetamol', 'acetaminofen', 'tylenol',
+              'ibuprofeno', 'advil', 'alivium',
+              'dipirona', 'novalgina', 'anador',
+              'aspirina', 'aas', 'somalgin',
+              'naproxeno', 'flanax',
+              'tramadol', 'tramal',
+              'morfina', 'dimorf',
+              'codeina', 'codein',
+              'dexametasona', 'decadron',
+              'prednisolona', 'prelone'
+            ];
+            
+            // Verificar se é medicamento válido
+            const isValidMedication = knownMedications.some(med => 
+              medicationText.includes(med) || med.includes(medicationText)
+            );
+            
+            if (isValidMedication) {
+              // Armazenar dados brutos para análise posterior
+              (reportData as any).rawMedicationTexts = (reportData as any).rawMedicationTexts || [];
+              (reportData as any).rawMedicationTexts.push({
+                text: answer as string,
+                date: dayKey,
+                quizType: quiz.tipo,
+                validated: true
+              });
+              console.log(`✅ Medicamento de resgate válido: "${answer}"`);
+            } else {
+              // Log medicamento suspeito/fictício
+              console.warn(`⚠️ Medicamento suspeito/não reconhecido: "${answer}" - ignorando`);
+              if (!reportData.observations) reportData.observations = '';
+              reportData.observations += `[${dayKey}] Medicamento não reconhecido: ${answer}; `;
+            }
             break;
             
           case 'sleep_quality':
@@ -404,7 +477,16 @@ function processQuizzesWithSemanticMapping(
           case 'bowel_movement':
             if (!reportData.observations) reportData.observations = '';
             reportData.observations += `[${dayKey}] Evacuação intestinal: ${answer}; `;
-            console.log(`💩 Informação intestinal: "${answer}"`);
+            
+            // Adicionar à contagem de saúde digestiva
+            if (!reportData.bowelMovements) reportData.bowelMovements = [];
+            reportData.bowelMovements.push({
+              date: dayKey,
+              status: answer,
+              quizType: quiz.tipo
+            });
+            
+            console.log(`💩 Informação intestinal processada: "${answer}"`);
             break;
             
           case 'symptoms':
@@ -423,10 +505,26 @@ function processQuizzesWithSemanticMapping(
             
           case 'free_text':
           case 'medication_text':
-            // Capturar todos os textos livres
-            if (!reportData.observations) reportData.observations = '';
-            reportData.observations += `[${dayKey}] Observação livre: ${answer}; `;
-            console.log(`📝 Texto livre capturado: "${answer}"`);
+            // Processar textos que mencionam medicamentos
+            const medText = (answer as string).toLowerCase();
+            const knownMeds = ['paracetamol', 'ibuprofeno', 'dipirona', 'tramadol', 'morfina', 'dimorf', 'aspirina'];
+            const containsKnownMed = knownMeds.some(med => medText.includes(med));
+            
+            if (containsKnownMed) {
+              (reportData as any).rawMedicationTexts = (reportData as any).rawMedicationTexts || [];
+              (reportData as any).rawMedicationTexts.push({
+                text: answer as string,
+                date: dayKey,
+                quizType: quiz.tipo,
+                validated: true
+              });
+              console.log(`✅ Texto com medicamento válido: "${answer}"`);
+            } else {
+              // Apenas adicionar às observações
+              if (!reportData.observations) reportData.observations = '';
+              reportData.observations += `[${dayKey}] Texto medicamentoso: ${answer}; `;
+              console.log(`📝 Texto medicamentoso processado: "${answer}"`);
+            }
             break;
             
           case 'multiple_choice':
