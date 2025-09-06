@@ -3185,6 +3185,41 @@ function calculateTherapyImpact(reportData: EnhancedReportData): number | string
   return Math.min(30, therapyMentions * 5); // Máximo 30% de redução
 }
 
+function generateRealInsight(crisisData: any): string {
+  if (!crisisData || crisisData.frequency === 0) {
+    return "Continue registrando episódios para gerar insights personalizados";
+  }
+  
+  if (crisisData.frequency < 3) {
+    return "Registre mais episódios para análise de padrões";
+  }
+  
+  const insights = [];
+  
+  // Insight sobre frequência
+  if (crisisData.frequency >= 10) {
+    insights.push("Alta frequência de crises - recomenda-se discussão médica urgente");
+  } else if (crisisData.frequency >= 5) {
+    insights.push("Padrão de crises frequentes identificado");
+  } else {
+    insights.push("Frequência de crises dentro do esperado");
+  }
+  
+  // Insight sobre intensidade
+  if (crisisData.averageIntensity >= 8) {
+    insights.push("crises muito intensas requerem atenção especializada");
+  } else if (crisisData.averageIntensity >= 6) {
+    insights.push("intensidade de dor significativa registrada");
+  }
+  
+  // Insight sobre gatilhos
+  if (crisisData.triggers && crisisData.triggers.length > 0 && crisisData.triggers[0] !== 'Dados insuficientes') {
+    insights.push(`principais gatilhos identificados: ${crisisData.triggers.slice(0, 2).join(' e ')}`);
+  }
+  
+  return insights.length > 0 ? insights.join(', ') : "Continue registrando para insights mais detalhados";
+}
+
 // Funções auxiliares para a nova seção de Quiz Summary
 function processQuizData(reportData: EnhancedReportData): any {
   // Processar dados dos quizzes para análise inteligente
@@ -3582,14 +3617,15 @@ function generateCrisisEpisodesCard(quizAnalysis: any): string {
       <div class="quiz-metric">
         <div class="quiz-metric-label">Principais Gatilhos:</div>
         <div style="font-size: 0.85rem; color: #475569; margin-top: 0.25rem;">
-          ${crisis.triggers.map((trigger: string, index: number) => 
-            `⚡ ${trigger} (${Math.floor(Math.random() * 3) + 2}x)`
-          ).join(' • ')}
+          ${crisis.triggers.length > 0 && crisis.triggers[0] !== 'Dados insuficientes' 
+            ? crisis.triggers.map((trigger: string) => `⚡ ${trigger}`).join(' • ')
+            : '⚠️ Registre mais episódios para identificar gatilhos'
+          }
         </div>
       </div>
       
       <div class="quiz-insight">
-        💡 Insight: 75% das crises ocorreram após noites mal dormidas
+        💡 Insight: ${generateRealInsight(crisis)}
       </div>
     </div>
   `;
@@ -3608,14 +3644,14 @@ function generateMedicationActivitiesCard(quizAnalysis: any): string {
         <div class="quiz-metric-label">Medicamentos de Resgate:</div>
         <div style="font-size: 0.85rem; color: #475569; margin-top: 0.25rem;">
           ${medication.rescueMedications.length > 0 && medication.rescueMedications[0] !== 'Dados não disponíveis'
-            ? medication.rescueMedications.map((med: string, index: number) => 
-                `💊 ${med} (${Math.floor(Math.random() * 4) + 2}x)`
+            ? medication.rescueMedications.map((med: string) => 
+                `💊 ${med}${typeof med === 'object' && med.frequency ? ` (${med.frequency})` : ''}`
               ).join(' • ')
             : '💊 Dados sendo coletados dos questionários...'
           }
         </div>
         <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
-          └ Efetividade baseada em análise dos relatos
+          └ Frequência baseada nos registros reais
         </div>
       </div>
       
@@ -3644,12 +3680,15 @@ function generateMedicationActivitiesCard(quizAnalysis: any): string {
       <div class="quiz-metric">
         <div class="quiz-metric-label">Terapias Realizadas:</div>
         <div style="font-size: 0.85rem; color: #475569; margin-top: 0.25rem;">
-          ${medication.therapies.map((therapy: string, index: number) => 
-            `🧘 ${therapy} (${Math.floor(Math.random() * 5) + 3}x)`
-          ).join(' • ')}
+          ${medication.therapies.length > 0 && medication.therapies[0] !== getInsufficientDataMessage('therapies')
+            ? medication.therapies.map((therapy: string) => 
+                `🧘 ${therapy}`
+              ).join(' • ')
+            : '⚠️ ' + getInsufficientDataMessage('therapies')
+          }
         </div>
         <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
-          └ Adesão ao tratamento: Boa
+          └ Adesão baseada nos registros: ${medication.adherence}${typeof medication.adherence === 'number' ? '%' : ''}
         </div>
       </div>
       
