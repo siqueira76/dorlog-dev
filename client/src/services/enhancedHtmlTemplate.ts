@@ -3404,62 +3404,146 @@ function extractEmotionalStates(observations: string) {
   };
 }
 
-// Função para extrair dados de evacuação das observações
+// Função auxiliar para calcular intervalos entre evacuações
+function calculateEvacuationIntervals(evacuationMap: Map<string, boolean>) {
+  const allDates = Array.from(evacuationMap.keys()).sort();
+  const evacuationDates = allDates.filter(date => evacuationMap.get(date) === true);
+  
+  if (evacuationDates.length === 0) {
+    return {
+      averageInterval: 0,
+      maxInterval: 0,
+      evacuationDays: [],
+      totalDays: allDates.length,
+      dailyPattern: false
+    };
+  }
+  
+  // Calcular intervalos entre evacuações consecutivas
+  const intervals = [];
+  let maxInterval = 0;
+  
+  for (let i = 1; i < evacuationDates.length; i++) {
+    const prevDate = new Date(evacuationDates[i-1]);
+    const currDate = new Date(evacuationDates[i]);
+    const daysDiff = Math.ceil((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+    intervals.push(daysDiff);
+    maxInterval = Math.max(maxInterval, daysDiff);
+  }
+  
+  // Verificar padrão diário (pelo menos 80% dos dias)
+  const dailyPattern = evacuationDates.length / allDates.length >= 0.8;
+  const averageInterval = intervals.length > 0 ? intervals.reduce((a, b) => a + b, 0) / intervals.length : 1;
+  
+  return {
+    averageInterval,
+    maxInterval,
+    evacuationDays: evacuationDates,
+    totalDays: allDates.length,
+    dailyPattern
+  };
+}
+
+// Função para extrair dados de evacuação das observações (CORRIGIDA)
 function extractEvacuationData(observations: string) {
   if (!observations) {
     return { 
       frequency: 0, 
       consistency: 'Não informado', 
-      healthScore: 50,
-      painReduction: 15,
-      humanizedStatus: 'Dados sendo coletados',
-      explanation: 'Continue respondendo os questionários para análise completa'
+      healthScore: 0,
+      painReduction: 0,
+      humanizedStatus: 'Dados insuficientes',
+      explanation: 'Continue respondendo para análise mais precisa',
+      dailyPattern: false,
+      maxDaysWithoutEvacuation: 0,
+      evacuationDays: []
     };
   }
   
-  // Analisar informações sobre evacuação
-  const evacuationEntries = observations.match(/Evacuação\/Info adicional:/g);
-  const frequency = evacuationEntries ? evacuationEntries.length : 0;
+  // CORREÇÃO: Buscar padrão correto usado pelo sistema semântico
+  const evacuationPattern = /\[([\d-]+)\] Evacuação intestinal: (Sim|Não)/g;
+  const matches = [...observations.matchAll(evacuationPattern)];
   
-  // Análise simples de consistência
-  const regular = (observations.match(/normal|regular|bem|ok/gi) || []).length;
-  const irregular = (observations.match(/constipação|difícil|ruim|problema/gi) || []).length;
+  console.log(`🔍 DEBUG Evacuação: Encontrados ${matches.length} registros de evacuação`);
   
-  let consistency = 'Regular';
-  let healthScore = 75;
-  let painReduction = 25;
-  let humanizedStatus = '';
-  let explanation = '';
-  
-  if (irregular > regular) {
-    consistency = 'Irregular';
-    healthScore = 40;
-    painReduction = 5;
-    humanizedStatus = 'Precisa de atenção';
-    explanation = 'Irregularidade intestinal pode intensificar a dor. Considere ajustar alimentação e hidratação';
-  } else if (regular > 0) {
-    consistency = 'Boa';
-    healthScore = 85;
-    painReduction = 35;
-    humanizedStatus = 'Funcionando bem';
-    explanation = 'Boa regularidade intestinal está contribuindo para reduzir sua dor';
-  } else if (frequency > 0) {
-    healthScore = 75;
-    humanizedStatus = 'Dentro da normalidade';
-    explanation = 'Padrão intestinal regular ajuda no controle da dor';
-  } else {
-    healthScore = 0; // Sem dados, score deve ser 0
-    humanizedStatus = 'Dados insuficientes';
-    explanation = 'Continue respondendo para análise mais precisa';
+  if (matches.length === 0) {
+    // Tentar padrão antigo como fallback
+    const oldPattern = /Evacuação\/Info adicional:/g;
+    const oldMatches = observations.match(oldPattern);
+    const frequency = oldMatches ? oldMatches.length : 0;
+    
+    console.log(`🔍 DEBUG Evacuação: Fallback - ${frequency} registros no padrão antigo`);
+    
+    if (frequency === 0) {
+      return {
+        frequency: 0,
+        consistency: 'Não informado',
+        healthScore: 0,
+        painReduction: 0,
+        humanizedStatus: 'Dados insuficientes',
+        explanation: 'Continue respondendo para análise mais precisa',
+        dailyPattern: false,
+        maxDaysWithoutEvacuation: 0,
+        evacuationDays: []
+      };
+    }
   }
   
+  // Mapear respostas por data
+  const evacuationMap = new Map<string, boolean>();
+  matches.forEach(match => {
+    const [, date, response] = match;
+    evacuationMap.set(date, response === 'Sim');
+    console.log(`📅 Evacuação ${date}: ${response}`);
+  });
+  
+  // Calcular intervalos e padrões
+  const intervals = calculateEvacuationIntervals(evacuationMap);
+  
+  // Determinar status de saúde digestiva
+  let healthScore = 0;
+  let humanizedStatus = '';
+  let explanation = '';
+  let painReduction = 0;
+  
+  if (intervals.evacuationDays.length === 0) {
+    healthScore = 0;
+    humanizedStatus = 'Dados insuficientes';
+    explanation = 'Continue respondendo para análise mais precisa';
+  } else if (intervals.dailyPattern) {
+    healthScore = 90;
+    humanizedStatus = 'Excelente - Padrão diário';
+    explanation = `Evacuação diária regular (${intervals.evacuationDays.length}/${intervals.totalDays} dias)`;
+    painReduction = 35;
+  } else if (intervals.maxInterval <= 2) {
+    healthScore = 80;
+    humanizedStatus = 'Bom - Regular';
+    explanation = `Padrão regular com intervalo máximo de ${intervals.maxInterval} dia(s)`;
+    painReduction = 25;
+  } else if (intervals.maxInterval <= 3) {
+    healthScore = 60;
+    humanizedStatus = 'Moderado';
+    explanation = `Intervalo de até ${intervals.maxInterval} dias entre evacuações`;
+    painReduction = 15;
+  } else {
+    healthScore = 30;
+    humanizedStatus = 'Precisa de atenção';
+    explanation = `Intervalos longos (até ${intervals.maxInterval} dias) podem afetar bem-estar geral`;
+    painReduction = 5;
+  }
+  
+  console.log(`💩 Saúde digestiva calculada: Score ${healthScore}, Status: ${humanizedStatus}`);
+  
   return {
-    frequency,
-    consistency,
+    frequency: matches.length,
+    consistency: intervals.dailyPattern ? 'Excelente' : intervals.maxInterval <= 2 ? 'Boa' : 'Irregular',
     healthScore,
     painReduction,
     humanizedStatus,
-    explanation
+    explanation,
+    dailyPattern: intervals.dailyPattern,
+    maxDaysWithoutEvacuation: intervals.maxInterval,
+    evacuationDays: intervals.evacuationDays
   };
 }
 
@@ -3600,6 +3684,13 @@ function generateMorningNightCard(quizAnalysis: any): string {
         <div style="font-size: 0.8rem; color: #64748b; line-height: 1.4; margin-top: 0.5rem;">
           ${evacuation.explanation}
         </div>
+        ${evacuation.frequency > 0 ? `
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+          └ ${evacuation.dailyPattern ? 'Padrão diário detectado' : 
+              evacuation.maxDaysWithoutEvacuation > 0 ? 
+              `Máx. ${evacuation.maxDaysWithoutEvacuation} dia(s) sem evacuação` : 
+              'Monitoramento iniciado'}
+        </div>` : ''}
       </div>
       
       <div class="quiz-metric">
@@ -3613,7 +3704,11 @@ function generateMorningNightCard(quizAnalysis: any): string {
       </div>
       
       <div class="quiz-insight">
-        💡 Insight: ${evacuation.explanation}
+        💡 Insight: ${evacuation.frequency > 0 ? 
+          evacuation.dailyPattern ? 'Regularidade intestinal excelente está contribuindo para seu bem-estar' :
+          evacuation.maxDaysWithoutEvacuation > 3 ? 'Considere melhorar a regularidade intestinal para reduzir desconforto' :
+          'Padrão intestinal dentro da normalidade' :
+          'Continue registrando dados para análise precisa'}
       </div>
     </div>
   `;
