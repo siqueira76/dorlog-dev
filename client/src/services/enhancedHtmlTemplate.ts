@@ -3471,17 +3471,24 @@ function extractHumorData(observations: string) {
     };
   }
   
-  const correlations = [
-    { factor: 'Evacuação regular', impact: 'Melhora humor em 40%' },
-    { factor: 'Sono reparador', impact: 'Reduz ansiedade em 60%' },
-    { factor: 'Atividade física', impact: 'Aumenta bem-estar em 50%' }
-  ];
+  // Analisar correlações reais baseadas nos dados das observações
+  const correlations = [];
+  const patterns = [];
   
-  const patterns = [
-    'Humor mais estável quando há evacuação regular',
-    'Ansiedade aumenta com constipação',
-    'Estado emocional melhora com sono adequado'
-  ];
+  // Analisar padrões reais se houver dados suficientes
+  const totalWords = observations.split(' ').length;
+  if (totalWords > 20) {
+    // Buscar correlações reais nas observações
+    if (observations.toLowerCase().includes('evacu') && observations.toLowerCase().includes('melhora')) {
+      correlations.push({ factor: 'Evacuação regular', impact: 'Mencionado impacto positivo' });
+    }
+    if (observations.toLowerCase().includes('sono') && (observations.toLowerCase().includes('bem') || observations.toLowerCase().includes('bom'))) {
+      correlations.push({ factor: 'Sono reparador', impact: 'Qualidade mencionada positivamente' });
+    }
+    if (observations.toLowerCase().includes('atividade') && observations.toLowerCase().includes('bem')) {
+      correlations.push({ factor: 'Atividade física', impact: 'Relatado benefício' });
+    }
+  }
   
   return { correlations, patterns };
 }
@@ -3504,10 +3511,31 @@ function calculateSleepQuality(observations: string): number {
 function extractRescueMedications(reportData: any): string[] {
   const defaultMeds = ['Dados não disponíveis'];
   
+  // Verificar se há medicamentos de resgate nos dados reais
   if (reportData.rescueMedications && reportData.rescueMedications.length > 0) {
-    return reportData.rescueMedications.map((med: any) => 
-      typeof med === 'object' ? med.medication : med
-    ).filter((med: string) => med !== 'ANÁLISE_PENDENTE');
+    const realMeds = reportData.rescueMedications
+      .map((med: any) => typeof med === 'object' ? med.medication : med)
+      .filter((med: string) => med && med !== 'ANÁLISE_PENDENTE' && med !== 'Dados não disponíveis');
+    
+    if (realMeds.length > 0) {
+      return realMeds;
+    }
+  }
+  
+  // Verificar medicamentos usados durante episódios de crise
+  if (reportData.observations) {
+    const medicationMentions = [];
+    const commonMeds = ['paracetamol', 'dipirona', 'ibuprofeno', 'naproxeno', 'tramadol', 'dimorf', 'codeína'];
+    
+    commonMeds.forEach(med => {
+      if (reportData.observations.toLowerCase().includes(med)) {
+        medicationMentions.push(med.charAt(0).toUpperCase() + med.slice(1));
+      }
+    });
+    
+    if (medicationMentions.length > 0) {
+      return medicationMentions;
+    }
   }
   
   return defaultMeds;
