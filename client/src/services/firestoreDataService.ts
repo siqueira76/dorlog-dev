@@ -365,7 +365,7 @@ function processQuizzesWithSemanticMapping(
             
           case 'pain_locations':
             (answer as string[]).forEach((location: string) => {
-              const existingPoint = reportData.painPoints.find(p => p.local === location);
+              const existingPoint = reportData.painPoints.find((p: any) => p.local === location);
               if (existingPoint) {
                 existingPoint.occurrences++;
               } else {
