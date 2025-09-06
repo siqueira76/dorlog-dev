@@ -3047,6 +3047,144 @@ function getEnhancedReportJavaScript(withPassword?: boolean, passwordHash?: stri
   `;
 }
 
+// Função para validar suficiência de dados
+function validateDataSufficiency(reportData: EnhancedReportData, field: string): boolean {
+  const minimumRequirements = {
+    'activities': 7,      // 7 dias mínimo para atividades físicas
+    'correlations': 5,    // 5 episódios mínimo para correlações  
+    'patterns': 10,       // 10 registros mínimo para padrões
+    'insights': 3,        // 3 dias mínimo para insights
+    'therapies': 5,       // 5 dias mínimo para adesão a terapias
+    'triggers': 3         // 3 crises mínimo para análise de gatilhos
+  };
+  
+  const totalDays = reportData.totalDays || 0;
+  const crisisEpisodes = reportData.crisisEpisodes || 0;
+  
+  switch (field) {
+    case 'activities':
+    case 'therapies':
+      return totalDays >= minimumRequirements[field];
+    case 'correlations':
+    case 'triggers':
+      return crisisEpisodes >= minimumRequirements[field];
+    case 'patterns':
+      return (reportData.painEvolution?.length || 0) >= minimumRequirements[field];
+    case 'insights':
+      return totalDays >= minimumRequirements[field];
+    default:
+      return false;
+  }
+}
+
+// Função para gerar mensagem de dados insuficientes
+function getInsufficientDataMessage(field: string): string {
+  const messages = {
+    'activities': 'Continue registrando atividades diárias',
+    'correlations': 'Registre mais episódios para análise de correlações',
+    'patterns': 'Mais registros necessários para identificar padrões',
+    'insights': 'Continue respondendo questionários para insights',
+    'therapies': 'Registre adesão a terapias por mais tempo',
+    'triggers': 'Mais episódios necessários para análise de gatilhos'
+  };
+  
+  return messages[field] || 'Dados insuficientes para análise';
+}
+
+// Funções auxiliares para análise de dados reais
+function analyzeRealTriggers(reportData: EnhancedReportData): Array<{name: string, percentage: number | string}> {
+  if (!reportData.observations) {
+    return [{ name: 'Nenhum gatilho identificado', percentage: 'N/A' }];
+  }
+  
+  const triggers = [
+    { name: 'Estresse', keywords: ['estresse', 'stress', 'ansiedade', 'nervoso'] },
+    { name: 'Sono ruim', keywords: ['insônia', 'sono ruim', 'mal dormido', 'cansado'] },
+    { name: 'Mudança climática', keywords: ['chuva', 'frio', 'clima', 'tempo', 'pressão'] }
+  ];
+  
+  const totalCrises = reportData.crisisEpisodes || 1;
+  
+  return triggers.map(trigger => {
+    const occurrences = trigger.keywords.reduce((count, keyword) => 
+      count + (reportData.observations?.toLowerCase().split(keyword).length - 1 || 0), 0
+    );
+    
+    return {
+      name: trigger.name,
+      percentage: totalCrises > 0 ? Math.round((occurrences / totalCrises) * 100) : 0
+    };
+  }).filter(t => t.percentage > 0);
+}
+
+function analyzeRealRiskHours(reportData: EnhancedReportData): Array<{period: string, percentage: number | string}> {
+  if (!reportData.painEvolution || reportData.painEvolution.length < 5) {
+    return [{ period: 'Dados insuficientes para análise temporal', percentage: 'N/A' }];
+  }
+  
+  const hourCounts = new Map<string, number>();
+  
+  reportData.painEvolution.forEach(pain => {
+    if (pain.date) {
+      const hour = new Date(pain.date).getHours();
+      let period = '';
+      
+      if (hour >= 6 && hour < 12) period = '6h-12h (Manhã)';
+      else if (hour >= 12 && hour < 18) period = '12h-18h (Tarde)';
+      else if (hour >= 18 && hour < 24) period = '18h-24h (Noite)';
+      else period = '0h-6h (Madrugada)';
+      
+      hourCounts.set(period, (hourCounts.get(period) || 0) + 1);
+    }
+  });
+  
+  const total = Array.from(hourCounts.values()).reduce((sum, count) => sum + count, 0);
+  
+  return Array.from(hourCounts.entries()).map(([period, count]) => ({
+    period,
+    percentage: Math.round((count / total) * 100)
+  })).sort((a, b) => (b.percentage as number) - (a.percentage as number));
+}
+
+function calculateActivityImpact(reportData: EnhancedReportData): number | string {
+  if (!reportData.painEvolution || reportData.painEvolution.length < 3) {
+    return "N/A";
+  }
+  
+  const activityDays = reportData.painEvolution.filter(p => 
+    p.context?.toLowerCase().includes('atividade') || 
+    p.context?.toLowerCase().includes('exercício')
+  );
+  
+  if (activityDays.length === 0) return 0;
+  
+  const avgPainWithActivity = activityDays.reduce((sum, p) => sum + p.level, 0) / activityDays.length;
+  const avgPainGeneral = reportData.averagePain || 0;
+  
+  return Math.max(0, Math.round(((avgPainGeneral - avgPainWithActivity) / avgPainGeneral) * 100));
+}
+
+function calculateSleepImpact(reportData: EnhancedReportData): number | string {
+  if (!reportData.observations) return "N/A";
+  
+  const sleepQualityMentions = (reportData.observations.match(/sono bom|bem dormido|descansado/gi) || []).length;
+  const totalEntries = (reportData.observations.match(/sono|dormi/gi) || []).length;
+  
+  if (totalEntries === 0) return "N/A";
+  
+  return Math.round((sleepQualityMentions / totalEntries) * 60); // Máximo 60% de redução
+}
+
+function calculateTherapyImpact(reportData: EnhancedReportData): number | string {
+  if (!reportData.observations) return "N/A";
+  
+  const therapyMentions = (reportData.observations.match(/fisioterapia|terapia|tratamento/gi) || []).length;
+  
+  if (therapyMentions === 0) return 0;
+  
+  return Math.min(30, therapyMentions * 5); // Máximo 30% de redução
+}
+
 // Funções auxiliares para a nova seção de Quiz Summary
 function processQuizData(reportData: EnhancedReportData): any {
   // Processar dados dos quizzes para análise inteligente
@@ -3088,33 +3226,41 @@ function processQuizData(reportData: EnhancedReportData): any {
   // Dados para "Medicamentos e Atividades"
   const medicationData = {
     rescueMedications: extractRescueMedications(reportData),
-    physicalActivities: {
-      walking: 12,
-      work: 25,
-      home: 18
+    physicalActivities: validateDataSufficiency(reportData, 'activities') ? {
+      walking: Math.min(totalDays, reportData.painEvolution?.filter(p => p.context?.includes('caminhada')).length || 0),
+      work: Math.min(totalDays, reportData.painEvolution?.filter(p => p.context?.includes('trabalho')).length || 0),
+      home: Math.min(totalDays, reportData.painEvolution?.filter(p => p.context?.includes('casa')).length || 0)
+    } : {
+      walking: "Dados insuficientes",
+      work: "Dados insuficientes", 
+      home: "Dados insuficientes"
     },
-    therapies: ['Fisioterapia', 'Clínica da Dor'],
-    adherence: 83,
+    therapies: validateDataSufficiency(reportData, 'therapies') ? 
+      (reportData.observations?.match(/fisioterapia|terapia|tratamento/gi) || []).length > 0 ? 
+        ['Fisioterapia', 'Clínica da Dor'] : ['Nenhuma terapia registrada'] :
+      [getInsufficientDataMessage('therapies')],
+    adherence: validateDataSufficiency(reportData, 'therapies') ? 
+      Math.round((totalDays / Math.max(totalDays, 7)) * 100) : 
+      "Dados insuficientes",
     digestiveHealth: evacuationData.healthScore
   };
   
   // Dados para "Padrões" com correlações reais
   const patternsData = {
-    commonTriggers: [
-      { name: 'Estresse', percentage: 60 },
-      { name: 'Mudança climática', percentage: 25 },
-      { name: 'Sono inadequado', percentage: 50 }
-    ],
-    protectiveFactors: [
-      { name: 'Atividade física regular', reduction: 40 },
-      { name: 'Qualidade do sono boa', reduction: 60 },
-      { name: 'Adesão à fisioterapia', reduction: 30 },
+    commonTriggers: validateDataSufficiency(reportData, 'triggers') ? 
+      analyzeRealTriggers(reportData) : 
+      [{ name: getInsufficientDataMessage('triggers'), percentage: "N/A" }],
+    protectiveFactors: validateDataSufficiency(reportData, 'correlations') ? [
+      { name: 'Atividade física regular', reduction: calculateActivityImpact(reportData) },
+      { name: 'Qualidade do sono boa', reduction: calculateSleepImpact(reportData) },
+      { name: 'Adesão à fisioterapia', reduction: calculateTherapyImpact(reportData) },
       { name: 'Evacuação regular', reduction: evacuationData.painReduction }
+    ] : [
+      { name: getInsufficientDataMessage('correlations'), reduction: "N/A" }
     ],
-    riskHours: [
-      { period: '15h-18h', percentage: 40 },
-      { period: '20h-22h', percentage: 35 }
-    ],
+    riskHours: validateDataSufficiency(reportData, 'patterns') ? 
+      analyzeRealRiskHours(reportData) : 
+      [{ period: getInsufficientDataMessage('patterns'), percentage: "N/A" }],
     emotionalCorrelations: humorData.correlations
   };
   
