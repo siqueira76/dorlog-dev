@@ -3448,6 +3448,7 @@ function extractEvacuationData(observations: string) {
     humanizedStatus = 'Dentro da normalidade';
     explanation = 'Padrão intestinal regular ajuda no controle da dor';
   } else {
+    healthScore = 0; // Sem dados, score deve ser 0
     humanizedStatus = 'Dados insuficientes';
     explanation = 'Continue respondendo para análise mais precisa';
   }
@@ -3495,16 +3496,21 @@ function extractHumorData(observations: string) {
 
 // Função para calcular qualidade do sono baseada nas observações
 function calculateSleepQuality(observations: string): number {
-  if (!observations) return 6.8;
+  if (!observations || observations.trim().length === 0) return 0; // Sem dados = score 0
   
   // Análise simples de palavras-chave relacionadas ao sono
   const goodSleep = (observations.match(/bem|boa|excelente|descansado|reparador/gi) || []).length;
   const badSleep = (observations.match(/ruim|péssimo|mal|insônia|acordou/gi) || []).length;
   
-  const total = goodSleep + badSleep || 1;
+  const total = goodSleep + badSleep;
+  
+  if (total === 0) {
+    return 0; // Sem menções sobre sono = score 0
+  }
+  
   const quality = (goodSleep / total) * 10;
   
-  return Math.max(3, Math.min(10, quality || 6.8));
+  return Math.max(0, Math.min(10, quality));
 }
 
 // Função para extrair medicamentos de resgate dos dados reais
