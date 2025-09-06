@@ -3220,6 +3220,35 @@ function generateRealInsight(crisisData: any): string {
   return insights.length > 0 ? insights.join(', ') : "Continue registrando para insights mais detalhados";
 }
 
+function generatePatternsInsight(patterns: any, evacuation: any): string {
+  if (!patterns.commonTriggers || patterns.commonTriggers.length === 0 || patterns.commonTriggers[0].name === getInsufficientDataMessage('triggers')) {
+    return "Continue registrando episódios para identificar padrões comportamentais";
+  }
+  
+  const insights = [];
+  
+  // Insight sobre gatilhos mais frequentes
+  const topTrigger = patterns.commonTriggers[0];
+  if (topTrigger && typeof topTrigger.percentage === 'number' && topTrigger.percentage > 50) {
+    insights.push(`${topTrigger.name} é o principal gatilho (${topTrigger.percentage}% das crises)`);
+  }
+  
+  // Insight sobre fatores protetivos
+  const topProtective = patterns.protectiveFactors?.find((f: any) => typeof f.reduction === 'number' && f.reduction > 30);
+  if (topProtective) {
+    insights.push(`${topProtective.name} mostra redução significativa da dor (-${topProtective.reduction}%)`);
+  }
+  
+  // Insight sobre saúde digestiva
+  if (evacuation && evacuation.consistency === 'Boa') {
+    insights.push('evacuação regular está correlacionada com menor ansiedade');
+  } else if (evacuation && evacuation.consistency !== 'Boa') {
+    insights.push('irregularidade intestinal pode estar afetando humor e dor');
+  }
+  
+  return insights.length > 0 ? insights.join(', ') : "Continue registrando para análise de padrões mais específica";
+}
+
 // Funções auxiliares para a nova seção de Quiz Summary
 function processQuizData(reportData: EnhancedReportData): any {
   // Processar dados dos quizzes para análise inteligente
@@ -3751,10 +3780,7 @@ function generatePatternsCard(quizAnalysis: any): string {
       </div>
       
       <div class="quiz-insight">
-        💡 Insight: ${evacuation.consistency === 'Boa' 
-          ? 'Evacução regular está correlacionada com menor ansiedade' 
-          : 'Irregularidade intestinal pode estar afetando seu humor e dor'
-        }
+        💡 Insight: ${generatePatternsInsight(patterns, evacuation)}
       </div>
     </div>
   `;
