@@ -3283,7 +3283,7 @@ function processQuizData(reportData: EnhancedReportData): any {
       ? painEvolution.reduce((sum, item) => sum + item.level, 0) / painEvolution.length 
       : 0,
     commonLocations: painPoints.slice(0, 3),
-    triggers: ['Estresse', 'Sono ruim', 'Mudança climática'],
+    triggers: validateDataSufficiency(reportData, 'triggers') ? analyzeRealTriggers(reportData).map(t => t.name) : ['Dados insuficientes'],
     emotionalTriggers: emotionalStatesData.triggers
   };
   
@@ -3325,7 +3325,7 @@ function processQuizData(reportData: EnhancedReportData): any {
     riskHours: validateDataSufficiency(reportData, 'patterns') ? 
       analyzeRealRiskHours(reportData) : 
       [{ period: getInsufficientDataMessage('patterns'), percentage: "N/A" }],
-    emotionalCorrelations: humorData.correlations
+    emotionalCorrelations: validateDataSufficiency(reportData, 'correlations') ? humorData.correlations : []
   };
   
   return {
