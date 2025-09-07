@@ -340,7 +340,15 @@ function getQuestionSemanticType(questionId: string, quizType: string, answer: a
       therapies.some(therapy => item.includes(therapy))
     );
     
+    // DEBUG: Log detalhado da detecção de terapias
+    console.log(`🏥 SEMANTIC DEBUG: Verificando terapias - Answer:`, answer, `hasTherapies:`, hasTherapies);
+    therapies.forEach(therapy => {
+      const found = answer.some(item => item.includes(therapy));
+      if (found) console.log(`🏥 ENCONTROU TERAPIA: ${therapy}`);
+    });
+    
     if (hasTherapies) {
+      console.log(`🏥 RETORNANDO treatment_activities para:`, answer);
       return 'treatment_activities';
     }
     
@@ -412,9 +420,19 @@ function processQuizzesWithSemanticMapping(
     // Processar respostas com mapeamento semântico
     if (quiz.respostas && typeof quiz.respostas === 'object') {
       Object.entries(quiz.respostas).forEach(([questionId, answer]) => {
+        // DEBUG EXTRA: Verificar se é pergunta de terapias especificamente
+        if (quiz.tipo === 'noturno' && questionId === '6') {
+          console.log(`🏥 DEBUG TERAPIAS: Quiz noturno P6 detectada - Answer:`, answer, `Type:`, typeof answer);
+        }
+        
         const semanticType = getQuestionSemanticType(questionId, quiz.tipo, answer);
         
         console.log(`📊 Auditoria: P${questionId} (${quiz.tipo}) -> Tipo: ${semanticType}, Valor: ${JSON.stringify(answer)}`);
+        
+        // DEBUG EXTRA: Log específico para treatment_activities
+        if (semanticType === 'treatment_activities') {
+          console.log(`🏥 ENCONTROU TREATMENT_ACTIVITIES! Quiz: ${quiz.tipo}, Q: ${questionId}, Answer:`, answer);
+        }
         
         // Log adicional para casos problemáticos
         if (semanticType === 'unknown') {
