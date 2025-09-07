@@ -7,6 +7,8 @@ O DorLog utiliza um sistema flexível de quizzes com mapeamento semântico autom
 ## 🏗️ Arquitetura de Dados
 
 ### Collection Firebase: `quizzes`
+
+**⚠️ IMPORTANTE**: O sistema implementa um robusto mecanismo de fallback quando os quizzes não estão configurados no Firebase ou quando as subcoleções `perguntas` estão vazias. Nestes casos, utiliza automaticamente quizzes de demonstração pré-definidos no código.
 ```
 📂 quizzes/
 ├── 📄 matinal/
@@ -35,36 +37,54 @@ O DorLog utiliza um sistema flexível de quizzes com mapeamento semântico autom
 
 ### 🌅 Quiz Matinal
 
+#### **Estado Atual (Firebase Produção):**
+| ID | Pergunta | Tipo | Opções | Semântica |
+|----|----------|------|---------|-----------|
+| 1 | "Como você dormiu?" | `opcoes` | ["Bem", "Médio", "Ruim", "Não dormiu"] | `sleep_quality` |
+| 2 | "Qual foi a intensidade da dor hoje?" | `eva` | 0-10 | `eva_scale` |
+
+#### **Estrutura Completa (Fallback/Demonstração):**
 | ID | Pergunta | Tipo | Opções | Semântica |
 |----|----------|------|---------|-----------|
 | 1 | "Como você se sente ao acordar hoje?" | `emojis` | - | `emotional_state` |
 | 2 | "Qual é o seu nível de dor neste momento?" | `eva` | 0-10 | `eva_scale` |
 | 3 | "Que sintomas você está sentindo hoje?" | `checkbox` | ["Dor de cabeça", "Náusea", "Fadiga", "Dor muscular", "Ansiedade", "Nenhum"] | `symptoms` |
-| 4 | "Como foi sua qualidade de sono na noite passada?" | `opcoes` | ["Muito ruim", "Ruim", "Regular", "Boa", "Excelente"] | `sleep_quality` |
-| 5 | "Descreva brevemente como você está se sentindo:" | `texto` | - | `free_text` |
+| 4 | "Descreva brevemente como foi sua noite de sono:" | `texto` | - | `sleep_quality` |
 
 ### 🌙 Quiz Noturno
 
-| ID | Pergunta (Inferida) | Tipo | Semântica |
-|----|---------------------|------|-----------|
-| 1 | Estado geral noturno | `emojis` | `emotional_state` |
-| 2 | Nível de dor atual | `eva` | `eva_scale` |
-| 3 | Atividades realizadas no dia | `checkbox` | `activities` |
-| 4 | Estado emocional | `opcoes` | `emotional_state` |
-| 8 | Evacuação intestinal | `opcoes` | `bowel_movement` |
+#### **Estado Atual (Firebase Produção):**
+*Não configurado - usando fallback de demonstração*
+
+#### **Estrutura Completa (Fallback/Demonstração):**
+| ID | Pergunta | Tipo | Opções | Semântica |
+|----|----------|------|---------|-----------|
+| 1 | "Como foi seu dia hoje?" | `emojis` | - | `emotional_state` |
+| 2 | "Qual é o seu nível de dor agora?" | `eva` | 0-10 | `eva_scale` |
+| 3 | "Quais atividades você realizou hoje?" | `checkbox` | ["Exercícios", "Trabalho", "Descanso", "Tarefas domésticas", "Socialização", "Outros"] | `activities` |
+| 4 | "Como você avalia sua qualidade de sono na noite anterior?" | `slider` | 1-10 | `sleep_quality` |
+| 5 | "Descreva como se sente ao final do dia:" | `texto` | - | `free_text` |
+| 6 | "Que sintomas você teve hoje?" | `checkbox` | ["Dor de cabeça", "Fadiga", "Dor muscular", "Ansiedade", "Irritabilidade", "Depressivo", "Nenhum"] | `symptoms` |
+| 7 | "Qual é sua expectativa para o sono de hoje?" | `opcoes` | ["Muito boa", "Boa", "Regular", "Ruim", "Muito ruim"] | `sleep_quality` |
+| 8 | "Algo específico que gostaria de registrar sobre hoje?" | `texto` | - | `free_text` |
+| 9 | "Como está seu humor agora?" | `emojis` | ["Ansioso", "Triste", "Irritado", "Calmo", "Feliz", "Depressivo"] | `emotional_state` |
 
 ### 🚨 Quiz Emergencial
 
-| ID | Pergunta (Inferida) | Tipo | Semântica |
-|----|---------------------|------|-----------|
-| 1 | Nível de dor de emergência | `eva` | `eva_scale` |
-| 2 | Locais da dor | `checkbox` | `pain_locations` |
-| 3 | Tipo de dor | `opcoes` | `multiple_choice` |
-| 4 | Duração da crise | `opcoes` | `multiple_choice` |
-| 5 | Gatilhos identificados | `checkbox` | `multiple_choice` |
-| 6 | Sintomas associados | `checkbox` | `symptoms` |
-| 7 | Medicamento de resgate tomado | `texto` | `rescue_medication` |
-| 8 | Observações adicionais | `texto` | `free_text` |
+#### **Estado Atual (Firebase Produção):**
+*Não configurado - usando fallback de demonstração*
+
+#### **Estrutura Completa (Fallback/Demonstração):**
+| ID | Pergunta | Tipo | Opções | Semântica |
+|----|----------|------|---------|-----------|
+| 1 | "Qual é a intensidade da sua dor agora?" | `eva` | 0-10 | `eva_scale` |
+| 2 | "Onde você está sentindo dor?" | `checkbox` | ["Cabeça", "Pescoço", "Ombros", "Costas", "Braços", "Pernas", "Abdômen", "Músculos", "Articulações", "Outro local"] | `pain_locations` |
+| 3 | "Como você descreveria sua dor?" | `checkbox` | ["Pulsante", "Latejante", "Aguda", "Queimação", "Formigamento", "Peso", "Pressão", "Pontada", "Cólica", "Contínua"] | `multiple_choice` |
+| 4 | "Há quanto tempo você está sentindo essa dor?" | `opcoes` | ["Menos de 1 hora", "1-3 horas", "3-6 horas", "6-12 horas", "Mais de 12 horas", "Vários dias"] | `multiple_choice` |
+| 5 | "O que pode ter desencadeado essa crise?" | `checkbox` | ["Estresse", "Mudança do tempo", "Falta de sono", "Atividade física", "Alimentação", "Postura", "Trabalho", "Não sei", "Outro"] | `multiple_choice` |
+| 6 | "Que outros sintomas você está sentindo?" | `checkbox` | ["Náusea", "Vômito", "Tontura", "Sensibilidade à luz", "Sensibilidade ao som", "Fadiga", "Ansiedade", "Irritabilidade", "Nenhum"] | `symptoms` |
+| 7 | "Você já tomou algum medicamento para essa dor?" | `opcoes` | ["Sim, melhorou", "Sim, não fez efeito", "Sim, piorou", "Não tomei ainda", "Não tenho medicamento"] | `rescue_medication` |
+| 8 | "Descreva qualquer informação adicional sobre esta crise:" | `texto` | - | `free_text` |
 
 ## 📊 Tipos de Perguntas Suportados
 
@@ -252,8 +272,33 @@ console.warn(`⚠️ Formato não reconhecido para Q${questionId}`);
 7. **Análise**: Insights gerados automaticamente
 8. **Visualização**: Dados apresentados em relatórios HTML
 
+## 🔧 Sistema de Carregamento de Quizzes
+
+### Fluxo de Carregamento
+1. **Tentativa Firebase**: Acessa `quizzes/{quizId}` no Firestore
+2. **Busca Subcoleção**: Consulta `perguntas` ordenadas por ID
+3. **Validação**: Verifica se há perguntas configuradas
+4. **Fallback Automático**: Se vazio, usa quizzes de demonstração pré-definidos
+5. **Toast Informativo**: Notifica usuário sobre modo demonstração
+
+### Estados do Sistema
+- **✅ Produção**: Quiz configurado no Firebase com perguntas na subcoleção
+- **⚠️ Demonstração**: Usando fallback devido a configuração incompleta
+- **❌ Erro**: Falha na conexão ou configuração Firebase inválida
+
+### Logs de Monitoramento
+```javascript
+console.log('🧪 Tentando carregar quiz:', quizId);
+console.log('📁 Tentando acessar documento quiz:', path);
+console.log('✅ Documento do quiz encontrado');
+console.log('📋 Pergunta carregada:', questionId, perguntaData);
+console.log('⚠️ Nenhuma pergunta encontrada na subcoleção');
+console.log('🔧 Usando quiz de demonstração');
+```
+
 ---
 
 **Última Atualização**: 2025-09-07  
-**Versão**: 1.0.0  
+**Versão**: 2.0.0  
 **Sistema**: DorLog Enhanced NLP  
+**Status Atual**: Quiz Matinal configurado (2 perguntas), Noturno e Emergencial em modo demonstração  
