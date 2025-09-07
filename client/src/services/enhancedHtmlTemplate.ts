@@ -3050,7 +3050,7 @@ function validateDataSufficiency(reportData: EnhancedReportData, field: string):
     'correlations': 5,    // 5 episódios mínimo para correlações  
     'patterns': 10,       // 10 registros mínimo para padrões
     'insights': 3,        // 3 dias mínimo para insights
-    'therapies': 5,       // 5 dias mínimo para adesão a terapias
+    'therapies': 2,       // 2 dias mínimo para adesão a terapias (corrigido para permitir análise precoce)
     'triggers': 3         // 3 crises mínimo para análise de gatilhos
   };
   
@@ -3059,8 +3059,11 @@ function validateDataSufficiency(reportData: EnhancedReportData, field: string):
   
   switch (field) {
     case 'activities':
-    case 'therapies':
       return totalDays >= minimumRequirements[field];
+    case 'therapies':
+      // Validar dados reais de tratamento em vez de apenas contar dias
+      const treatmentData = (reportData as any).treatmentActivities || [];
+      return treatmentData.length >= minimumRequirements[field];
     case 'correlations':
     case 'triggers':
       return crisisEpisodes >= minimumRequirements[field];
@@ -3080,7 +3083,7 @@ function getInsufficientDataMessage(field: string): string {
     'correlations': 'Registre mais episódios para análise de correlações',
     'patterns': 'Mais registros necessários para identificar padrões',
     'insights': 'Continue respondendo questionários para insights',
-    'therapies': 'Registre adesão a terapias por mais tempo',
+    'therapies': 'Dados insuficientes - registre terapias nos questionários diários',
     'triggers': 'Mais episódios necessários para análise de gatilhos'
   };
   
