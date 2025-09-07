@@ -554,23 +554,30 @@ function processQuizzesWithSemanticMapping(
             
           case 'treatment_activities':
             // Processar atividades terapêuticas
+            console.log(`🏥 DEBUG: Processando treatment_activities - Answer:`, answer, `Day:`, dayKey);
             reportData.treatmentActivities = reportData.treatmentActivities || [];
             (answer as string[]).forEach(treatment => {
-              if (treatment === 'Não fiz') return; // Ignorar resposta negativa
+              if (treatment === 'Não fiz') {
+                console.log(`🏥 DEBUG: Ignorando resposta negativa: ${treatment}`);
+                return; // Ignorar resposta negativa
+              }
               
               const existing = reportData.treatmentActivities.find((t: any) => t.treatment === treatment);
               if (existing) {
                 existing.frequency++;
                 existing.dates.push(dayKey);
+                console.log(`🏥 DEBUG: Incrementando terapia existente: ${treatment}, nova freq: ${existing.frequency}`);
               } else {
                 reportData.treatmentActivities.push({
                   treatment,
                   frequency: 1,
                   dates: [dayKey]
                 });
+                console.log(`🏥 DEBUG: Adicionando nova terapia: ${treatment}`);
               }
             });
             console.log(`🏥 Atividades terapêuticas processadas: ${(answer as string[]).join(', ')}`);
+            console.log(`🏥 DEBUG: Total treatmentActivities agora:`, reportData.treatmentActivities?.length || 0);
             break;
             
           case 'triggers':
