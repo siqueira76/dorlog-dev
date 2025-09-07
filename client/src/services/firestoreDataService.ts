@@ -524,9 +524,20 @@ function processQuizzesWithSemanticMapping(
             break;
             
           case 'activities':
-            // Processar atividades como observações
+            // Processar atividades como observações E criar estrutura específica
             if (!reportData.observations) reportData.observations = '';
             reportData.observations += `[${dayKey}] Atividades: ${(answer as string[]).join(', ')}; `;
+            
+            // Criar estrutura específica para atividades físicas
+            if (!(reportData as any).physicalActivitiesData) (reportData as any).physicalActivitiesData = [];
+            (answer as string[]).forEach(activity => {
+              (reportData as any).physicalActivitiesData.push({
+                date: dayKey,
+                activity: activity,
+                source: quiz.tipo
+              });
+            });
+            
             console.log(`🏃 Atividades processadas: ${(answer as string[]).join(', ')}`);
             break;
             

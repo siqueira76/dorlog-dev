@@ -3087,6 +3087,61 @@ function getInsufficientDataMessage(field: string): string {
   return messages[field] || 'Dados insuficientes para análise';
 }
 
+// Função auxiliar para contar atividades físicas dos dados reais
+function countPhysicalActivities(reportData: EnhancedReportData): {
+  walking: number;
+  work: number;
+  home: number;
+  exercise: number;
+  totalDays: number;
+} {
+  const physicalActivitiesData = (reportData as any).physicalActivitiesData || [];
+  
+  if (physicalActivitiesData.length === 0) {
+    return {
+      walking: 0,
+      work: 0,
+      home: 0,
+      exercise: 0,
+      totalDays: 0
+    };
+  }
+  
+  // Contar ocorrências de cada tipo de atividade
+  const walkingDays = new Set();
+  const workDays = new Set();
+  const homeDays = new Set();
+  const exerciseDays = new Set();
+  const allDays = new Set();
+  
+  physicalActivitiesData.forEach((record: any) => {
+    allDays.add(record.date);
+    
+    switch (record.activity) {
+      case 'Caminhada':
+        walkingDays.add(record.date);
+        break;
+      case 'Trabalho':
+        workDays.add(record.date);
+        break;
+      case 'Cuidou da casa':
+        homeDays.add(record.date);
+        break;
+      case 'Atividade física':
+        exerciseDays.add(record.date);
+        break;
+    }
+  });
+  
+  return {
+    walking: walkingDays.size,
+    work: workDays.size,
+    home: homeDays.size,
+    exercise: exerciseDays.size,
+    totalDays: allDays.size
+  };
+}
+
 // Funções auxiliares para análise de dados reais
 function analyzeRealTriggers(reportData: EnhancedReportData): Array<{name: string, percentage: number | string}> {
   // Primeiro, tentar usar dados estruturados dos quizzes emergenciais
@@ -3259,13 +3314,14 @@ function processQuizData(reportData: EnhancedReportData): any {
   const evacuationData = extractEvacuationData(observations);
   const humorData = extractHumorData(observations);
   
-  // Dados para "Manhãs e Noites" com dados reais
+  // Dados para "Manhãs e Noites" com dados reais e atividades físicas
   const morningData = {
     sleepQuality: totalDays > 0 ? calculateSleepQuality(observations) : 0,
     eveningPain: averagePain,
     emotionalStates: emotionalStatesData.distribution,
     evacuationFrequency: evacuationData.frequency,
-    evacuationConsistency: evacuationData.consistency
+    evacuationConsistency: evacuationData.consistency,
+    physicalActivities: countPhysicalActivities(reportData)
   };
   
   // Dados para "Episódios de Crise"
@@ -3282,15 +3338,7 @@ function processQuizData(reportData: EnhancedReportData): any {
   // Dados para "Medicamentos e Atividades"
   const medicationData = {
     rescueMedications: extractRescueMedications(reportData),
-    physicalActivities: validateDataSufficiency(reportData, 'activities') ? {
-      walking: Math.min(totalDays, reportData.painEvolution?.filter((p: any) => p.context?.includes('caminhada')).length || 0),
-      work: Math.min(totalDays, reportData.painEvolution?.filter((p: any) => p.context?.includes('trabalho')).length || 0),
-      home: Math.min(totalDays, reportData.painEvolution?.filter((p: any) => p.context?.includes('casa')).length || 0)
-    } : {
-      walking: "Dados insuficientes",
-      work: "Dados insuficientes", 
-      home: "Dados insuficientes"
-    },
+    physicalActivities: countPhysicalActivities(reportData),
     therapies: validateDataSufficiency(reportData, 'therapies') ? 
       (reportData.observations?.match(/fisioterapia|terapia|tratamento/gi) || []).length > 0 ? 
         ['Fisioterapia', 'Clínica da Dor'] : ['Nenhuma terapia registrada'] :
@@ -4029,6 +4077,57 @@ function generateMorningNightCard(quizAnalysis: any, reportData?: any): string {
       </div>
       ` : ''}
       
+      <!-- Seção de Atividades Físicas -->
+      <div class="quiz-metric">
+        <div class="quiz-metric-label">🏃 Atividades Físicas:</div>
+        ${(() => {
+          const activities = morning.physicalActivities;
+          
+          if (activities.totalDays === 0) {
+            return `
+            <div class="quiz-metric-main" style="color: #64748b; font-style: italic;">
+              Dados insuficientes para análise
+            </div>
+            <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
+              └ Responda a pergunta "Você fez alguma atividade física hoje?" no quiz noturno
+            </div>
+            `;
+          }
+          
+          const activePercentage = Math.round((activities.totalDays / totalDays) * 100);
+          
+          return `
+          <div style="font-size: 0.85rem; color: #475569; margin-top: 0.25rem;">
+            🚶 Caminhada (${activities.walking} dias) • 
+            💼 Trabalho (${activities.work} dias) • 
+            🏠 Casa (${activities.home} dias) • 
+            🏃 Exercícios (${activities.exercise} dias)
+          </div>
+          <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
+            └ Você se manteve ativo em ${activities.totalDays} de ${totalDays} dias (${activePercentage}%)
+          </div>
+          
+          <!-- Análise Inteligente das Atividades -->
+          ${activities.totalDays > 0 ? `
+          <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.6rem; background: #f8fafc; padding: 0.5rem; border-radius: 6px; border-left: 3px solid #10b981;">
+            <div><strong>🧠 Análise de Atividades:</strong></div>
+            <div>• Total de atividades registradas: ${activities.walking + activities.work + activities.home + activities.exercise} registros</div>
+            ${activities.walking > 0 ? `<div>• Caminhadas: ${activities.walking} dia(s) - ${Math.round((activities.walking / activities.totalDays) * 100)}% dos dias ativos</div>` : ''}
+            ${activities.exercise > 0 ? `<div>• Exercícios físicos: ${activities.exercise} dia(s) - ${Math.round((activities.exercise / activities.totalDays) * 100)}% dos dias ativos</div>` : ''}
+            ${activities.work > 0 ? `<div>• Atividades laborais: ${activities.work} dia(s)</div>` : ''}
+            ${activities.home > 0 ? `<div>• Cuidados domésticos: ${activities.home} dia(s)</div>` : ''}
+            <div>• Nível de atividade: ${
+              activePercentage >= 80 ? 'Muito ativo 🟢' :
+              activePercentage >= 60 ? 'Moderadamente ativo 🟡' :
+              activePercentage >= 40 ? 'Pouco ativo 🟠' :
+              'Sedentário 🔴'
+            }</div>
+          </div>
+          ` : ''}
+          `;
+        })()}
+      </div>
+      
       <div class="quiz-insight">
         💡 Insight: ${painPoints && painPoints.length > 0 ? 
           (() => {
@@ -4219,17 +4318,6 @@ function generateMedicationActivitiesCard(quizAnalysis: any): string {
         </div>
       </div>
       
-      <div class="quiz-metric">
-        <div class="quiz-metric-label">Atividades Físicas:</div>
-        <div style="font-size: 0.85rem; color: #475569; margin-top: 0.25rem;">
-          🚶 Caminhada (${medication.physicalActivities.walking} dias) • 
-          💼 Trabalho (${medication.physicalActivities.work} dias) • 
-          🏠 Casa (${medication.physicalActivities.home} dias)
-        </div>
-        <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
-          └ Você se manteve ativo em ${medication.adherence}% dos dias
-        </div>
-      </div>
       
       <div class="quiz-metric">
         <div class="quiz-metric-label">Saúde Digestiva:</div>
