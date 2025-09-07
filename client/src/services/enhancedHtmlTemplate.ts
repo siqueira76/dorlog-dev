@@ -1698,7 +1698,7 @@ function generateTextualReportsSection(reportData: EnhancedReportData): string {
           ${sentimentData.slice(0, 3).map(report => `
             <div style="background: #f8fafc; border-left: 3px solid #dc2626; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem;">
               <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.25rem;">
-                ${new Date(report.date).toLocaleDateString('pt-BR')} - Quiz Emergencial 
+                Data não disponível - Quiz Emergencial 
                 <span style="background: #dc2626; color: white; padding: 0.125rem 0.375rem; border-radius: 10px; font-size: 0.7rem; margin-left: 0.5rem;">
                   🔍 Analisado
                 </span>
@@ -3151,10 +3151,11 @@ function calculateActivityImpact(reportData: EnhancedReportData): number | strin
     return "N/A";
   }
   
-  const activityDays = reportData.painEvolution.filter((p: any) => 
+  const activityFilter = reportData.painEvolution?.filter((p: any) => 
     p.context?.toLowerCase().includes('atividade') || 
     p.context?.toLowerCase().includes('exercício')
-  ).length || 0;
+  ) || [];
+  const activityDays = activityFilter;
   
   if (activityDays.length === 0) return 0;
   
