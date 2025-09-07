@@ -981,7 +981,7 @@ function generateQuizIntelligentSummarySection(reportData: EnhancedReportData): 
         
         <div class="quiz-summary-grid">
             ${generateMorningNightCard(quizAnalysis, reportData)}
-            ${generateCrisisEpisodesCard(quizAnalysis)}
+            ${generateCrisisEpisodesCard(quizAnalysis, reportData)}
             ${generateMedicationActivitiesCard(quizAnalysis)}
             ${generatePatternsCard(quizAnalysis)}
         </div>
@@ -1486,8 +1486,7 @@ function generateCrisesSection(reportData: EnhancedReportData): string {
         ` : ''}
       </div>
 
-      <!-- Medicamentos de Resgate -->
-      ${medicationsContent}
+      <!-- Medicamentos de Resgate integrados na seção de crises -->
       
       <!-- NOVA SUBSEÇÃO 1: Sumário de Relatos Textuais -->
       ${generateTextualReportsSection(reportData)}
