@@ -376,3 +376,299 @@ export class SleepPainAnalysisService {
     };
   }
 }
+
+/**
+ * Interfaces e tipos para análise de bem-estar expandida
+ */
+export interface FatigueAnalysis {
+  averageLevel: number;
+  trend: 'IMPROVING' | 'WORSENING' | 'STABLE';
+  criticalDays: number;
+  correlation: {
+    withPain: number;
+    description: string;
+  };
+}
+
+export interface TreatmentAnalysis {
+  treatmentFrequency: Array<{
+    treatment: string;
+    count: number;
+    percentage: number;
+  }>;
+  effectiveness: {
+    treatmentDays: number;
+    nonTreatmentDays: number;
+    avgPainOnTreatmentDays: number;
+    avgPainOnNonTreatmentDays: number;
+    improvement: number;
+  };
+  mostEffectiveTreatment: string;
+}
+
+export interface TriggerAnalysis {
+  triggerFrequency: Array<{
+    trigger: string;
+    count: number;
+    percentage: number;
+    avgPainOnTriggerDays: number;
+  }>;
+  highRiskTriggers: string[];
+  patternInsights: string;
+}
+
+/**
+ * Serviço para análise expandida de bem-estar
+ */
+export class WellnessAnalysisService {
+  
+  /**
+   * Analisa dados de fadiga do usuário
+   */
+  static analyzeFatigue(reportData: ReportData): FatigueAnalysis {
+    console.log('😴 Analisando dados de fadiga...');
+    
+    if (!reportData.fatigueData || reportData.fatigueData.length === 0) {
+      return {
+        averageLevel: 0,
+        trend: 'STABLE',
+        criticalDays: 0,
+        correlation: {
+          withPain: 0,
+          description: 'Dados insuficientes para análise de fadiga'
+        }
+      };
+    }
+    
+    const fatigueData = reportData.fatigueData;
+    const averageLevel = fatigueData.reduce((sum: number, entry: any) => sum + entry.level, 0) / fatigueData.length;
+    const criticalDays = fatigueData.filter((entry: any) => entry.level >= 4).length;
+    
+    // Calcular tendência
+    const sortedData = [...fatigueData].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const firstHalf = sortedData.slice(0, Math.floor(sortedData.length / 2));
+    const secondHalf = sortedData.slice(Math.floor(sortedData.length / 2));
+    
+    const firstHalfAvg = firstHalf.reduce((sum: number, entry: any) => sum + entry.level, 0) / firstHalf.length;
+    const secondHalfAvg = secondHalf.reduce((sum: number, entry: any) => sum + entry.level, 0) / secondHalf.length;
+    
+    let trend: 'IMPROVING' | 'WORSENING' | 'STABLE' = 'STABLE';
+    if (secondHalfAvg - firstHalfAvg > 0.5) trend = 'WORSENING';
+    else if (firstHalfAvg - secondHalfAvg > 0.5) trend = 'IMPROVING';
+    
+    // Correlação com dor
+    let correlation = 0;
+    if (reportData.painEvolution && reportData.painEvolution.length > 0) {
+      const painByDate = new Map();
+      reportData.painEvolution.forEach((entry: any) => {
+        const date = entry.date.split('T')[0];
+        painByDate.set(date, entry.level);
+      });
+      
+      const correlationData: Array<{fatigue: number, pain: number}> = [];
+      fatigueData.forEach((entry: any) => {
+        const date = entry.date.split('T')[0];
+        const painLevel = painByDate.get(date);
+        if (painLevel !== undefined) {
+          correlationData.push({ fatigue: entry.level, pain: painLevel });
+        }
+      });
+      
+      if (correlationData.length > 1) {
+        correlation = this.calculateCorrelation(
+          correlationData.map(d => d.fatigue),
+          correlationData.map(d => d.pain)
+        );
+      }
+    }
+    
+    const correlationDescription = correlation > 0.3 
+      ? 'Correlação positiva moderada entre fadiga e dor'
+      : correlation < -0.3
+      ? 'Correlação negativa moderada entre fadiga e dor'
+      : 'Correlação fraca entre fadiga e dor';
+    
+    return {
+      averageLevel: Number(averageLevel.toFixed(1)),
+      trend,
+      criticalDays,
+      correlation: {
+        withPain: Number(correlation.toFixed(2)),
+        description: correlationDescription
+      }
+    };
+  }
+  
+  /**
+   * Analisa atividades terapêuticas e sua efetividade
+   */
+  static analyzeTreatments(reportData: ReportData): TreatmentAnalysis {
+    console.log('🏥 Analisando atividades terapêuticas...');
+    
+    if (!reportData.treatmentActivities || reportData.treatmentActivities.length === 0) {
+      return {
+        treatmentFrequency: [],
+        effectiveness: {
+          treatmentDays: 0,
+          nonTreatmentDays: 0,
+          avgPainOnTreatmentDays: 0,
+          avgPainOnNonTreatmentDays: 0,
+          improvement: 0
+        },
+        mostEffectiveTreatment: 'Nenhum dado disponível'
+      };
+    }
+    
+    const treatments = reportData.treatmentActivities;
+    const totalTreatments = treatments.reduce((sum: number, t: any) => sum + t.frequency, 0);
+    
+    // Frequência de tratamentos
+    const treatmentFrequency = treatments.map((t: any) => ({
+      treatment: t.treatment,
+      count: t.frequency,
+      percentage: Number(((t.frequency / totalTreatments) * 100).toFixed(1))
+    }));
+    
+    // Efetividade dos tratamentos
+    let effectiveness = {
+      treatmentDays: 0,
+      nonTreatmentDays: 0,
+      avgPainOnTreatmentDays: 0,
+      avgPainOnNonTreatmentDays: 0,
+      improvement: 0
+    };
+    
+    if (reportData.painEvolution && reportData.painEvolution.length > 0) {
+      const treatmentDates = new Set();
+      treatments.forEach((t: any) => {
+        t.dates.forEach((date: string) => treatmentDates.add(date));
+      });
+      
+      const painOnTreatmentDays: number[] = [];
+      const painOnNonTreatmentDays: number[] = [];
+      
+      reportData.painEvolution.forEach((entry: any) => {
+        const date = entry.date.split('T')[0];
+        if (treatmentDates.has(date)) {
+          painOnTreatmentDays.push(entry.level);
+        } else {
+          painOnNonTreatmentDays.push(entry.level);
+        }
+      });
+      
+      if (painOnTreatmentDays.length > 0 && painOnNonTreatmentDays.length > 0) {
+        const avgTreatmentPain = painOnTreatmentDays.reduce((sum, pain) => sum + pain, 0) / painOnTreatmentDays.length;
+        const avgNonTreatmentPain = painOnNonTreatmentDays.reduce((sum, pain) => sum + pain, 0) / painOnNonTreatmentDays.length;
+        
+        effectiveness = {
+          treatmentDays: painOnTreatmentDays.length,
+          nonTreatmentDays: painOnNonTreatmentDays.length,
+          avgPainOnTreatmentDays: Number(avgTreatmentPain.toFixed(1)),
+          avgPainOnNonTreatmentDays: Number(avgNonTreatmentPain.toFixed(1)),
+          improvement: Number((avgNonTreatmentPain - avgTreatmentPain).toFixed(1))
+        };
+      }
+    }
+    
+    const mostEffectiveTreatment = treatmentFrequency.length > 0 
+      ? treatmentFrequency[0].treatment 
+      : 'Nenhum dado disponível';
+    
+    return {
+      treatmentFrequency,
+      effectiveness,
+      mostEffectiveTreatment
+    };
+  }
+  
+  /**
+   * Analisa gatilhos identificados pelo usuário
+   */
+  static analyzeTriggers(reportData: ReportData): TriggerAnalysis {
+    console.log('⚠️ Analisando gatilhos identificados...');
+    
+    if (!reportData.triggersData || reportData.triggersData.length === 0) {
+      return {
+        triggerFrequency: [],
+        highRiskTriggers: [],
+        patternInsights: 'Nenhum gatilho identificado no período analisado'
+      };
+    }
+    
+    const triggers = reportData.triggersData;
+    const totalTriggers = triggers.reduce((sum: number, t: any) => sum + t.frequency, 0);
+    
+    // Frequência de gatilhos
+    const triggerFrequency = triggers.map((t: any) => {
+      let avgPainOnTriggerDays = 0;
+      
+      // Calcular dor média nos dias com esse gatilho
+      if (reportData.painEvolution && reportData.painEvolution.length > 0) {
+        const painOnTriggerDays: number[] = [];
+        
+        t.dates.forEach((date: string) => {
+          const painEntry = reportData.painEvolution.find((p: any) => p.date.split('T')[0] === date);
+          if (painEntry) {
+            painOnTriggerDays.push(painEntry.level);
+          }
+        });
+        
+        if (painOnTriggerDays.length > 0) {
+          avgPainOnTriggerDays = painOnTriggerDays.reduce((sum, pain) => sum + pain, 0) / painOnTriggerDays.length;
+        }
+      }
+      
+      return {
+        trigger: t.trigger,
+        count: t.frequency,
+        percentage: Number(((t.frequency / totalTriggers) * 100).toFixed(1)),
+        avgPainOnTriggerDays: Number(avgPainOnTriggerDays.toFixed(1))
+      };
+    });
+    
+    // Identificar gatilhos de alto risco (>= 7 de dor média)
+    const highRiskTriggers = triggerFrequency
+      .filter(t => t.avgPainOnTriggerDays >= 7)
+      .map(t => t.trigger);
+    
+    // Gerar insights de padrões
+    const sortedTriggers = [...triggerFrequency].sort((a, b) => b.count - a.count);
+    const mostFrequentTrigger = sortedTriggers[0]?.trigger || 'Nenhum';
+    const highestPainTrigger = [...triggerFrequency].sort((a, b) => b.avgPainOnTriggerDays - a.avgPainOnTriggerDays)[0]?.trigger || 'Nenhum';
+    
+    let patternInsights = `Gatilho mais frequente: ${mostFrequentTrigger}. `;
+    if (highestPainTrigger !== mostFrequentTrigger) {
+      patternInsights += `Gatilho com maior impacto na dor: ${highestPainTrigger}. `;
+    }
+    if (highRiskTriggers.length > 0) {
+      patternInsights += `Gatilhos críticos identificados: ${highRiskTriggers.join(', ')}.`;
+    } else {
+      patternInsights += 'Nenhum gatilho crítico identificado.';
+    }
+    
+    return {
+      triggerFrequency,
+      highRiskTriggers,
+      patternInsights
+    };
+  }
+  
+  /**
+   * Calcula correlação entre dois arrays de números
+   */
+  private static calculateCorrelation(x: number[], y: number[]): number {
+    if (x.length !== y.length || x.length === 0) return 0;
+    
+    const n = x.length;
+    const sumX = x.reduce((sum, val) => sum + val, 0);
+    const sumY = y.reduce((sum, val) => sum + val, 0);
+    const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
+    const sumX2 = x.reduce((sum, val) => sum + val * val, 0);
+    const sumY2 = y.reduce((sum, val) => sum + val * val, 0);
+    
+    const numerator = n * sumXY - sumX * sumY;
+    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+    
+    return denominator === 0 ? 0 : numerator / denominator;
+  }
+}
