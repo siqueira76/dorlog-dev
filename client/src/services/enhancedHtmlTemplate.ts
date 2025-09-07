@@ -4078,7 +4078,65 @@ function generateMorningNightCard(quizAnalysis: any, reportData?: any): string {
   `;
 }
 
-function generateCrisisEpisodesCard(quizAnalysis: any): string {
+// Função auxiliar para gerar subseção de medicamentos dentro de crises
+function generateMedicationsSubsection(reportData: any): string {
+  if (!reportData.rescueMedications || reportData.rescueMedications.length === 0) {
+    return `
+      <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid #f1f5f9;">
+        <div class="quiz-metric">
+          <div class="quiz-metric-label">💊 Medicamentos Utilizados nas Crises:</div>
+          <div style="font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; font-style: italic;">
+            📝 Nenhum medicamento registrado - registre medicamentos no quiz emergencial para análise
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const totalMedicationsUsed = reportData.rescueMedications.length;
+  const totalUsageEvents = reportData.rescueMedications.reduce((sum: number, med: any) => sum + med.frequency, 0);
+  const topMeds = reportData.rescueMedications
+    .sort((a: any, b: any) => b.frequency - a.frequency)
+    .slice(0, 3);
+
+  return `
+    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid #f1f5f9;">
+      <div class="quiz-metric">
+        <div class="quiz-metric-label">💊 Medicamentos Utilizados nas Crises:</div>
+        
+        <!-- Estatísticas Compactas -->
+        <div style="display: flex; gap: 1rem; margin: 0.75rem 0; flex-wrap: wrap;">
+          <div style="background: #f8fafc; border-radius: 6px; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0;">
+            <span style="font-size: 0.9rem; font-weight: 600; color: #475569;">${totalMedicationsUsed}</span>
+            <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.25rem;">medicamentos</span>
+          </div>
+          <div style="background: #f8fafc; border-radius: 6px; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0;">
+            <span style="font-size: 0.9rem; font-weight: 600; color: #475569;">${totalUsageEvents}</span>
+            <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.25rem;">usos totais</span>
+          </div>
+        </div>
+
+        <!-- Lista de Medicamentos Mais Usados -->
+        <div style="font-size: 0.85rem; color: #475569; margin-top: 0.5rem;">
+          ${topMeds.map((med: any) => {
+            const riskIcon = med.riskLevel === 'high' ? '🔴' : 
+                           med.riskLevel === 'medium' ? '🟡' : '🟢';
+            const categoryIcon = med.category === 'prescribed' ? '📋' : 
+                                med.category === 'otc' ? '🏪' : '❓';
+            return `💊 ${med.medication} ${categoryIcon} (${med.frequency}x) ${riskIcon}`;
+          }).join(' • ')}
+          ${reportData.rescueMedications.length > 3 ? ` • +${reportData.rescueMedications.length - 3} outros` : ''}
+        </div>
+        
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">
+          └ 🟢 Baixo risco • 🟡 Médio risco • 🔴 Alto risco | 📋 Prescrito • 🏪 Sem receita
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function generateCrisisEpisodesCard(quizAnalysis: any, reportData?: any): string {
   const { crisis, totalDays } = quizAnalysis;
   
   if (crisis.frequency === 0) {
@@ -4094,6 +4152,7 @@ function generateCrisisEpisodesCard(quizAnalysis: any): string {
             Parabéns! Continue mantendo o autocuidado
           </div>
         </div>
+        ${reportData ? generateMedicationsSubsection(reportData) : ''}
       </div>
     `;
   }
@@ -4145,6 +4204,8 @@ function generateCrisisEpisodesCard(quizAnalysis: any): string {
           }
         </div>
       </div>
+
+      ${reportData ? generateMedicationsSubsection(reportData) : ''}
       
       <div class="quiz-insight">
         💡 Insight: ${generateRealInsight(crisis)}
