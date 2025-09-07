@@ -3336,7 +3336,8 @@ function processQuizData(reportData: EnhancedReportData): any {
     totalDays,
     emotional: emotionalStatesData,
     evacuation: evacuationData,
-    humor: humorData
+    humor: humorData,
+    painPoints: painPoints
   };
 }
 
@@ -3733,7 +3734,7 @@ function extractRescueMedications(reportData: any): string[] {
 }
 
 function generateMorningNightCard(quizAnalysis: any): string {
-  const { morning, totalDays, evacuation } = quizAnalysis;
+  const { morning, totalDays, evacuation, painPoints } = quizAnalysis;
   
   if (totalDays === 0) {
     return `
@@ -3750,6 +3751,18 @@ function generateMorningNightCard(quizAnalysis: any): string {
   
   // Emoji para saúde digestiva
   const digestiveEmoji = evacuation.healthScore >= 80 ? '✅' : evacuation.healthScore >= 60 ? '⚠️' : '❗';
+  
+  // Função para obter emoji dos pontos de dor
+  const getPainLocationEmoji = (location: string): string => {
+    const locationLower = location.toLowerCase();
+    if (locationLower.includes('cabeça') || locationLower.includes('cabeca')) return '🧠';
+    if (locationLower.includes('cervical') || locationLower.includes('pescoço') || locationLower.includes('pescoco')) return '🦴';
+    if (locationLower.includes('lombar') || locationLower.includes('coluna')) return '🦴';
+    if (locationLower.includes('braços') || locationLower.includes('bracos') || locationLower.includes('ombro')) return '💪';
+    if (locationLower.includes('barriga') || locationLower.includes('abdomen') || locationLower.includes('abdômen')) return '🤰';
+    if (locationLower.includes('pernas') || locationLower.includes('joelho') || locationLower.includes('tornozelo')) return '🦵';
+    return '📍';
+  };
   
   return `
     <div class="quiz-card quiz-card-morning">
@@ -3775,6 +3788,32 @@ function generateMorningNightCard(quizAnalysis: any): string {
         <div style="font-size: 0.8rem; color: #64748b; line-height: 1.4; margin-top: 0.5rem;">
           ${quizAnalysis.emotional.summary}
         </div>
+      </div>
+      
+      <div class="quiz-metric">
+        <div class="quiz-metric-label">📍 Locais de Dor Reportados:</div>
+        ${painPoints && painPoints.length > 0 ? `
+        <div class="quiz-metric-main">
+          ${painPoints.slice(0, 3).map((point: any) => 
+            `${getPainLocationEmoji(point.local)} ${point.local} (${point.occurrences}x)`
+          ).join(' • ')}
+        </div>
+        <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
+          └ Baseado nos relatos noturnos dos últimos ${totalDays} dias
+        </div>
+        ${painPoints.length > 3 ? `
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+          +${painPoints.length - 3} outro(s) local(is) reportado(s)
+        </div>
+        ` : ''}
+        ` : `
+        <div class="quiz-metric-main" style="color: #64748b; font-style: italic;">
+          Dados insuficientes para análise
+        </div>
+        <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
+          └ Continue respondendo aos questionários noturnos
+        </div>
+        `}
       </div>
       
       <div class="quiz-metric">
@@ -3820,16 +3859,22 @@ function generateMorningNightCard(quizAnalysis: any): string {
       </div>
       
       <div class="quiz-insight">
-        💡 Insight: ${evacuation.intervalAnalysis ? 
-          evacuation.intervalAnalysis.longestInterval <= 2 ? 'Excelente regularidade intestinal está contribuindo para seu bem-estar geral' :
-          evacuation.intervalAnalysis.longestInterval <= 4 ? 'Padrão intestinal levemente irregular - considere aumentar hidratação e fibras' :
-          evacuation.intervalAnalysis.longestInterval <= 7 ? 'Constipação moderada detectada - pode estar impactando seu conforto' :
-          'Constipação severa identificada - recomenda-se acompanhamento médico' :
-          evacuation.frequency > 0 ? 
-            evacuation.dailyPattern ? 'Regularidade intestinal excelente está contribuindo para seu bem-estar' :
-            evacuation.maxDaysWithoutEvacuation > 3 ? 'Considere melhorar a regularidade intestinal para reduzir desconforto' :
-            'Padrão intestinal dentro da normalidade' :
-            'Continue registrando dados para análise precisa'}
+        💡 Insight: ${painPoints && painPoints.length > 0 ? 
+          painPoints[0].occurrences > (totalDays * 0.6) ? 
+            `Você relatou dor na região ${painPoints[0].local.toLowerCase()} em ${Math.round((painPoints[0].occurrences / totalDays) * 100)}% dos dias analisados` :
+          painPoints.length > 2 ? 
+            `Dor distribuída entre múltiplas regiões: ${painPoints.slice(0, 2).map((p: any) => p.local).join(' e ')} são as mais frequentes` :
+            `Padrão de dor focado principalmente na região ${painPoints[0].local.toLowerCase()}` :
+          evacuation.intervalAnalysis ? 
+            evacuation.intervalAnalysis.longestInterval <= 2 ? 'Excelente regularidade intestinal está contribuindo para seu bem-estar geral' :
+            evacuation.intervalAnalysis.longestInterval <= 4 ? 'Padrão intestinal levemente irregular - considere aumentar hidratação e fibras' :
+            evacuation.intervalAnalysis.longestInterval <= 7 ? 'Constipação moderada detectada - pode estar impactando seu conforto' :
+            'Constipação severa identificada - recomenda-se acompanhamento médico' :
+            evacuation.frequency > 0 ? 
+              evacuation.dailyPattern ? 'Regularidade intestinal excelente está contribuindo para seu bem-estar' :
+              evacuation.maxDaysWithoutEvacuation > 3 ? 'Considere melhorar a regularidade intestinal para reduzir desconforto' :
+              'Padrão intestinal dentro da normalidade' :
+              'Continue registrando dados para análise precisa'}
       </div>
     </div>
   `;
