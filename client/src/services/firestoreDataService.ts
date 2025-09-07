@@ -486,7 +486,8 @@ function processQuizzesWithSemanticMapping(
               quizType: quiz.tipo
             });
             
-            console.log(`💩 Informação intestinal processada: "${answer}"`);
+            console.log(`💩 Informação intestinal processada: "${answer}" para ${dayKey}`);
+            console.log(`🔍 DEBUG Total de registros intestinais até agora: ${reportData.bowelMovements.length}`);
             break;
             
           case 'symptoms':
@@ -698,8 +699,14 @@ export async function fetchUserReportData(userId: string, periods: string[]): Pr
     // Ordenar evolução da dor por data
     reportData.painEvolution.sort((a, b) => a.date.localeCompare(b.date));
 
-    // Gerar observações
-    reportData.observations = `Relatório baseado em ${reportData.totalDays} dias de registros entre ${periods.length} período(s). `;
+    // Gerar observações (preservar dados existentes dos quizzes)
+    const existingObservations = reportData.observations || '';
+    const baseInfo = `Relatório baseado em ${reportData.totalDays} dias de registros entre ${periods.length} período(s). `;
+    
+    console.log(`🔍 DEBUG Observações ANTES: ${existingObservations.length} caracteres`);
+    console.log(`🔍 DEBUG Tem dados de evacuação: ${existingObservations.includes('Evacuação intestinal')}`);
+    
+    reportData.observations = existingObservations + baseInfo;
     
     if (reportData.crisisEpisodes > 0) {
       reportData.observations += `Foram registrados ${reportData.crisisEpisodes} episódios de crise no período. `;
