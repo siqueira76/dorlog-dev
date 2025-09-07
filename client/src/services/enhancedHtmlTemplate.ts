@@ -3092,28 +3092,23 @@ function getInsufficientDataMessage(field: string): string {
 
 // Funções auxiliares para análise de dados reais
 function analyzeRealTriggers(reportData: EnhancedReportData): Array<{name: string, percentage: number | string}> {
-  if (!reportData.observations) {
-    return [{ name: 'Nenhum gatilho identificado', percentage: 'N/A' }];
+  // Primeiro, tentar usar dados estruturados dos quizzes emergenciais
+  if (reportData.triggersData && Array.isArray(reportData.triggersData) && reportData.triggersData.length > 0) {
+    const totalCrises = reportData.crisisEpisodes || 1;
+    
+    // Processar gatilhos estruturados dos quizzes emergenciais
+    return reportData.triggersData
+      .filter((trigger: any) => trigger.trigger && trigger.frequency > 0)
+      .map((trigger: any) => ({
+        name: trigger.trigger,
+        percentage: totalCrises > 0 ? Math.round((trigger.frequency / totalCrises) * 100) : 0
+      }))
+      .sort((a, b) => (b.percentage as number) - (a.percentage as number))
+      .slice(0, 5); // Limitar aos 5 principais gatilhos
   }
   
-  const triggers = [
-    { name: 'Estresse', keywords: ['estresse', 'stress', 'ansiedade', 'nervoso'] },
-    { name: 'Sono ruim', keywords: ['insônia', 'sono ruim', 'mal dormido', 'cansado'] },
-    { name: 'Mudança climática', keywords: ['chuva', 'frio', 'clima', 'tempo', 'pressão'] }
-  ];
-  
-  const totalCrises = reportData.crisisEpisodes || 1;
-  
-  return triggers.map(trigger => {
-    const occurrences = trigger.keywords.reduce((count, keyword) => 
-      count + (reportData.observations?.toLowerCase().split(keyword).length - 1 || 0), 0
-    );
-    
-    return {
-      name: trigger.name,
-      percentage: totalCrises > 0 ? Math.round((occurrences / totalCrises) * 100) : 0
-    };
-  }).filter(t => t.percentage > 0);
+  // Fallback: se não há dados estruturados, retornar mensagem de dados insuficientes
+  return [{ name: 'Dados insuficientes', percentage: 'N/A' }];
 }
 
 function analyzeRealRiskHours(reportData: EnhancedReportData): Array<{period: string, percentage: number | string}> {
