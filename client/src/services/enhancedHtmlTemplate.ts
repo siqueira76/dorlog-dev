@@ -980,7 +980,7 @@ function generateQuizIntelligentSummarySection(reportData: EnhancedReportData): 
         </div>
         
         <div class="quiz-summary-grid">
-            ${generateMorningNightCard(quizAnalysis)}
+            ${generateMorningNightCard(quizAnalysis, reportData)}
             ${generateCrisisEpisodesCard(quizAnalysis)}
             ${generateMedicationActivitiesCard(quizAnalysis)}
             ${generatePatternsCard(quizAnalysis)}
@@ -3786,20 +3786,37 @@ function extractRescueMedications(reportData: any): string[] {
   return defaultMeds;
 }
 
-function generateMorningNightCard(quizAnalysis: any): string {
+function generateMorningNightCard(quizAnalysis: any, reportData?: any): string {
   const { morning, totalDays, evacuation, painPoints } = quizAnalysis;
   
   if (totalDays === 0) {
     return `
       <div class="quiz-card quiz-card-morning">
         <div class="quiz-card-title">
-          🌅 Suas Manhãs e Noites
+          🌅 Suas Manhãs e Noites - Análise Expandida de Bem-estar
         </div>
         <p style="text-align: center; color: #64748b; font-style: italic;">
           Dados insuficientes para análise
         </p>
       </div>
     `;
+  }
+
+  // Importar as análises expandidas de bem-estar
+  let fatigueAnalysis = null;
+  let treatmentAnalysis = null;
+  let triggerAnalysis = null;
+
+  try {
+    if (reportData) {
+      // Usar as análises do WellnessAnalysisService
+      const { WellnessAnalysisService } = require('./sleepPainAnalysisService');
+      fatigueAnalysis = WellnessAnalysisService.analyzeFatigue(reportData);
+      treatmentAnalysis = WellnessAnalysisService.analyzeTreatments(reportData);
+      triggerAnalysis = WellnessAnalysisService.analyzeTriggers(reportData);
+    }
+  } catch (error) {
+    console.warn('⚠️ Análises expandidas não disponíveis:', error.message);
   }
   
   // Emoji para saúde digestiva
@@ -3820,7 +3837,7 @@ function generateMorningNightCard(quizAnalysis: any): string {
   return `
     <div class="quiz-card quiz-card-morning">
       <div class="quiz-card-title">
-        🌅 Suas Manhãs e Noites
+        🌅 Suas Manhãs e Noites - Análise Expandida de Bem-estar
       </div>
       
       <div class="quiz-metric">
@@ -3960,6 +3977,68 @@ function generateMorningNightCard(quizAnalysis: any): string {
           └ Intensidade média ao final do dia
         </div>
       </div>
+      
+      ${fatigueAnalysis ? `
+      <div class="quiz-metric">
+        <div class="quiz-metric-label">😴 Análise de Fadiga:</div>
+        <div class="quiz-metric-main">
+          ${fatigueAnalysis.averageLevel.toFixed(1)}/5 - Tendência ${
+            fatigueAnalysis.trend === 'IMPROVING' ? '📈 Melhorando' :
+            fatigueAnalysis.trend === 'WORSENING' ? '📉 Piorando' :
+            '➡️ Estável'
+          }
+        </div>
+        <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
+          ${fatigueAnalysis.correlation.description}
+        </div>
+        ${fatigueAnalysis.criticalDays > 0 ? `
+        <div style="font-size: 0.75rem; color: #ef4444; margin-top: 0.3rem; background: #fef2f2; padding: 0.3rem; border-radius: 4px;">
+          ⚠️ ${fatigueAnalysis.criticalDays} dia(s) com fadiga severa (≥4/5)
+        </div>
+        ` : ''}
+      </div>
+      ` : ''}
+      
+      ${treatmentAnalysis && treatmentAnalysis.treatmentFrequency.length > 0 ? `
+      <div class="quiz-metric">
+        <div class="quiz-metric-label">🏥 Atividades Terapêuticas:</div>
+        <div class="quiz-metric-main">
+          ${treatmentAnalysis.treatmentFrequency.slice(0, 2).map(t => 
+            `${t.treatment} (${t.percentage}%)`
+          ).join(' • ')}
+        </div>
+        ${treatmentAnalysis.effectiveness.improvement !== 0 ? `
+        <div style="font-size: 0.8rem; color: ${treatmentAnalysis.effectiveness.improvement > 0 ? '#10b981' : '#ef4444'}; margin-top: 0.5rem;">
+          ${treatmentAnalysis.effectiveness.improvement > 0 ? '✅' : '❌'} Efetividade: 
+          ${Math.abs(treatmentAnalysis.effectiveness.improvement).toFixed(1)} pontos 
+          ${treatmentAnalysis.effectiveness.improvement > 0 ? 'de melhoria' : 'de piora'} na dor
+        </div>
+        ` : ''}
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.3rem;">
+          └ ${treatmentAnalysis.effectiveness.treatmentDays} dia(s) com terapia vs 
+          ${treatmentAnalysis.effectiveness.nonTreatmentDays} dia(s) sem terapia
+        </div>
+      </div>
+      ` : ''}
+      
+      ${triggerAnalysis && triggerAnalysis.triggerFrequency.length > 0 ? `
+      <div class="quiz-metric">
+        <div class="quiz-metric-label">⚠️ Gatilhos Identificados:</div>
+        <div class="quiz-metric-main">
+          ${triggerAnalysis.triggerFrequency.slice(0, 3).map(t => 
+            `${t.trigger} (${t.count}x)`
+          ).join(' • ')}
+        </div>
+        ${triggerAnalysis.highRiskTriggers.length > 0 ? `
+        <div style="font-size: 0.8rem; color: #ef4444; margin-top: 0.5rem; background: #fef2f2; padding: 0.3rem; border-radius: 4px;">
+          🚨 Gatilhos críticos: ${triggerAnalysis.highRiskTriggers.join(', ')}
+        </div>
+        ` : ''}
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; background: #f8fafc; padding: 0.4rem; border-radius: 4px;">
+          💡 ${triggerAnalysis.patternInsights}
+        </div>
+      </div>
+      ` : ''}
       
       <div class="quiz-insight">
         💡 Insight: ${painPoints && painPoints.length > 0 ? 
