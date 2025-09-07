@@ -284,6 +284,12 @@ function getQuestionSemanticType(questionId: string, quizType: string, answer: a
       console.log(`⚠️ AVISO: P2 emergencial como número - pode ser erro nos dados`);
       return 'unknown';
     }
+    
+    // Fadiga como slider numérico (P3 noturno - "Teve fadiga?")
+    if (questionId === '3' && quizType === 'noturno') {
+      return 'fatigue_level';
+    }
+    
     return 'eva_scale'; // Escala de dor EVA
   }
   
@@ -326,6 +332,26 @@ function getQuestionSemanticType(questionId: string, quizType: string, answer: a
     
     if (hasEmotions) {
       return 'emotional_state';
+    }
+    
+    // Detectar terapias específicas (P6 noturno - "Fez alguma terapia hoje?")
+    const therapies = ['Psicólogo', 'Clínica da Dor', 'Fisioterapia', 'Outro', 'Não fiz'];
+    const hasTherapies = answer.some(item => 
+      therapies.some(therapy => item.includes(therapy))
+    );
+    
+    if (hasTherapies) {
+      return 'treatment_activities';
+    }
+    
+    // Detectar gatilhos específicos (P7 noturno - "Identificou algum gatilho?")
+    const triggers = ['Estresse', 'Alimentação', 'Clima', 'Esforço físico', 'Sono ruim', 'Intestino travado', 'Não identifiquei'];
+    const hasTriggers = answer.some(item => 
+      triggers.some(trigger => item.includes(trigger))
+    );
+    
+    if (hasTriggers) {
+      return 'triggers';
     }
     
     return 'multiple_choice';
@@ -502,6 +528,59 @@ function processQuizzesWithSemanticMapping(
             if (!reportData.observations) reportData.observations = '';
             reportData.observations += `[${dayKey}] Atividades: ${(answer as string[]).join(', ')}; `;
             console.log(`🏃 Atividades processadas: ${(answer as string[]).join(', ')}`);
+            break;
+            
+          case 'fatigue_level':
+            // Processar nível de fadiga
+            reportData.fatigueData = reportData.fatigueData || [];
+            reportData.fatigueData.push({
+              date: dayKey,
+              level: answer as number,
+              context: quiz.tipo
+            });
+            console.log(`😴 Nível de fadiga processado: ${answer}/5 (${quiz.tipo})`);
+            break;
+            
+          case 'treatment_activities':
+            // Processar atividades terapêuticas
+            reportData.treatmentActivities = reportData.treatmentActivities || [];
+            (answer as string[]).forEach(treatment => {
+              if (treatment === 'Não fiz') return; // Ignorar resposta negativa
+              
+              const existing = reportData.treatmentActivities.find((t: any) => t.treatment === treatment);
+              if (existing) {
+                existing.frequency++;
+                existing.dates.push(dayKey);
+              } else {
+                reportData.treatmentActivities.push({
+                  treatment,
+                  frequency: 1,
+                  dates: [dayKey]
+                });
+              }
+            });
+            console.log(`🏥 Atividades terapêuticas processadas: ${(answer as string[]).join(', ')}`);
+            break;
+            
+          case 'triggers':
+            // Processar gatilhos identificados
+            reportData.triggersData = reportData.triggersData || [];
+            (answer as string[]).forEach(trigger => {
+              if (trigger === 'Não identifiquei') return; // Ignorar resposta negativa
+              
+              const existing = reportData.triggersData.find((t: any) => t.trigger === trigger);
+              if (existing) {
+                existing.frequency++;
+                existing.dates.push(dayKey);
+              } else {
+                reportData.triggersData.push({
+                  trigger,
+                  frequency: 1,
+                  dates: [dayKey]
+                });
+              }
+            });
+            console.log(`⚠️ Gatilhos processados: ${(answer as string[]).join(', ')}`);
             break;
             
           case 'free_text':
