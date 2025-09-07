@@ -3444,7 +3444,7 @@ function calculateEvacuationIntervals(evacuationMap: Map<string, boolean>) {
   };
 }
 
-// Função para extrair dados de evacuação das observações (CORRIGIDA)
+// Função para extrair dados de evacuação das observações (MELHORADA - v2.0)
 function extractEvacuationData(observations: string) {
   if (!observations) {
     return { 
@@ -3456,7 +3456,9 @@ function extractEvacuationData(observations: string) {
       explanation: 'Continue respondendo para análise mais precisa',
       dailyPattern: false,
       maxDaysWithoutEvacuation: 0,
-      evacuationDays: []
+      evacuationDays: [],
+      intervalAnalysis: null,
+      clinicalRecommendation: 'Continue registrando para análise completa'
     };
   }
   
@@ -3484,7 +3486,9 @@ function extractEvacuationData(observations: string) {
         explanation: 'Continue respondendo para análise mais precisa',
         dailyPattern: false,
         maxDaysWithoutEvacuation: 0,
-        evacuationDays: []
+        evacuationDays: [],
+        intervalAnalysis: null,
+        clinicalRecommendation: 'Continue registrando para análise completa'
       };
     }
   }
@@ -3497,42 +3501,68 @@ function extractEvacuationData(observations: string) {
     console.log(`📅 Evacuação ${date}: ${response}`);
   });
   
-  // Calcular intervalos e padrões
+  // Calcular intervalos e padrões com análise avançada
   const intervals = calculateEvacuationIntervals(evacuationMap);
+  const intervalAnalysis = analyzeDigestiveIntervals(evacuationMap);
   
-  // Determinar status de saúde digestiva
+  // Determinar status de saúde digestiva com base nos intervalos
   let healthScore = 0;
   let humanizedStatus = '';
   let explanation = '';
   let painReduction = 0;
+  let clinicalRecommendation = '';
   
   if (intervals.evacuationDays.length === 0) {
     healthScore = 0;
     humanizedStatus = 'Dados insuficientes';
     explanation = 'Continue respondendo para análise mais precisa';
-  } else if (intervals.dailyPattern) {
-    healthScore = 90;
-    humanizedStatus = 'Excelente - Padrão diário';
-    explanation = `Evacuação diária regular (${intervals.evacuationDays.length}/${intervals.totalDays} dias)`;
-    painReduction = 35;
-  } else if (intervals.maxInterval <= 2) {
-    healthScore = 80;
-    humanizedStatus = 'Bom - Regular';
-    explanation = `Padrão regular com intervalo máximo de ${intervals.maxInterval} dia(s)`;
-    painReduction = 25;
-  } else if (intervals.maxInterval <= 3) {
-    healthScore = 60;
-    humanizedStatus = 'Moderado';
-    explanation = `Intervalo de até ${intervals.maxInterval} dias entre evacuações`;
-    painReduction = 15;
+    clinicalRecommendation = 'Continue registrando para análise completa';
   } else {
-    healthScore = 30;
-    humanizedStatus = 'Precisa de atenção';
-    explanation = `Intervalos longos (até ${intervals.maxInterval} dias) podem afetar bem-estar geral`;
-    painReduction = 5;
+    // Nova lógica baseada no maior intervalo sem evacuação
+    const maxInterval = intervalAnalysis.longestInterval;
+    const avgInterval = intervalAnalysis.averageInterval;
+    const lastEvacuation = intervalAnalysis.daysSinceLastEvacuation;
+    
+    if (maxInterval <= 2 && intervals.dailyPattern) {
+      healthScore = 95;
+      humanizedStatus = 'Funcionamento Normal';
+      explanation = `Intestino funcionando dentro da normalidade. Maior intervalo: ${maxInterval} dia(s)`;
+      clinicalRecommendation = 'Continue mantendo uma boa hidratação e dieta equilibrada';
+      painReduction = 40;
+    } else if (maxInterval <= 2) {
+      healthScore = 85;
+      humanizedStatus = 'Funcionamento Normal';
+      explanation = `Padrão regular. Maior intervalo: ${maxInterval} dia(s), média: ${avgInterval.toFixed(1)} dia(s)`;
+      clinicalRecommendation = 'Excelente regularidade intestinal. Continue os hábitos atuais';
+      painReduction = 35;
+    } else if (maxInterval <= 4) {
+      healthScore = 70;
+      humanizedStatus = 'Leve Irregularidade';
+      explanation = `Irregularidade leve. Maior intervalo: ${maxInterval} dias, média: ${avgInterval.toFixed(1)} dia(s)`;
+      clinicalRecommendation = 'Aumente a ingestão de água e fibras. Monitore padrões alimentares';
+      painReduction = 25;
+    } else if (maxInterval <= 7) {
+      healthScore = 50;
+      humanizedStatus = 'Atenção Necessária';
+      explanation = `Constipação moderada. Maior intervalo: ${maxInterval} dias, média: ${avgInterval.toFixed(1)} dia(s)`;
+      clinicalRecommendation = 'Considere orientação nutricional. Aumente atividade física e hidratação';
+      painReduction = 15;
+    } else {
+      healthScore = 25;
+      humanizedStatus = 'Consulte um Médico';
+      explanation = `Constipação severa. Maior intervalo: ${maxInterval} dias, média: ${avgInterval.toFixed(1)} dia(s)`;
+      clinicalRecommendation = 'Recomenda-se avaliação médica urgente. Constipação prolongada requer atenção profissional';
+      painReduction = 5;
+    }
+    
+    // Adicionar informação sobre situação atual
+    if (lastEvacuation > 0) {
+      explanation += `. Última evacuação: há ${lastEvacuation} dia(s)`;
+    }
   }
   
   console.log(`💩 Saúde digestiva calculada: Score ${healthScore}, Status: ${humanizedStatus}`);
+  console.log(`📊 Intervalos: Maior=${intervalAnalysis.longestInterval}, Média=${intervalAnalysis.averageInterval.toFixed(1)}`);
   
   return {
     frequency: matches.length,
@@ -3543,7 +3573,78 @@ function extractEvacuationData(observations: string) {
     explanation,
     dailyPattern: intervals.dailyPattern,
     maxDaysWithoutEvacuation: intervals.maxInterval,
-    evacuationDays: intervals.evacuationDays
+    evacuationDays: intervals.evacuationDays,
+    intervalAnalysis,
+    clinicalRecommendation
+  };
+}
+
+// Nova função para análise avançada de intervalos digestivos
+function analyzeDigestiveIntervals(evacuationMap: Map<string, boolean>) {
+  const dates = Array.from(evacuationMap.keys()).sort();
+  const evacuationDates = dates.filter(date => evacuationMap.get(date) === true);
+  
+  if (evacuationDates.length === 0) {
+    return {
+      longestInterval: 0,
+      averageInterval: 0,
+      daysSinceLastEvacuation: 0,
+      totalDays: dates.length,
+      evacuationFrequency: 0,
+      intervalPattern: 'unknown'
+    };
+  }
+  
+  // Calcular intervalos entre evacuações consecutivas
+  const intervals = [];
+  let longestInterval = 0;
+  
+  for (let i = 1; i < evacuationDates.length; i++) {
+    const prevDate = new Date(evacuationDates[i-1]);
+    const currDate = new Date(evacuationDates[i]);
+    const daysDiff = Math.ceil((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+    intervals.push(daysDiff);
+    longestInterval = Math.max(longestInterval, daysDiff);
+  }
+  
+  // Calcular dias desde a última evacuação
+  const lastEvacuationDate = new Date(evacuationDates[evacuationDates.length - 1]);
+  const today = new Date();
+  const daysSinceLastEvacuation = Math.ceil((today.getTime() - lastEvacuationDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Se há um gap atual maior que o registrado, considerar esse gap
+  if (daysSinceLastEvacuation > longestInterval) {
+    longestInterval = daysSinceLastEvacuation;
+  }
+  
+  // Calcular média dos intervalos
+  const averageInterval = intervals.length > 0 ? intervals.reduce((a, b) => a + b, 0) / intervals.length : 1;
+  
+  // Determinar padrão de intervalos
+  let intervalPattern = 'unknown';
+  if (longestInterval <= 2) {
+    intervalPattern = 'regular';
+  } else if (longestInterval <= 4) {
+    intervalPattern = 'mild_irregular';
+  } else if (longestInterval <= 7) {
+    intervalPattern = 'moderate_constipation';
+  } else {
+    intervalPattern = 'severe_constipation';
+  }
+  
+  // Frequência de evacuação (porcentagem de dias com evacuação)
+  const evacuationFrequency = (evacuationDates.length / dates.length) * 100;
+  
+  console.log(`📊 Análise digestiva avançada: Maior intervalo=${longestInterval}, Média=${averageInterval.toFixed(1)}, Último=${daysSinceLastEvacuation}`);
+  
+  return {
+    longestInterval,
+    averageInterval,
+    daysSinceLastEvacuation,
+    totalDays: dates.length,
+    evacuationFrequency,
+    intervalPattern,
+    intervals
   };
 }
 
