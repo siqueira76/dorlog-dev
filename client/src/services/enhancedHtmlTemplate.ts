@@ -1404,8 +1404,7 @@ function generateCrisesSection(reportData: EnhancedReportData): string {
     return '😌'; // Sem dor/muito leve
   };
   
-  // Extrair gatilhos mais comuns dos textos livres dos quizzes emergenciais
-  const commonTriggers = ['Estresse', 'Mudança climática', 'Esforço físico', 'Sono inadequado', 'Alimentação'];
+  // Gatilhos serão extraídos dos dados reais estruturados quando disponíveis
   
   if (crisisCount === 0) {
     return `
@@ -1469,12 +1468,10 @@ function generateCrisesSection(reportData: EnhancedReportData): string {
           <span>⚡</span> Principais Gatilhos Identificados
         </h4>
         
-        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-          ${commonTriggers.slice(0, 3).map(trigger => `
-            <span style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 1px solid #fca5a5; border-radius: 20px; padding: 0.5rem 1rem; font-size: 0.85rem; color: #7f1d1d; font-weight: 600;">
-              ${trigger}
-            </span>
-          `).join('')}
+        <div style="padding: 1rem; background: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
+          <p style="font-size: 0.9rem; color: #7f1d1d; margin: 0; font-style: italic;">
+            📊 Os gatilhos principais serão identificados com base nos episódios registrados nos quizzes emergenciais.
+          </p>
         </div>
         
         ${averageCrisisPain > 0 ? `
@@ -3278,7 +3275,7 @@ function processQuizData(reportData: EnhancedReportData): any {
       ? painEvolution.reduce((sum, item) => sum + item.level, 0) / painEvolution.length 
       : 0,
     commonLocations: painPoints.slice(0, 3),
-    triggers: validateDataSufficiency(reportData, 'triggers') ? analyzeRealTriggers(reportData).map(t => t.name) : ['Dados insuficientes'],
+    triggers: analyzeRealTriggers(reportData).map(t => t.name),
     emotionalTriggers: emotionalStatesData.triggers
   };
   
@@ -3306,9 +3303,7 @@ function processQuizData(reportData: EnhancedReportData): any {
   
   // Dados para "Padrões" com correlações reais
   const patternsData = {
-    commonTriggers: validateDataSufficiency(reportData, 'triggers') ? 
-      analyzeRealTriggers(reportData) : 
-      [{ name: getInsufficientDataMessage('triggers'), percentage: "N/A" }],
+    commonTriggers: analyzeRealTriggers(reportData),
     protectiveFactors: validateDataSufficiency(reportData, 'correlations') ? [
       { name: 'Atividade física regular', reduction: calculateActivityImpact(reportData) },
       { name: 'Qualidade do sono boa', reduction: calculateSleepImpact(reportData) },
