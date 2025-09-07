@@ -3046,7 +3046,7 @@ function getEnhancedReportJavaScript(withPassword?: boolean, passwordHash?: stri
 // Função para validar suficiência de dados
 function validateDataSufficiency(reportData: EnhancedReportData, field: string): boolean {
   const minimumRequirements = {
-    'activities': 7,      // 7 dias mínimo para atividades físicas
+    'activities': 1,      // 1 dia mínimo para atividades físicas (corrigido)
     'correlations': 5,    // 5 episódios mínimo para correlações  
     'patterns': 10,       // 10 registros mínimo para padrões
     'insights': 3,        // 3 dias mínimo para insights

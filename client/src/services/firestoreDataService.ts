@@ -314,8 +314,8 @@ function getQuestionSemanticType(questionId: string, quizType: string, answer: a
       return 'symptoms';
     }
     
-    // Verificar se contém atividades
-    const activities = ['Exercícios', 'Trabalho', 'Descanso', 'Socialização', 'Tarefas domésticas'];
+    // Verificar se contém atividades (corrigido para as opções reais do quiz)
+    const activities = ['Exercícios', 'Trabalho', 'Descanso', 'Socialização', 'Tarefas domésticas', 'Caminhada', 'Cuidou da casa', 'Atividade física'];
     const hasActivities = answer.some(item => 
       activities.some(activity => item.includes(activity))
     );
