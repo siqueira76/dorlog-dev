@@ -4108,17 +4108,9 @@ function generateMedicationsSubsection(reportData: any): string {
         <!-- Lista de Medicamentos Mais Usados -->
         <div style="font-size: 0.85rem; color: #475569; margin-top: 0.5rem;">
           ${topMeds.map((med: any) => {
-            const riskIcon = med.riskLevel === 'high' ? '🔴' : 
-                           med.riskLevel === 'medium' ? '🟡' : '🟢';
-            const categoryIcon = med.category === 'prescribed' ? '📋' : 
-                                med.category === 'otc' ? '🏪' : '❓';
-            return `💊 ${med.medication} ${categoryIcon} (${med.frequency}x) ${riskIcon}`;
+            return `💊 ${med.medication} (${med.frequency}x)`;
           }).join(' • ')}
           ${reportData.rescueMedications.length > 3 ? ` • +${reportData.rescueMedications.length - 3} outros` : ''}
-        </div>
-        
-        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">
-          └ 🟢 Baixo risco • 🟡 Médio risco • 🔴 Alto risco | 📋 Prescrito • 🏪 Sem receita
         </div>
       </div>
     </div>
