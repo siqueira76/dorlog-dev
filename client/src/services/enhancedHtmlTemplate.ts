@@ -3778,20 +3778,35 @@ function generateMorningNightCard(quizAnalysis: any): string {
       </div>
       
       <div class="quiz-metric">
-        <div class="quiz-metric-label">Saúde Digestiva:</div>
+        <div class="quiz-metric-label">🏥 Saúde Digestiva:</div>
         <div class="quiz-metric-main">
           ${evacuation.humanizedStatus} ${digestiveEmoji}
         </div>
         <div style="font-size: 0.8rem; color: #64748b; line-height: 1.4; margin-top: 0.5rem;">
           ${evacuation.explanation}
         </div>
-        ${evacuation.frequency > 0 ? `
+        ${evacuation.intervalAnalysis ? `
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem; background: #f8fafc; padding: 0.4rem; border-radius: 4px; border-left: 3px solid ${evacuation.healthScore >= 80 ? '#22c55e' : evacuation.healthScore >= 60 ? '#f59e0b' : '#ef4444'};">
+          <div><strong>📊 Análise de Intervalos:</strong></div>
+          <div>• Maior intervalo: ${evacuation.intervalAnalysis.longestInterval} dia(s)</div>
+          <div>• Intervalo médio: ${evacuation.intervalAnalysis.averageInterval.toFixed(1)} dia(s)</div>
+          ${evacuation.intervalAnalysis.daysSinceLastEvacuation > 0 ? 
+            `<div>• Última evacuação: há ${evacuation.intervalAnalysis.daysSinceLastEvacuation} dia(s)</div>` : ''}
+          <div>• Frequência: ${evacuation.intervalAnalysis.evacuationFrequency.toFixed(1)}% dos dias</div>
+        </div>
+        ` : evacuation.frequency > 0 ? `
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
           └ ${evacuation.dailyPattern ? 'Padrão diário detectado' : 
               evacuation.maxDaysWithoutEvacuation > 0 ? 
               `Máx. ${evacuation.maxDaysWithoutEvacuation} dia(s) sem evacuação` : 
               'Monitoramento iniciado'}
         </div>` : ''}
+        ${evacuation.clinicalRecommendation ? `
+        <div style="font-size: 0.75rem; color: #475569; margin-top: 0.4rem; background: #e2e8f0; padding: 0.4rem; border-radius: 4px;">
+          <div><strong>💡 Recomendação:</strong></div>
+          <div style="font-style: italic;">${evacuation.clinicalRecommendation}</div>
+        </div>
+        ` : ''}
       </div>
       
       <div class="quiz-metric">
@@ -3805,11 +3820,16 @@ function generateMorningNightCard(quizAnalysis: any): string {
       </div>
       
       <div class="quiz-insight">
-        💡 Insight: ${evacuation.frequency > 0 ? 
-          evacuation.dailyPattern ? 'Regularidade intestinal excelente está contribuindo para seu bem-estar' :
-          evacuation.maxDaysWithoutEvacuation > 3 ? 'Considere melhorar a regularidade intestinal para reduzir desconforto' :
-          'Padrão intestinal dentro da normalidade' :
-          'Continue registrando dados para análise precisa'}
+        💡 Insight: ${evacuation.intervalAnalysis ? 
+          evacuation.intervalAnalysis.longestInterval <= 2 ? 'Excelente regularidade intestinal está contribuindo para seu bem-estar geral' :
+          evacuation.intervalAnalysis.longestInterval <= 4 ? 'Padrão intestinal levemente irregular - considere aumentar hidratação e fibras' :
+          evacuation.intervalAnalysis.longestInterval <= 7 ? 'Constipação moderada detectada - pode estar impactando seu conforto' :
+          'Constipação severa identificada - recomenda-se acompanhamento médico' :
+          evacuation.frequency > 0 ? 
+            evacuation.dailyPattern ? 'Regularidade intestinal excelente está contribuindo para seu bem-estar' :
+            evacuation.maxDaysWithoutEvacuation > 3 ? 'Considere melhorar a regularidade intestinal para reduzir desconforto' :
+            'Padrão intestinal dentro da normalidade' :
+            'Continue registrando dados para análise precisa'}
       </div>
     </div>
   `;
