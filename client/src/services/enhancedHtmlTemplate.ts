@@ -3782,7 +3782,7 @@ function generateMorningNightCard(quizAnalysis: any, reportData?: any): string {
     return `
       <div class="quiz-card quiz-card-morning">
         <div class="quiz-card-title">
-          🌅 Suas Manhãs e Noites - Análise Expandida de Bem-estar
+          🌅 Manhãs e Noites
         </div>
         <p style="text-align: center; color: #64748b; font-style: italic;">
           Dados insuficientes para análise
@@ -3826,7 +3826,7 @@ function generateMorningNightCard(quizAnalysis: any, reportData?: any): string {
   return `
     <div class="quiz-card quiz-card-morning">
       <div class="quiz-card-title">
-        🌅 Suas Manhãs e Noites - Análise Expandida de Bem-estar
+        🌅 Manhãs e Noites
       </div>
       
       <div class="quiz-metric">
@@ -4124,7 +4124,7 @@ function generateCrisisEpisodesCard(quizAnalysis: any, reportData?: any): string
     return `
       <div class="quiz-card quiz-card-crisis">
         <div class="quiz-card-title">
-          🚨 Seus Episódios de Crise
+          🚨 Episódios de Crise
         </div>
         <div style="text-align: center; padding: 1rem;">
           <div style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
@@ -4144,7 +4144,7 @@ function generateCrisisEpisodesCard(quizAnalysis: any, reportData?: any): string
   return `
     <div class="quiz-card quiz-card-crisis">
       <div class="quiz-card-title">
-        🚨 Seus Episódios de Crise
+        🚨 Episódios de Crise
       </div>
       
       <div class="quiz-metric">
