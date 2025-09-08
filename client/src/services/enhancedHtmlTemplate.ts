@@ -900,11 +900,6 @@ function getEnhancedReportCSS(): string {
 }
 
 function generateEnhancedHeader(userEmail: string, periodsText: string, reportData: EnhancedReportData): string {
-  const riskLevel = reportData.smartSummary?.riskAssessment?.overall || 'medium';
-  const riskColor = riskLevel === 'critical' ? '🔴' : 
-                   riskLevel === 'high' ? '🟠' : 
-                   riskLevel === 'medium' ? '🟡' : '🟢';
-  
   return `
     <div class="enhanced-header">
         <div class="logo-enhanced">
@@ -917,7 +912,6 @@ function generateEnhancedHeader(userEmail: string, periodsText: string, reportDa
             <span class="badge">📅 ${periodsText}</span>
             <span class="badge">👤 ${userEmail}</span>
             <span class="badge">🧠 IA Ativada</span>
-            <span class="badge">${riskColor} Risco ${riskLevel.toUpperCase()}</span>
         </div>
         
         <div class="header-info">
