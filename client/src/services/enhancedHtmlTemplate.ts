@@ -2404,7 +2404,7 @@ function generateEnhancedMedicationsSection(reportData: EnhancedReportData): str
       <div style="background: white; border-radius: 12px; padding: 1.25rem; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
         <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
           <span style="color: #10b981; font-size: 1.25rem;">💊</span>
-          <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0;">Medicamentos Atuais</h3>
+          <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0;">Medicamentos de uso Contínuo</h3>
         </div>
         
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; text-center;">
@@ -2419,7 +2419,7 @@ function generateEnhancedMedicationsSection(reportData: EnhancedReportData): str
     <div style="background: white; border-radius: 12px; padding: 1.25rem; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
       <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
         <span style="color: #10b981; font-size: 1.25rem;">💊</span>
-        <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0;">Medicamentos Atuais</h3>
+        <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0;">Medicamentos de uso Contínuo</h3>
         <span style="background: #e0f2fe; color: #0277bd; padding: 0.125rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${reportData.medications.length}</span>
       </div>
 
