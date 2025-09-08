@@ -571,41 +571,50 @@ function processQuizzesWithSemanticMapping(
             break;
             
           case 'treatment_activities':
-            // Processar atividades terapêuticas com rastreamento de não-adesão
+            // Processar atividades terapêuticas com validação de exclusividade
             console.log(`🏥 DEBUG: Processando treatment_activities - Answer:`, answer, `Day:`, dayKey);
             reportData.treatmentActivities = reportData.treatmentActivities || [];
             (reportData as any).therapyNonAdherence = (reportData as any).therapyNonAdherence || [];
             
             const hasNonAdherence = (answer as string[]).includes('Não fiz');
             
+            // VALIDAÇÃO CRÍTICA: "Não fiz" deve ser exclusivo
+            if (hasNonAdherence && (answer as string[]).length > 1) {
+              console.warn(`⚠️ INCONSISTÊNCIA: "Não fiz" selecionado junto com outras terapias: ${(answer as string[]).join(', ')}`);
+              // Normalizar: se "Não fiz" foi selecionado, ignorar outras opções
+              answer = ['Não fiz'];
+            }
+            
             if (hasNonAdherence) {
               // Rastrear não-adesão para análises futuras
               (reportData as any).therapyNonAdherence.push({
                 date: dayKey,
                 reason: 'user_declined',
-                quizType: quiz.tipo
+                quizType: quiz.tipo,
+                originalAnswer: answer // Para auditoria
               });
               console.log(`🏥 DEBUG: Registrada não-adesão terapêutica em ${dayKey}`);
+              return; // Não processar mais nada se "Não fiz"
             }
             
             (answer as string[]).forEach(treatment => {
-              if (treatment === 'Não fiz') {
-                console.log(`🏥 DEBUG: Processando resposta negativa: ${treatment}`);
-                return; // Já processado acima
-              }
+              // Normalizar string de terapia
+              const normalizedTreatment = normalizeTreatmentString(treatment);
               
-              const existing = reportData.treatmentActivities.find((t: any) => t.treatment === treatment);
+              const existing = reportData.treatmentActivities.find((t: any) => 
+                normalizeTreatmentString(t.treatment) === normalizedTreatment);
+              
               if (existing) {
                 existing.frequency++;
                 existing.dates.push(dayKey);
-                console.log(`🏥 DEBUG: Incrementando terapia existente: ${treatment}, nova freq: ${existing.frequency}`);
+                console.log(`🏥 DEBUG: Incrementando terapia existente: ${normalizedTreatment}, nova freq: ${existing.frequency}`);
               } else {
                 reportData.treatmentActivities.push({
-                  treatment,
+                  treatment: normalizedTreatment,
                   frequency: 1,
                   dates: [dayKey]
                 });
-                console.log(`🏥 DEBUG: Adicionando nova terapia: ${treatment}`);
+                console.log(`🏥 DEBUG: Adicionando nova terapia: ${normalizedTreatment}`);
               }
             });
             
@@ -946,5 +955,45 @@ export async function fetchUserReportData(userId: string, periods: string[]): Pr
       ]
     };
   }
+}
+
+// Função para normalizar strings de terapia
+function normalizeTreatmentString(treatment: string): string {
+  if (!treatment) return '';
+  
+  const normalized = treatment.toLowerCase().trim();
+  
+  // Mapeamento de normalizações
+  const treatmentMap: { [key: string]: string } = {
+    'psicologo': 'Psicólogo',
+    'psicóloga': 'Psicólogo',
+    'psicoterapia': 'Psicólogo',
+    'psicoterapia individual': 'Psicólogo',
+    'psicologa': 'Psicólogo',
+    'clinica da dor': 'Clínica da Dor',
+    'clinica de dor': 'Clínica da Dor',
+    'clínica da dor': 'Clínica da Dor',
+    'fisio': 'Fisioterapia',
+    'fisioterapia': 'Fisioterapia',
+    'pilates': 'Fisioterapia',
+    'outro': 'Outras Terapias',
+    'outros': 'Outras Terapias',
+    'outras': 'Outras Terapias'
+  };
+  
+  // Buscar por correspondências exatas primeiro
+  if (treatmentMap[normalized]) {
+    return treatmentMap[normalized];
+  }
+  
+  // Buscar por correspondências parciais
+  for (const [key, value] of Object.entries(treatmentMap)) {
+    if (normalized.includes(key)) {
+      return value;
+    }
+  }
+  
+  // Se não encontrou correspondência, manter original mas capitalizado
+  return treatment.charAt(0).toUpperCase() + treatment.slice(1).toLowerCase();
 }
 
