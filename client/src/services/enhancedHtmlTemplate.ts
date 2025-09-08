@@ -2401,32 +2401,29 @@ function generateEnhancedObservationsSection(reportData: EnhancedReportData): st
 function generateEnhancedMedicationsSection(reportData: EnhancedReportData): string {
   if (!reportData.medications || reportData.medications.length === 0) {
     return `
-      <div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; margin-bottom: 2rem;">
-        <h3 style="font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
-          <span style="color: #10b981; font-size: 1.5rem;">💊</span>
-          <span>Medicamentos Atuais</span>
-        </h3>
+      <div style="background: white; border-radius: 12px; padding: 1.25rem; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+          <span style="color: #10b981; font-size: 1.25rem;">💊</span>
+          <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0;">Medicamentos Atuais</h3>
+        </div>
         
-        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #22c55e; border-radius: 12px; padding: 2rem; text-center;">
-          <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: #bbf7d0; border-radius: 50%; margin-bottom: 1rem;">
-            <span style="font-size: 2rem;">💊</span>
-          </div>
-          <h4 style="font-size: 1.1rem; font-weight: 600; color: #166534; margin-bottom: 0.5rem;">Nenhum medicamento cadastrado</h4>
-          <p style="color: #15803d; font-size: 0.9rem; margin: 0;">Cadastre seus medicamentos na seção correspondente do app para visualizar aqui.</p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; text-center;">
+          <div style="color: #64748b; font-size: 0.9rem;">💊 Nenhum medicamento cadastrado</div>
+          <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.25rem;">Cadastre na seção correspondente do app</div>
         </div>
       </div>
     `;
   }
 
   return `
-    <div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; margin-bottom: 2rem;">
-      <h3 style="font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
-        <span style="color: #10b981; font-size: 1.5rem;">💊</span>
-        <span>Medicamentos Atuais</span>
-        <span style="background: #dbeafe; color: #1d4ed8; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">${reportData.medications.length}</span>
-      </h3>
+    <div style="background: white; border-radius: 12px; padding: 1.25rem; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <span style="color: #10b981; font-size: 1.25rem;">💊</span>
+        <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0;">Medicamentos Atuais</h3>
+        <span style="background: #e0f2fe; color: #0277bd; padding: 0.125rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${reportData.medications.length}</span>
+      </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem;">
         ${reportData.medications.map(med => {
           // Validação e limpeza dos dados do medicamento
           const medicationName = med.nome && typeof med.nome === 'string' && med.nome.trim().length > 0 
@@ -2446,39 +2443,30 @@ function generateEnhancedMedicationsSection(reportData: EnhancedReportData): str
             : null;
 
           return `
-            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #86efac; border-radius: 12px; padding: 1.25rem; position: relative; overflow: hidden;">
-              
-              <!-- Header do Medicamento -->
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
-                  <div style="width: 40px; height: 40px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid #22c55e;">
-                    <span style="font-size: 1.25rem;">💊</span>
-                  </div>
-                  <div style="flex: 1; min-width: 0;">
-                    <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #166534; margin-bottom: 0.125rem; word-wrap: break-word;">${medicationName}</h4>
-                    <p style="margin: 0; color: #15803d; font-size: 0.8rem; font-weight: 500;">Medicamento de Uso Contínuo</p>
-                  </div>
-                </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem;">
+              <!-- Header compacto -->
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <span style="color: #10b981; font-size: 1rem;">💊</span>
+                <h4 style="margin: 0; font-size: 0.95rem; font-weight: 600; color: #1e293b; flex: 1; word-wrap: break-word;">${medicationName}</h4>
               </div>
               
-              <!-- Informações de Dosagem -->
-              <div style="background: white; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #bbf7d0;">
-                <div style="margin-bottom: 0.75rem;">
-                  <div style="font-size: 0.8rem; font-weight: 600; color: #166534; margin-bottom: 0.25rem;">📋 Posologia:</div>
-                  <div style="font-size: 0.9rem; color: #374151; font-weight: 500;">${dosage}</div>
+              <!-- Informações compactas -->
+              <div style="space-y: 0.5rem;">
+                <div style="margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Posologia: </span>
+                  <span style="font-size: 0.8rem; color: #374151;">${dosage}</span>
                 </div>
-                <div>
-                  <div style="font-size: 0.8rem; font-weight: 600; color: #166534; margin-bottom: 0.25rem;">⏰ Frequência:</div>
-                  <div style="font-size: 0.9rem; color: #374151; font-weight: 500;">${frequency}</div>
+                <div style="margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Frequência: </span>
+                  <span style="font-size: 0.8rem; color: #374151;">${frequency}</span>
                 </div>
+                ${prescribedBy ? `
+                <div style="margin-bottom: 0;">
+                  <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Médico: </span>
+                  <span style="font-size: 0.8rem; color: #059669; font-weight: 500;">${prescribedBy}</span>
+                </div>
+                ` : ''}
               </div>
-              
-              ${prescribedBy ? `
-              <div style="border-top: 1px solid #bbf7d0; padding-top: 0.75rem;">
-                <div style="font-size: 0.8rem; font-weight: 600; color: #166534; margin-bottom: 0.25rem;">👨‍⚕️ Prescrito por:</div>
-                <div style="font-size: 0.85rem; color: #15803d; font-weight: 600; font-style: italic;">${prescribedBy}</div>
-              </div>
-              ` : ''}
             </div>
           `;
         }).join('')}
@@ -2490,32 +2478,29 @@ function generateEnhancedMedicationsSection(reportData: EnhancedReportData): str
 function generateEnhancedDoctorsSection(reportData: EnhancedReportData): string {
   if (!reportData.doctors || reportData.doctors.length === 0) {
     return `
-      <div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; margin-bottom: 2rem;">
-        <h3 style="font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
-          <span style="color: #3b82f6; font-size: 1.5rem;">👨‍⚕️</span>
-          <span>Equipe Médica</span>
-        </h3>
+      <div style="background: white; border-radius: 12px; padding: 1.25rem; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+          <span style="color: #3b82f6; font-size: 1.25rem;">👨‍⚕️</span>
+          <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0;">Equipe Médica</h3>
+        </div>
         
-        <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 2rem; text-center;">
-          <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: #bfdbfe; border-radius: 50%; margin-bottom: 1rem;">
-            <span style="font-size: 2rem;">👨‍⚕️</span>
-          </div>
-          <h4 style="font-size: 1.1rem; font-weight: 600; color: #1e40af; margin-bottom: 0.5rem;">Nenhum médico cadastrado</h4>
-          <p style="color: #1d4ed8; font-size: 0.9rem; margin: 0;">Cadastre seus médicos na seção correspondente do app para visualizar aqui.</p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; text-center;">
+          <div style="color: #64748b; font-size: 0.9rem;">👨‍⚕️ Nenhum médico cadastrado</div>
+          <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.25rem;">Cadastre na seção correspondente do app</div>
         </div>
       </div>
     `;
   }
 
   return `
-    <div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; margin-bottom: 2rem;">
-      <h3 style="font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
-        <span style="color: #3b82f6; font-size: 1.5rem;">👨‍⚕️</span>
-        <span>Equipe Médica</span>
-        <span style="background: #fef3c7; color: #d97706; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">${reportData.doctors.length}</span>
-      </h3>
+    <div style="background: white; border-radius: 12px; padding: 1.25rem; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <span style="color: #3b82f6; font-size: 1.25rem;">👨‍⚕️</span>
+        <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0;">Equipe Médica</h3>
+        <span style="background: #fef3c7; color: #d97706; padding: 0.125rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${reportData.doctors.length}</span>
+      </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem;">
         ${reportData.doctors.map(doctor => {
           // Validação e limpeza dos dados do médico
           const doctorName = doctor.nome && typeof doctor.nome === 'string' && doctor.nome.trim().length > 0 
@@ -2535,39 +2520,30 @@ function generateEnhancedDoctorsSection(reportData: EnhancedReportData): string 
             : null;
 
           return `
-            <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #60a5fa; border-radius: 12px; padding: 1.25rem; position: relative; overflow: hidden;">
-              
-              <!-- Header do Médico -->
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
-                  <div style="width: 40px; height: 40px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid #3b82f6;">
-                    <span style="font-size: 1.25rem;">👨‍⚕️</span>
-                  </div>
-                  <div style="flex: 1; min-width: 0;">
-                    <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e40af; margin-bottom: 0.125rem; word-wrap: break-word;">${doctorName}</h4>
-                    <p style="margin: 0; color: #1d4ed8; font-size: 0.8rem; font-weight: 500;">Profissional de Saúde</p>
-                  </div>
-                </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem;">
+              <!-- Header compacto -->
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <span style="color: #3b82f6; font-size: 1rem;">👨‍⚕️</span>
+                <h4 style="margin: 0; font-size: 0.95rem; font-weight: 600; color: #1e293b; flex: 1; word-wrap: break-word;">${doctorName}</h4>
               </div>
               
-              <!-- Informações Profissionais -->
-              <div style="background: white; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #bfdbfe;">
-                <div style="margin-bottom: 0.75rem;">
-                  <div style="font-size: 0.8rem; font-weight: 600; color: #1e40af; margin-bottom: 0.25rem;">🏥 Especialidade:</div>
-                  <div style="font-size: 0.9rem; color: #374151; font-weight: 500;">${specialty}</div>
+              <!-- Informações compactas -->
+              <div style="space-y: 0.5rem;">
+                <div style="margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Especialidade: </span>
+                  <span style="font-size: 0.8rem; color: #374151;">${specialty}</span>
                 </div>
-                <div>
-                  <div style="font-size: 0.8rem; font-weight: 600; color: #1e40af; margin-bottom: 0.25rem;">📋 CRM:</div>
-                  <div style="font-size: 0.9rem; color: #374151; font-weight: 500;">${crm}</div>
+                <div style="margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">CRM: </span>
+                  <span style="font-size: 0.8rem; color: #374151;">${crm}</span>
                 </div>
+                ${contact ? `
+                <div style="margin-bottom: 0;">
+                  <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Contato: </span>
+                  <span style="font-size: 0.8rem; color: #0369a1; font-weight: 500;">${contact}</span>
+                </div>
+                ` : ''}
               </div>
-              
-              ${contact ? `
-              <div style="border-top: 1px solid #bfdbfe; padding-top: 0.75rem;">
-                <div style="font-size: 0.8rem; font-weight: 600; color: #1e40af; margin-bottom: 0.25rem;">📞 Contato:</div>
-                <div style="font-size: 0.85rem; color: #1d4ed8; font-weight: 600; font-style: italic;">${contact}</div>
-              </div>
-              ` : ''}
             </div>
           `;
         }).join('')}
