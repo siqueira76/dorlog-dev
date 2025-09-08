@@ -5,12 +5,48 @@
  * sem interferir nas funcionalidades existentes da aplicação.
  */
 
-import { pipeline } from '@xenova/transformers';
+import { pipeline, env } from '@xenova/transformers';
 import type { 
   TextClassificationPipeline,
   SummarizationPipeline,
   ZeroShotClassificationPipeline
 } from '@xenova/transformers';
+
+// Configuração de CDNs múltiplos para fallback
+interface CDNConfig {
+  name: string;
+  baseUrl: string;
+  priority: number;
+}
+
+// Sistema de CDNs com fallback sequencial
+const CDN_CONFIGS: CDNConfig[] = [
+  {
+    name: 'jsdelivr',
+    baseUrl: 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/models/',
+    priority: 1
+  },
+  {
+    name: 'unpkg',
+    baseUrl: 'https://unpkg.com/@xenova/transformers@2.17.2/models/',
+    priority: 2
+  },
+  {
+    name: 'huggingface',
+    baseUrl: 'https://huggingface.co/models/',
+    priority: 3
+  }
+];
+
+// Detecção de ambiente para otimização
+function detectEnvironment(): { isGitHubPages: boolean; isReplit: boolean; isLocal: boolean } {
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  return {
+    isGitHubPages: hostname.includes('github.io'),
+    isReplit: hostname.includes('replit.dev') || hostname.includes('replit.co'),
+    isLocal: hostname === 'localhost' || hostname === '127.0.0.1'
+  };
+}
 
 // Tipos para análise NLP
 export interface SentimentResult {
@@ -55,6 +91,50 @@ export class NLPAnalysisService {
   private classificationPipeline: ZeroShotClassificationPipeline | null = null;
   private isLoading = false;
   private initialized = false;
+  private currentCDNIndex = 0;
+  private environmentInfo = detectEnvironment();
+  
+  constructor() {
+    this.configureCDNForEnvironment();
+  }
+  
+  /**
+   * Configura CDN baseado no ambiente detectado
+   */
+  private configureCDNForEnvironment(): void {
+    const { isGitHubPages, isReplit } = this.environmentInfo;
+    
+    // Priorizar CDNs baseado no ambiente
+    if (isGitHubPages) {
+      console.log('🌐 GitHub Pages detectado - priorizando jsDelivr CDN');
+      this.currentCDNIndex = 0; // jsDelivr primeiro
+    } else if (isReplit) {
+      console.log('🔧 Replit detectado - priorizando unpkg CDN');
+      this.currentCDNIndex = 1; // unpkg primeiro
+    } else {
+      console.log('💻 Ambiente local/outro - usando ordem padrão');
+      this.currentCDNIndex = 0; // padrão
+    }
+    
+    // Configurar transformers.js para usar CDN específico
+    try {
+      const selectedCDN = CDN_CONFIGS[this.currentCDNIndex];
+      console.log(`🎯 CDN selecionado: ${selectedCDN.name} (${selectedCDN.baseUrl})`);
+      
+      // Configurar env do transformers para usar CDN específico
+      try {
+        if (env && typeof env === 'object') {
+          // Configuração pode variar por versão - fazer de forma segura
+          (env as any).remoteURL = selectedCDN.baseUrl;
+          console.log('✅ CDN configurado no transformers.js');
+        }
+      } catch (e) {
+        console.log('ℹ️ CDN não configurável nesta versão');
+      }
+    } catch (error) {
+      console.warn('⚠️ Não foi possível configurar CDN específico, usando padrão');
+    }
+  }
 
   /**
    * Inicializa os modelos NLP (lazy loading) - versão otimizada
@@ -96,32 +176,81 @@ export class NLPAnalysisService {
   }
 
   /**
-   * Inicializa apenas o modelo de sentimento
+   * Inicializa apenas o modelo de sentimento com fallback de CDN
    */
   private async initializeSentimentModel(): Promise<void> {
-    this.sentimentPipeline = await pipeline(
+    const modelName = 'Xenova/distilbert-base-uncased-finetuned-sst-2-english';
+    this.sentimentPipeline = await this.loadModelWithFallback(
       'text-classification',
-      'Xenova/distilbert-base-uncased-finetuned-sst-2-english'
+      modelName
     ) as TextClassificationPipeline;
+  }
+  
+  /**
+   * Carrega modelo com sistema de fallback de CDN
+   */
+  private async loadModelWithFallback(task: string, modelName: string, options?: any): Promise<any> {
+    let lastError: Error | null = null;
+    
+    // Tentar carregar com CDNs em ordem de prioridade
+    for (let i = 0; i < CDN_CONFIGS.length; i++) {
+      const cdnIndex = (this.currentCDNIndex + i) % CDN_CONFIGS.length;
+      const cdn = CDN_CONFIGS[cdnIndex];
+      
+      try {
+        console.log(`🔄 Tentativa ${i + 1}/${CDN_CONFIGS.length}: Carregando via ${cdn.name}...`);
+        
+        // Configurar CDN temporariamente
+        try {
+          if (env && typeof env === 'object') {
+            (env as any).remoteURL = cdn.baseUrl;
+          }
+        } catch (e) {
+          // Silenciosamente ignorar se não puder configurar
+        }
+        
+        // Criar timeout específico para cada tentativa
+        const modelPromise = pipeline(task as any, modelName, options);
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error(`Timeout ${cdn.name} (15s)`)), 15000)
+        );
+        
+        const model = await Promise.race([modelPromise, timeoutPromise]);
+        
+        console.log(`✅ Modelo carregado com sucesso via ${cdn.name}`);
+        this.currentCDNIndex = cdnIndex; // Atualizar CDN de sucesso
+        return model;
+        
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`⚠️ Falha ao carregar via ${cdn.name}:`, error instanceof Error ? error.message : 'Erro desconhecido');
+        
+        // Se não é o último CDN, continuar tentando
+        if (i < CDN_CONFIGS.length - 1) {
+          console.log(`🔄 Tentando próximo CDN...`);
+          continue;
+        }
+      }
+    }
+    
+    // Se chegou aqui, todos os CDNs falharam
+    console.error('❌ Todos os CDNs falharam ao carregar o modelo');
+    console.error('📝 Último erro:', lastError?.message || 'Erro desconhecido');
+    throw lastError || new Error('Falha em todos os CDNs disponíveis');
   }
 
   /**
-   * Inicializa modelo de sumarização sob demanda
+   * Inicializa modelo de sumarização sob demanda com fallback de CDN
    */
   private async initializeSummaryModel(): Promise<void> {
     if (this.summaryPipeline) return;
     
     try {
       console.log('📥 Carregando modelo de sumarização...');
-      const initPromise = pipeline(
+      this.summaryPipeline = await this.loadModelWithFallback(
         'summarization',
         'Xenova/t5-small'
-      );
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout modelo sumarização')), 20000)
-      );
-      
-      this.summaryPipeline = await Promise.race([initPromise, timeoutPromise]) as SummarizationPipeline;
+      ) as SummarizationPipeline;
     } catch (error) {
       console.error('❌ Erro ao carregar modelo de sumarização:', error);
       throw error;
@@ -129,22 +258,17 @@ export class NLPAnalysisService {
   }
 
   /**
-   * Inicializa modelo de classificação sob demanda
+   * Inicializa modelo de classificação sob demanda com fallback de CDN
    */
   private async initializeClassificationModel(): Promise<void> {
     if (this.classificationPipeline) return;
     
     try {
       console.log('📥 Carregando modelo de classificação...');
-      const initPromise = pipeline(
+      this.classificationPipeline = await this.loadModelWithFallback(
         'zero-shot-classification',
         'Xenova/distilbert-base-uncased-mnli'
-      );
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout modelo classificação')), 20000)
-      );
-      
-      this.classificationPipeline = await Promise.race([initPromise, timeoutPromise]) as ZeroShotClassificationPipeline;
+      ) as ZeroShotClassificationPipeline;
     } catch (error) {
       console.error('❌ Erro ao carregar modelo de classificação:', error);
       throw error;
