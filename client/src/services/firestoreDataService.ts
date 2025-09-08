@@ -571,13 +571,27 @@ function processQuizzesWithSemanticMapping(
             break;
             
           case 'treatment_activities':
-            // Processar atividades terapêuticas
+            // Processar atividades terapêuticas com rastreamento de não-adesão
             console.log(`🏥 DEBUG: Processando treatment_activities - Answer:`, answer, `Day:`, dayKey);
             reportData.treatmentActivities = reportData.treatmentActivities || [];
+            (reportData as any).therapyNonAdherence = (reportData as any).therapyNonAdherence || [];
+            
+            const hasNonAdherence = (answer as string[]).includes('Não fiz');
+            
+            if (hasNonAdherence) {
+              // Rastrear não-adesão para análises futuras
+              (reportData as any).therapyNonAdherence.push({
+                date: dayKey,
+                reason: 'user_declined',
+                quizType: quiz.tipo
+              });
+              console.log(`🏥 DEBUG: Registrada não-adesão terapêutica em ${dayKey}`);
+            }
+            
             (answer as string[]).forEach(treatment => {
               if (treatment === 'Não fiz') {
-                console.log(`🏥 DEBUG: Ignorando resposta negativa: ${treatment}`);
-                return; // Ignorar resposta negativa
+                console.log(`🏥 DEBUG: Processando resposta negativa: ${treatment}`);
+                return; // Já processado acima
               }
               
               const existing = reportData.treatmentActivities.find((t: any) => t.treatment === treatment);
@@ -594,8 +608,9 @@ function processQuizzesWithSemanticMapping(
                 console.log(`🏥 DEBUG: Adicionando nova terapia: ${treatment}`);
               }
             });
+            
             console.log(`🏥 Atividades terapêuticas processadas: ${(answer as string[]).join(', ')}`);
-            console.log(`🏥 DEBUG: Total treatmentActivities agora:`, reportData.treatmentActivities?.length || 0);
+            console.log(`🏥 DEBUG: Total treatmentActivities: ${reportData.treatmentActivities?.length || 0}, Não-adesão: ${(reportData as any).therapyNonAdherence?.length || 0}`);
             break;
             
           case 'triggers':

@@ -500,24 +500,37 @@ export class WellnessAnalysisService {
   }
   
   /**
-   * Analisa atividades terapêuticas e sua efetividade
+   * Analisa atividades terapêuticas e sua efetividade com validação de consistência
    */
   static analyzeTreatments(reportData: ReportData): TreatmentAnalysis {
     console.log('🏥 Analisando atividades terapêuticas...');
     
+    // Verificar dados de não-adesão para análise mais completa
+    const nonAdherence = (reportData as any).therapyNonAdherence || [];
+    if (nonAdherence.length > 0) {
+      console.log(`🏥 ANÁLISE: ${nonAdherence.length} dia(s) sem terapia registrados`);
+    }
+    
     if (!reportData.treatmentActivities || reportData.treatmentActivities.length === 0) {
-      return {
+      // Retornar análise mesmo sem dados de terapias ativas
+      const result = {
         treatmentFrequency: [],
         effectiveness: {
           treatmentDays: 0,
-          nonTreatmentDays: 0,
+          nonTreatmentDays: nonAdherence.length,
           avgPainOnTreatmentDays: 0,
           avgPainOnNonTreatmentDays: 0,
           improvement: 0
         },
-        mostEffectiveTreatment: 'Nenhum dado disponível'
+        mostEffectiveTreatment: nonAdherence.length > 0 ? 'Sem terapias realizadas' : 'Nenhum dado disponível'
       };
+      
+      console.log(`🏥 RESULTADO: Sem terapias ativas, ${nonAdherence.length} dia(s) de não-adesão`);
+      return result;
     }
+    
+    // Validação de consistência - detectar usuários com muitas terapias diferentes
+    this.validateTherapyConsistency(reportData.treatmentActivities);
     
     const treatments = reportData.treatmentActivities;
     const totalTreatments = treatments.reduce((sum: number, t: any) => sum + t.frequency, 0);
@@ -670,5 +683,33 @@ export class WellnessAnalysisService {
     const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
     
     return denominator === 0 ? 0 : numerator / denominator;
+  }
+  
+  /**
+   * Valida consistência de dados de terapias
+   */
+  private static validateTherapyConsistency(treatmentData: any[]): void {
+    const uniqueTherapies = new Set(treatmentData.map(t => t.treatment));
+    
+    if (uniqueTherapies.size > 4) {
+      console.warn(`⚠️ VALIDAÇÃO: Usuário reporta ${uniqueTherapies.size} terapias diferentes - revisar dados`);
+      console.warn(`🏥 TERAPIAS: ${Array.from(uniqueTherapies).join(', ')}`);
+    }
+    
+    // Verificar frequências muito altas (possível erro de dados)
+    const highFrequencyTherapies = treatmentData.filter(t => t.frequency > 15);
+    if (highFrequencyTherapies.length > 0) {
+      console.warn(`⚠️ VALIDAÇÃO: Terapias com frequência muito alta detectadas`);
+      highFrequencyTherapies.forEach(t => {
+        console.warn(`🏥 ALTA FREQ: ${t.treatment} reportado ${t.frequency} vezes`);
+      });
+    }
+    
+    // Verificar consistência temporal
+    treatmentData.forEach(therapy => {
+      if (therapy.dates && therapy.dates.length !== therapy.frequency) {
+        console.warn(`⚠️ VALIDAÇÃO: Inconsistência temporal em ${therapy.treatment}: ${therapy.frequency} freq vs ${therapy.dates.length} datas`);
+      }
+    });
   }
 }

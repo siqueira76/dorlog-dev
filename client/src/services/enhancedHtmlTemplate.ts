@@ -3050,7 +3050,7 @@ function validateDataSufficiency(reportData: EnhancedReportData, field: string):
     'correlations': 5,    // 5 episódios mínimo para correlações  
     'patterns': 10,       // 10 registros mínimo para padrões
     'insights': 3,        // 3 dias mínimo para insights
-    'therapies': 2,       // 2 dias mínimo para adesão a terapias (corrigido para permitir análise precoce)
+    'therapies': 3,       // 3 registros mínimo para análise confiável de terapias
     'triggers': 3         // 3 crises mínimo para análise de gatilhos
   };
   
@@ -3083,7 +3083,7 @@ function getInsufficientDataMessage(field: string): string {
     'correlations': 'Registre mais episódios para análise de correlações',
     'patterns': 'Mais registros necessários para identificar padrões',
     'insights': 'Continue respondendo questionários para insights',
-    'therapies': 'Dados insuficientes - registre terapias nos questionários diários',
+    'therapies': 'Continue registrando terapias nos questionários noturnos (mín. 3 registros)',
     'triggers': 'Mais episódios necessários para análise de gatilhos'
   };
   
@@ -4039,12 +4039,13 @@ function generateMorningNightCard(quizAnalysis: any, reportData?: any): string {
       </div>
       ` : ''}
       
-      ${treatmentAnalysis && treatmentAnalysis.treatmentFrequency.length > 0 ? `
+      <!-- Seção de Terapias Realizadas com Fallback Inteligente -->
       <div class="quiz-metric">
-        <div class="quiz-metric-label">Terapias Realizadas:</div>
+        <div class="quiz-metric-label">🧘 Terapias Realizadas:</div>
+        ${treatmentAnalysis && treatmentAnalysis.treatmentFrequency.length > 0 ? `
         <div class="quiz-metric-main">
           ${treatmentAnalysis.treatmentFrequency.slice(0, 2).map(t => 
-            `${t.treatment} (${t.percentage}%)`
+            `🧘 ${t.treatment} (${t.percentage}%)`
           ).join(' • ')}
         </div>
         ${treatmentAnalysis.effectiveness.improvement !== 0 ? `
@@ -4058,8 +4059,19 @@ function generateMorningNightCard(quizAnalysis: any, reportData?: any): string {
           └ ${treatmentAnalysis.effectiveness.treatmentDays} dia(s) com terapia vs 
           ${treatmentAnalysis.effectiveness.nonTreatmentDays} dia(s) sem terapia
         </div>
+        ` : `
+        <div style="color: #64748b; font-style: italic; margin-top: 0.25rem;">
+          📊 Ainda coletando dados de terapias
+        </div>
+        <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
+          └ Continue respondendo os questionários noturnos (Pergunta 6)
+        </div>
+        <div style="font-size: 0.75rem; color: #475569; margin-top: 0.4rem; background: #f8fafc; padding: 0.4rem; border-radius: 4px; border-left: 3px solid #6366f1;">
+          <div><strong>💡 Dica:</strong></div>
+          <div>No quiz noturno, responda "Fez alguma terapia hoje?" para gerar análises de efetividade</div>
+        </div>
+        `}
       </div>
-      ` : ''}
       
       ${triggerAnalysis && triggerAnalysis.triggerFrequency.length > 0 ? `
       <div class="quiz-metric">
