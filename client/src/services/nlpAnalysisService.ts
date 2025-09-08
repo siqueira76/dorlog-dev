@@ -12,31 +12,14 @@ import type {
   ZeroShotClassificationPipeline
 } from '@xenova/transformers';
 
-// Configuração de CDNs múltiplos para fallback
-interface CDNConfig {
+// Detecção de compatibilidade para GitHub Pages
+interface EnvironmentConfig {
   name: string;
-  baseUrl: string;
-  priority: number;
+  allowRemoteModels: boolean;
+  allowLocalModels: boolean;
+  useBrowserCache: boolean;
+  useWebGPU?: boolean;
 }
-
-// Sistema de CDNs com fallback sequencial
-const CDN_CONFIGS: CDNConfig[] = [
-  {
-    name: 'jsdelivr',
-    baseUrl: 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/models/',
-    priority: 1
-  },
-  {
-    name: 'unpkg',
-    baseUrl: 'https://unpkg.com/@xenova/transformers@2.17.2/models/',
-    priority: 2
-  },
-  {
-    name: 'huggingface',
-    baseUrl: 'https://huggingface.co/models/',
-    priority: 3
-  }
-];
 
 // Detecção de ambiente para otimização
 function detectEnvironment(): { isGitHubPages: boolean; isReplit: boolean; isLocal: boolean } {
@@ -46,6 +29,35 @@ function detectEnvironment(): { isGitHubPages: boolean; isReplit: boolean; isLoc
     isReplit: hostname.includes('replit.dev') || hostname.includes('replit.co'),
     isLocal: hostname === 'localhost' || hostname === '127.0.0.1'
   };
+}
+
+// Configurações otimizadas por ambiente
+function getEnvironmentConfig(envInfo: { isGitHubPages: boolean; isReplit: boolean; isLocal: boolean }): EnvironmentConfig {
+  if (envInfo.isGitHubPages) {
+    return {
+      name: 'GitHub Pages',
+      allowRemoteModels: true,  // Usar Hugging Face Hub (padrão)
+      allowLocalModels: false,  // Não precisamos de modelos locais
+      useBrowserCache: true,    // Cache otimizado para PWA
+      useWebGPU: true          // Performance máxima
+    };
+  } else if (envInfo.isReplit) {
+    return {
+      name: 'Replit',
+      allowRemoteModels: true,  // Usar Hugging Face Hub
+      allowLocalModels: false,  // Evitar problemas de filesystem
+      useBrowserCache: false,   // Cache pode causar problemas no dev
+      useWebGPU: false         // Compatibilidade primeiro
+    };
+  } else {
+    return {
+      name: 'Local/Outros',
+      allowRemoteModels: true,
+      allowLocalModels: false,
+      useBrowserCache: true,
+      useWebGPU: true
+    };
+  }
 }
 
 // Tipos para análise NLP
@@ -91,48 +103,44 @@ export class NLPAnalysisService {
   private classificationPipeline: ZeroShotClassificationPipeline | null = null;
   private isLoading = false;
   private initialized = false;
-  private currentCDNIndex = 0;
   private environmentInfo = detectEnvironment();
+  private environmentConfig: EnvironmentConfig;
   
   constructor() {
-    this.configureCDNForEnvironment();
+    this.environmentConfig = getEnvironmentConfig(this.environmentInfo);
+    this.configureEnvironment();
   }
   
   /**
-   * Configura CDN baseado no ambiente detectado
+   * Configura ambiente baseado na detecção (GitHub Pages, Replit, etc.)
    */
-  private configureCDNForEnvironment(): void {
-    const { isGitHubPages, isReplit } = this.environmentInfo;
+  private configureEnvironment(): void {
+    const config = this.environmentConfig;
     
-    // Priorizar CDNs baseado no ambiente
-    if (isGitHubPages) {
-      console.log('🌐 GitHub Pages detectado - priorizando jsDelivr CDN');
-      this.currentCDNIndex = 0; // jsDelivr primeiro
-    } else if (isReplit) {
-      console.log('🔧 Replit detectado - priorizando unpkg CDN');
-      this.currentCDNIndex = 1; // unpkg primeiro
-    } else {
-      console.log('💻 Ambiente local/outro - usando ordem padrão');
-      this.currentCDNIndex = 0; // padrão
-    }
+    console.log(`🌍 Ambiente detectado: ${config.name}`);
+    console.log('🎯 Configuração otimizada:', {
+      allowRemoteModels: config.allowRemoteModels,
+      allowLocalModels: config.allowLocalModels,
+      useBrowserCache: config.useBrowserCache
+    });
     
-    // Configurar transformers.js para usar CDN específico
     try {
-      const selectedCDN = CDN_CONFIGS[this.currentCDNIndex];
-      console.log(`🎯 CDN selecionado: ${selectedCDN.name} (${selectedCDN.baseUrl})`);
-      
-      // Configurar env do transformers para usar CDN específico
-      try {
-        if (env && typeof env === 'object') {
-          // Configuração pode variar por versão - fazer de forma segura
-          (env as any).remoteURL = selectedCDN.baseUrl;
-          console.log('✅ CDN configurado no transformers.js');
+      // Configurar transformers.js com configurações corretas
+      if (env && typeof env === 'object') {
+        (env as any).allowRemoteModels = config.allowRemoteModels;
+        (env as any).allowLocalModels = config.allowLocalModels;
+        (env as any).useBrowserCache = config.useBrowserCache;
+        
+        // GitHub Pages específico - não configurar remoteHost (usar padrão HF Hub)
+        if (this.environmentInfo.isGitHubPages) {
+          console.log('🚀 GitHub Pages: Usando Hugging Face Hub (padrão)');
+          // Não configurar remoteHost - deixar padrão
         }
-      } catch (e) {
-        console.log('ℹ️ CDN não configurável nesta versão');
+        
+        console.log('✅ Transformers.js configurado para', config.name);
       }
     } catch (error) {
-      console.warn('⚠️ Não foi possível configurar CDN específico, usando padrão');
+      console.warn('⚠️ Configuração de ambiente limitada, usando padrões');
     }
   }
 
@@ -176,78 +184,60 @@ export class NLPAnalysisService {
   }
 
   /**
-   * Inicializa apenas o modelo de sentimento com fallback de CDN
+   * Inicializa apenas o modelo de sentimento
    */
   private async initializeSentimentModel(): Promise<void> {
     const modelName = 'Xenova/distilbert-base-uncased-finetuned-sst-2-english';
-    this.sentimentPipeline = await this.loadModelWithFallback(
+    this.sentimentPipeline = await this.loadModelWithOptimization(
       'text-classification',
       modelName
     ) as TextClassificationPipeline;
   }
   
   /**
-   * Carrega modelo com sistema de fallback de CDN
+   * Carrega modelo usando configuração padrão (Hugging Face Hub)
    */
-  private async loadModelWithFallback(task: string, modelName: string, options?: any): Promise<any> {
-    let lastError: Error | null = null;
+  private async loadModelWithOptimization(task: string, modelName: string, options?: any): Promise<any> {
+    const config = this.environmentConfig;
+    const timeout = config.name === 'GitHub Pages' ? 30000 : 20000; // Mais tempo para GitHub Pages
     
-    // Tentar carregar com CDNs em ordem de prioridade
-    for (let i = 0; i < CDN_CONFIGS.length; i++) {
-      const cdnIndex = (this.currentCDNIndex + i) % CDN_CONFIGS.length;
-      const cdn = CDN_CONFIGS[cdnIndex];
+    console.log(`📥 Carregando modelo ${modelName} via Hugging Face Hub...`);
+    
+    try {
+      // Usar configuração padrão - não sobrescrever URLs
+      const modelPromise = pipeline(task as any, modelName, {
+        ...options,
+        // Para GitHub Pages, otimizar configurações
+        ...(this.environmentInfo.isGitHubPages && {
+          device: config.useWebGPU ? 'webgpu' : 'cpu',
+          dtype: 'fp32' // Compatibilidade máxima
+        })
+      });
       
-      try {
-        console.log(`🔄 Tentativa ${i + 1}/${CDN_CONFIGS.length}: Carregando via ${cdn.name}...`);
-        
-        // Configurar CDN temporariamente
-        try {
-          if (env && typeof env === 'object') {
-            (env as any).remoteURL = cdn.baseUrl;
-          }
-        } catch (e) {
-          // Silenciosamente ignorar se não puder configurar
-        }
-        
-        // Criar timeout específico para cada tentativa
-        const modelPromise = pipeline(task as any, modelName, options);
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error(`Timeout ${cdn.name} (15s)`)), 15000)
-        );
-        
-        const model = await Promise.race([modelPromise, timeoutPromise]);
-        
-        console.log(`✅ Modelo carregado com sucesso via ${cdn.name}`);
-        this.currentCDNIndex = cdnIndex; // Atualizar CDN de sucesso
-        return model;
-        
-      } catch (error) {
-        lastError = error as Error;
-        console.warn(`⚠️ Falha ao carregar via ${cdn.name}:`, error instanceof Error ? error.message : 'Erro desconhecido');
-        
-        // Se não é o último CDN, continuar tentando
-        if (i < CDN_CONFIGS.length - 1) {
-          console.log(`🔄 Tentando próximo CDN...`);
-          continue;
-        }
-      }
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error(`Timeout carregamento (${timeout/1000}s)`)), timeout)
+      );
+      
+      const model = await Promise.race([modelPromise, timeoutPromise]);
+      
+      console.log(`✅ Modelo ${modelName} carregado com sucesso`);
+      return model;
+      
+    } catch (error) {
+      console.error(`❌ Erro ao carregar modelo ${modelName}:`, error instanceof Error ? error.message : 'Erro desconhecido');
+      throw error;
     }
-    
-    // Se chegou aqui, todos os CDNs falharam
-    console.error('❌ Todos os CDNs falharam ao carregar o modelo');
-    console.error('📝 Último erro:', lastError?.message || 'Erro desconhecido');
-    throw lastError || new Error('Falha em todos os CDNs disponíveis');
   }
 
   /**
-   * Inicializa modelo de sumarização sob demanda com fallback de CDN
+   * Inicializa modelo de sumarização sob demanda
    */
   private async initializeSummaryModel(): Promise<void> {
     if (this.summaryPipeline) return;
     
     try {
       console.log('📥 Carregando modelo de sumarização...');
-      this.summaryPipeline = await this.loadModelWithFallback(
+      this.summaryPipeline = await this.loadModelWithOptimization(
         'summarization',
         'Xenova/t5-small'
       ) as SummarizationPipeline;
@@ -258,14 +248,14 @@ export class NLPAnalysisService {
   }
 
   /**
-   * Inicializa modelo de classificação sob demanda com fallback de CDN
+   * Inicializa modelo de classificação sob demanda
    */
   private async initializeClassificationModel(): Promise<void> {
     if (this.classificationPipeline) return;
     
     try {
       console.log('📥 Carregando modelo de classificação...');
-      this.classificationPipeline = await this.loadModelWithFallback(
+      this.classificationPipeline = await this.loadModelWithOptimization(
         'zero-shot-classification',
         'Xenova/distilbert-base-uncased-mnli'
       ) as ZeroShotClassificationPipeline;
@@ -665,40 +655,53 @@ export class NLPAnalysisService {
   }
 
   /**
-   * Retorna status detalhado dos modelos com informações de CDN
+   * Retorna status detalhado dos modelos com informações de ambiente
    */
   getModelStatus(): { 
     sentiment: boolean; 
     summary: boolean; 
     classification: boolean; 
     fallbackMode: boolean;
-    currentCDN: string;
+    remoteSource: string;
     environment: string;
-    cdnHealth: { name: string; working: boolean }[];
+    configuration: EnvironmentConfig;
   } {
-    const { isGitHubPages, isReplit, isLocal } = this.environmentInfo;
-    const environment = isGitHubPages ? 'GitHub Pages' : isReplit ? 'Replit' : isLocal ? 'Local' : 'Outro';
-    
     return {
       sentiment: !!this.sentimentPipeline,
       summary: !!this.summaryPipeline,
       classification: !!this.classificationPipeline,
       fallbackMode: !this.initialized,
-      currentCDN: CDN_CONFIGS[this.currentCDNIndex]?.name || 'N/A',
-      environment,
-      cdnHealth: this.getCDNHealthStatus()
+      remoteSource: 'Hugging Face Hub',
+      environment: this.environmentConfig.name,
+      configuration: this.environmentConfig
     };
   }
   
   /**
-   * Verifica saúde dos CDNs disponíveis
+   * Verifica conectividade com Hugging Face Hub
    */
-  private getCDNHealthStatus(): { name: string; working: boolean }[] {
-    // Esta seria uma verificação mais complexa em produção
-    return CDN_CONFIGS.map(cdn => ({
-      name: cdn.name,
-      working: true // Por enquanto, assume que todos estão funcionais
-    }));
+  private async checkRemoteConnectivity(): Promise<{ source: string; available: boolean; responseTime: number }> {
+    const startTime = Date.now();
+    try {
+      // Teste simples de conectividade com HF Hub
+      const testUrl = 'https://huggingface.co/api/models/Xenova/distilbert-base-uncased-finetuned-sst-2-english';
+      const response = await fetch(testUrl, { 
+        method: 'HEAD', 
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      return {
+        source: 'Hugging Face Hub',
+        available: response.ok,
+        responseTime: Date.now() - startTime
+      };
+    } catch (error) {
+      return {
+        source: 'Hugging Face Hub',
+        available: false,
+        responseTime: Date.now() - startTime
+      };
+    }
   }
   
   /**
@@ -707,12 +710,13 @@ export class NLPAnalysisService {
   async getDiagnosticInfo(): Promise<{
     status: string;
     models: { sentiment: boolean; summary: boolean; classification: boolean };
-    cdn: { current: string; available: string[]; priority: number };
-    environment: { type: string; hostname: string };
+    remote: { source: string; connectivity: boolean; responseTime: number };
+    environment: { type: string; hostname: string; config: EnvironmentConfig };
     performance: { initTime: number | null; lastError: string | null };
     recommendations: string[];
   }> {
     const modelStatus = this.getModelStatus();
+    const connectivity = await this.checkRemoteConnectivity();
     const recommendations: string[] = [];
     
     // Gerar recomendações baseadas no status
@@ -720,13 +724,17 @@ export class NLPAnalysisService {
       recommendations.push('Modelos IA indisponíveis - usando análise baseada em regras');
     }
     
-    if (!modelStatus.sentiment && !modelStatus.summary && !modelStatus.classification) {
-      recommendations.push('Verificar conectividade de rede');
+    if (!connectivity.available) {
+      recommendations.push('Verificar conectividade com Hugging Face Hub');
       recommendations.push('Tentar recarregar a página');
     }
     
-    if (modelStatus.environment === 'Replit' && modelStatus.currentCDN === 'huggingface') {
-      recommendations.push('Considerar usar jsDelivr CDN para melhor performance');
+    if (modelStatus.environment === 'Replit') {
+      recommendations.push('Para produção, considere deploy no GitHub Pages para melhor performance');
+    }
+    
+    if (modelStatus.environment === 'GitHub Pages' && !connectivity.available) {
+      recommendations.push('Verificar CORS e conectividade externa');
     }
     
     return {
@@ -736,86 +744,75 @@ export class NLPAnalysisService {
         summary: modelStatus.summary,
         classification: modelStatus.classification
       },
-      cdn: {
-        current: modelStatus.currentCDN,
-        available: CDN_CONFIGS.map(c => c.name),
-        priority: this.currentCDNIndex
+      remote: {
+        source: connectivity.source,
+        connectivity: connectivity.available,
+        responseTime: connectivity.responseTime
       },
       environment: {
         type: modelStatus.environment,
-        hostname: typeof window !== 'undefined' ? window.location.hostname : 'N/A'
+        hostname: typeof window !== 'undefined' ? window.location.hostname : 'N/A',
+        config: this.environmentConfig
       },
       performance: {
-        initTime: null, // Pode ser implementado com timestamp
-        lastError: null // Pode armazenar último erro
+        initTime: null,
+        lastError: null
       },
       recommendations
     };
   }
 
   /**
-   * Força reinicialização com CDN específico
+   * Força reinicialização com limpeza de cache
    */
-  async reinitializeWithCDN(cdnName: string): Promise<boolean> {
-    const cdnIndex = CDN_CONFIGS.findIndex(cdn => cdn.name === cdnName);
-    if (cdnIndex === -1) {
-      console.error(`❌ CDN '${cdnName}' não encontrado`);
-      return false;
-    }
-    
-    console.log(`🔄 Reinicializando com CDN: ${cdnName}`);
+  async reinitializeWithCacheClear(): Promise<boolean> {
+    console.log('🔄 Reinicializando com limpeza de cache...');
     
     // Limpar modelos atuais
     this.dispose();
     
-    // Definir novo CDN como preferência
-    this.currentCDNIndex = cdnIndex;
+    // Limpar cache do browser se possível
+    try {
+      if (typeof window !== 'undefined' && 'caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        console.log('🗑️ Cache do browser limpo');
+      }
+    } catch (error) {
+      console.warn('⚠️ Não foi possível limpar cache do browser');
+    }
     
-    // Reconfigurar CDN
-    this.configureCDNForEnvironment();
+    // Reconfigurar ambiente
+    this.configureEnvironment();
     
     // Tentar reinicializar
     try {
       await this.initialize();
       return this.isReady();
     } catch (error) {
-      console.error(`❌ Falha ao reinicializar com ${cdnName}:`, error);
+      console.error('❌ Falha ao reinicializar:', error);
       return false;
     }
   }
   
   /**
-   * Testa conectividade com todos os CDNs
+   * Testa conectividade com Hugging Face Hub
    */
-  async testCDNConnectivity(): Promise<{ name: string; available: boolean; responseTime: number }[]> {
-    const results = [];
+  async testRemoteConnectivity(): Promise<{ source: string; available: boolean; responseTime: number; details: string }> {
+    console.log('📋 Testando conectividade com Hugging Face Hub...');
     
-    for (const cdn of CDN_CONFIGS) {
-      const startTime = Date.now();
-      try {
-        // Teste simples de conectividade
-        const testUrl = `${cdn.baseUrl.replace('/models/', '')}/models.json`;
-        const response = await fetch(testUrl, { 
-          method: 'HEAD', 
-          timeout: 5000 
-        } as any);
-        
-        results.push({
-          name: cdn.name,
-          available: response.ok,
-          responseTime: Date.now() - startTime
-        });
-      } catch (error) {
-        results.push({
-          name: cdn.name,
-          available: false,
-          responseTime: Date.now() - startTime
-        });
-      }
-    }
+    const result = await this.checkRemoteConnectivity();
     
-    console.log('📋 Teste de conectividade CDN:', results);
-    return results;
+    const details = result.available 
+      ? `Conectividade OK (${result.responseTime}ms)`
+      : `Falha na conectividade (${result.responseTime}ms)`;
+    
+    console.log('📋 Resultado do teste:', { ...result, details });
+    
+    return {
+      ...result,
+      details
+    };
   }
   
   /**
