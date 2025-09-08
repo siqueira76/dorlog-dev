@@ -4041,7 +4041,7 @@ function generateMorningNightCard(quizAnalysis: any, reportData?: any): string {
       
       ${treatmentAnalysis && treatmentAnalysis.treatmentFrequency.length > 0 ? `
       <div class="quiz-metric">
-        <div class="quiz-metric-label">🏥 Atividades Terapêuticas:</div>
+        <div class="quiz-metric-label">Terapias Realizadas:</div>
         <div class="quiz-metric-main">
           ${treatmentAnalysis.treatmentFrequency.slice(0, 2).map(t => 
             `${t.treatment} (${t.percentage}%)`
@@ -4332,20 +4332,6 @@ function generateMedicationActivitiesCard(quizAnalysis: any): string {
         </div>
       </div>
       
-      <div class="quiz-metric">
-        <div class="quiz-metric-label">Terapias Realizadas:</div>
-        <div style="font-size: 0.85rem; color: #475569; margin-top: 0.25rem;">
-          ${medication.therapies.length > 0 && medication.therapies[0] !== getInsufficientDataMessage('therapies')
-            ? medication.therapies.map((therapy: string) => 
-                `🧘 ${therapy}`
-              ).join(' • ')
-            : '⚠️ ' + getInsufficientDataMessage('therapies')
-          }
-        </div>
-        <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
-          └ Adesão baseada nos registros: ${medication.adherence}${typeof medication.adherence === 'number' ? '%' : ''}
-        </div>
-      </div>
       
       <div class="quiz-insight">
         💡 Insight: ${evacuation.consistency === 'Boa' 
