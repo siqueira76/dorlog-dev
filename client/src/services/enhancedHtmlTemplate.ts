@@ -982,7 +982,6 @@ function generateQuizIntelligentSummarySection(reportData: EnhancedReportData): 
         <div class="quiz-summary-grid">
             ${generateMorningNightCard(quizAnalysis, reportData)}
             ${generateCrisisEpisodesCard(quizAnalysis, reportData)}
-            ${generateMedicationActivitiesCard(quizAnalysis)}
             ${generatePatternsCard(quizAnalysis)}
         </div>
     </div>
@@ -3881,6 +3880,16 @@ function generateMorningNightCard(quizAnalysis: any, reportData?: any): string {
       </div>
       
       <div class="quiz-metric">
+        <div class="quiz-metric-label">Intensidade média da Dor:</div>
+        <div class="quiz-metric-main">
+          ${morning.eveningPain.toFixed(1)}/10 😌
+        </div>
+        <div style="font-size: 0.8rem; color: #64748b;">
+          └ Intensidade média ao final do dia
+        </div>
+      </div>
+      
+      <div class="quiz-metric">
         <div class="quiz-metric-label">Qualidade do Sono:</div>
         <div class="quiz-metric-main">
           ${morning.sleepQuality.toFixed(1)}/10 😴
@@ -4008,15 +4017,6 @@ function generateMorningNightCard(quizAnalysis: any, reportData?: any): string {
         ` : ''}
       </div>
       
-      <div class="quiz-metric">
-        <div class="quiz-metric-label">Dor Noturna:</div>
-        <div class="quiz-metric-main">
-          ${morning.eveningPain.toFixed(1)}/10 😌
-        </div>
-        <div style="font-size: 0.8rem; color: #64748b;">
-          └ Intensidade média ao final do dia
-        </div>
-      </div>
       
       ${fatigueAnalysis ? `
       <div class="quiz-metric">
@@ -4309,51 +4309,6 @@ function generateCrisisEpisodesCard(quizAnalysis: any, reportData?: any): string
   `;
 }
 
-function generateMedicationActivitiesCard(quizAnalysis: any): string {
-  const { medication, evacuation } = quizAnalysis;
-  
-  return `
-    <div class="quiz-card quiz-card-medication">
-      <div class="quiz-card-title">
-        💊 Medicamentos e Autocuidado
-      </div>
-      
-      <div class="quiz-metric">
-        <div class="quiz-metric-label">Medicamentos de Resgate:</div>
-        <div style="font-size: 0.85rem; color: #475569; margin-top: 0.25rem;">
-          ${medication.rescueMedications.length > 0 && medication.rescueMedications[0] !== 'Dados não disponíveis'
-            ? medication.rescueMedications.map((med: string) => 
-                `💊 ${med}${typeof med === 'object' && med.frequency ? ` (${med.frequency})` : ''}`
-              ).join(' • ')
-            : '💊 Dados sendo coletados dos questionários...'
-          }
-        </div>
-        <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
-          └ Frequência baseada nos registros reais
-        </div>
-      </div>
-      
-      
-      <div class="quiz-metric">
-        <div class="quiz-metric-label">Saúde Digestiva:</div>
-        <div class="quiz-metric-main">
-          Score: ${medication.digestiveHealth}/100 💩
-        </div>
-        <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
-          └ Baseado em ${evacuation.frequency} relatos de evacuação
-        </div>
-      </div>
-      
-      
-      <div class="quiz-insight">
-        💡 Insight: ${evacuation.consistency === 'Boa' 
-          ? 'Função intestinal regular contribui para menor dor geral' 
-          : 'Cuidar da saúde intestinal pode reduzir desconforto e ansiedade'
-        }
-      </div>
-    </div>
-  `;
-}
 
 function generatePatternsCard(quizAnalysis: any): string {
   const { patterns, humor, evacuation } = quizAnalysis;
