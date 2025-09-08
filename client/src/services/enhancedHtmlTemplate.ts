@@ -3100,6 +3100,7 @@ function countPhysicalActivities(reportData: EnhancedReportData): {
         homeDays.add(record.date);
         break;
       case 'Atividade física':
+      case 'Exercicios':
         exerciseDays.add(record.date);
         break;
     }
