@@ -3195,14 +3195,42 @@ function calculateSleepImpact(reportData: EnhancedReportData): number | string {
   return Math.round((sleepQualityMentions / totalEntries) * 60); // Máximo 60% de redução
 }
 
-function calculateTherapyImpact(reportData: EnhancedReportData): number | string {
-  if (!reportData.observations) return "N/A";
+function calculateRealTherapyImpact(reportData: EnhancedReportData): number | string {
+  const treatmentData = (reportData as any).treatmentActivities || [];
   
-  const therapyMentions = (reportData.observations.match(/fisioterapia|terapia|tratamento/gi) || []).length;
+  if (treatmentData.length === 0) {
+    return "Sem dados";
+  }
   
-  if (therapyMentions === 0) return 0;
+  // Calcular correlação real entre dias com terapia e dor
+  if (reportData.painEvolution && reportData.painEvolution.length > 0) {
+    const treatmentDates = new Set();
+    treatmentData.forEach((t: any) => {
+      t.dates.forEach((date: string) => treatmentDates.add(date));
+    });
+    
+    const painOnTreatmentDays: number[] = [];
+    const painOnNonTreatmentDays: number[] = [];
+    
+    reportData.painEvolution.forEach((entry: any) => {
+      const date = entry.date.split('T')[0];
+      if (treatmentDates.has(date)) {
+        painOnTreatmentDays.push(entry.level);
+      } else {
+        painOnNonTreatmentDays.push(entry.level);
+      }
+    });
+    
+    if (painOnTreatmentDays.length > 0 && painOnNonTreatmentDays.length > 0) {
+      const avgTreatmentPain = painOnTreatmentDays.reduce((sum, pain) => sum + pain, 0) / painOnTreatmentDays.length;
+      const avgNonTreatmentPain = painOnNonTreatmentDays.reduce((sum, pain) => sum + pain, 0) / painOnNonTreatmentDays.length;
+      
+      const improvement = avgNonTreatmentPain - avgTreatmentPain;
+      return Math.max(0, Math.round((improvement / avgNonTreatmentPain) * 100));
+    }
+  }
   
-  return Math.min(30, therapyMentions * 5); // Máximo 30% de redução
+  return "Dados insuficientes";
 }
 
 function generateRealInsight(crisisData: any): string {
@@ -3312,10 +3340,7 @@ function processQuizData(reportData: EnhancedReportData): any {
   const medicationData = {
     rescueMedications: extractRescueMedications(reportData),
     physicalActivities: countPhysicalActivities(reportData),
-    therapies: validateDataSufficiency(reportData, 'therapies') ? 
-      (reportData.observations?.match(/fisioterapia|terapia|tratamento/gi) || []).length > 0 ? 
-        ['Fisioterapia', 'Clínica da Dor'] : ['Nenhuma terapia registrada'] :
-      [getInsufficientDataMessage('therapies')],
+    therapies: extractRealTherapyData(reportData),
     adherence: validateDataSufficiency(reportData, 'therapies') ? 
       Math.round((totalDays / Math.max(totalDays, 7)) * 100) : 
       "Dados insuficientes",
@@ -3328,7 +3353,7 @@ function processQuizData(reportData: EnhancedReportData): any {
     protectiveFactors: validateDataSufficiency(reportData, 'correlations') ? [
       { name: 'Atividade física regular', reduction: calculateActivityImpact(reportData) },
       { name: 'Qualidade do sono boa', reduction: calculateSleepImpact(reportData) },
-      { name: 'Adesão à fisioterapia', reduction: calculateTherapyImpact(reportData) },
+      { name: 'Adesão às terapias', reduction: calculateRealTherapyImpact(reportData) },
       { name: 'Evacuação regular', reduction: evacuationData.painReduction }
     ] : [
       { name: getInsufficientDataMessage('correlations'), reduction: "N/A" }
@@ -3760,6 +3785,52 @@ function calculateSleepQuality(observations: string): number {
   const quality = (goodSleep / total) * 10;
   
   return Math.max(0, Math.min(10, quality));
+}
+
+// Função para extrair dados reais de terapias dos dados estruturados
+function extractRealTherapyData(reportData: any): string[] {
+  const treatmentData = (reportData as any).treatmentActivities || [];
+  
+  if (treatmentData.length === 0) {
+    return [getInsufficientDataMessage('therapies')];
+  }
+  
+  // Normalizar e extrair terapias realizadas
+  const therapies = treatmentData.map((t: any) => {
+    // Normalizar nomes de terapias
+    const normalizedTherapy = normalizeTherapyName(t.treatment);
+    return `${normalizedTherapy} (${t.frequency}x)`;
+  });
+  
+  return therapies.slice(0, 5); // Limitar a 5 terapias mais frequentes
+}
+
+// Função para normalizar nomes de terapias
+function normalizeTherapyName(therapyName: string): string {
+  const normalized = therapyName.toLowerCase().trim();
+  
+  // Mapeamento de normalizações
+  const therapyMap: { [key: string]: string } = {
+    'psicologo': 'Psicólogo',
+    'psicoterapia': 'Psicólogo',
+    'psicologa': 'Psicólogo',
+    'clinica da dor': 'Clínica da Dor',
+    'clinica de dor': 'Clínica da Dor',
+    'clínica da dor': 'Clínica da Dor',
+    'fisio': 'Fisioterapia',
+    'fisioterapia': 'Fisioterapia',
+    'outro': 'Outras Terapias'
+  };
+  
+  // Buscar por correspondências parciais
+  for (const [key, value] of Object.entries(therapyMap)) {
+    if (normalized.includes(key)) {
+      return value;
+    }
+  }
+  
+  // Se não encontrou correspondência, manter original mas capitalizado
+  return therapyName.charAt(0).toUpperCase() + therapyName.slice(1).toLowerCase();
 }
 
 // Função para extrair medicamentos de resgate dos dados reais
