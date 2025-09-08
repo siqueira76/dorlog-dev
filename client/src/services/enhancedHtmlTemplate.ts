@@ -781,9 +781,10 @@ function getEnhancedReportCSS(): string {
         /* Mobile-Optimized Cards Grid */
         .mobile-optimized-cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.25rem;
             margin-bottom: 2rem;
+            padding: 0.5rem;
         }
 
         /* Responsive */
@@ -812,14 +813,16 @@ function getEnhancedReportCSS(): string {
             /* Enhanced mobile experience for cards grid */
             .mobile-optimized-cards-grid {
                 grid-template-columns: 1fr;
-                gap: 0.75rem;
+                gap: 1rem;
                 margin-bottom: 1.5rem;
+                padding: 0.25rem;
             }
 
             /* Mobile-optimized card styling */
             .mobile-optimized-cards-grid > div {
                 min-height: auto;
-                padding: 1rem !important;
+                padding: 1.25rem !important;
+                margin-bottom: 0.5rem;
             }
 
             /* Better mobile typography for cards */
@@ -841,13 +844,15 @@ function getEnhancedReportCSS(): string {
 
         @media (max-width: 480px) {
             .mobile-optimized-cards-grid {
-                gap: 0.5rem;
+                gap: 0.75rem;
                 margin-bottom: 1rem;
+                padding: 0.125rem;
             }
 
             .mobile-optimized-cards-grid > div {
-                padding: 0.75rem !important;
-                border-radius: 0.5rem !important;
+                padding: 1rem !important;
+                border-radius: 0.75rem !important;
+                margin-bottom: 0.25rem;
             }
 
             /* Extra small mobile optimization */
@@ -857,17 +862,31 @@ function getEnhancedReportCSS(): string {
 
             /* Improve card content spacing on very small screens */
             .mobile-optimized-cards-grid .space-y-3 > * + * {
-                margin-top: 0.5rem !important;
+                margin-top: 0.75rem !important;
+            }
+
+            /* Internal card spacing */
+            .mobile-optimized-cards-grid .mb-3 {
+                margin-bottom: 1rem !important;
+            }
+
+            .mobile-optimized-cards-grid .p-3 {
+                padding: 0.875rem !important;
+            }
+
+            .mobile-optimized-cards-grid .p-2 {
+                padding: 0.625rem !important;
             }
 
             /* Optimize button and badge layouts */
             .mobile-optimized-cards-grid .flex-wrap {
                 justify-content: flex-start !important;
+                gap: 0.375rem !important;
             }
 
             .mobile-optimized-cards-grid .flex-wrap > * {
-                margin-right: 0.25rem !important;
-                margin-bottom: 0.25rem !important;
+                margin-right: 0 !important;
+                margin-bottom: 0 !important;
             }
         }
 
@@ -2066,14 +2085,14 @@ function generateEveningReflectionsCard(noturnoData?: any): string {
 function generateCrisisContextCard(emergencialData?: any): string {
   if (!emergencialData || !emergencialData.summary) {
     return `
-      <div class="bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 rounded-lg p-4">
-        <div class="flex items-center space-x-2 mb-3">
+      <div class="bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 rounded-xl p-5">
+        <div class="flex items-center space-x-3 mb-4">
           <span class="text-2xl">🚨</span>
           <h3 class="text-lg font-semibold text-red-800">Contextos de Crise</h3>
         </div>
-        <div class="text-gray-600 text-sm">
+        <div class="text-gray-600 text-sm space-y-2">
           <p>Nenhuma crise com contexto detalhado registrada.</p>
-          <p class="mt-1 text-xs">Esta seção mostrará insights sobre situações de emergência quando ocorrerem.</p>
+          <p class="text-xs opacity-75">Esta seção mostrará insights sobre situações de emergência quando ocorrerem.</p>
         </div>
       </div>
     `;
@@ -2084,29 +2103,29 @@ function generateCrisisContextCard(emergencialData?: any): string {
                       urgencyLevel >= 6 ? 'text-orange-600' : 'text-yellow-600';
 
   return `
-    <div class="bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 rounded-lg p-4">
-      <div class="flex items-center space-x-2 mb-3">
+    <div class="bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 rounded-xl p-5">
+      <div class="flex items-center space-x-3 mb-4">
         <span class="text-2xl">🚨</span>
         <h3 class="text-lg font-semibold text-red-800">Contextos de Crise</h3>
       </div>
       
-      <div class="space-y-3">
-        <div class="bg-white bg-opacity-50 rounded-lg p-3">
+      <div class="space-y-4">
+        <div class="bg-white bg-opacity-60 rounded-lg p-4">
           <p class="text-sm text-gray-700 leading-relaxed">${emergencialData.summary}</p>
         </div>
         
         ${emergencialData.commonTriggers && emergencialData.commonTriggers.length > 0 ? `
-        <div class="bg-red-100 bg-opacity-50 rounded-lg p-2">
-          <p class="text-xs font-medium text-red-700 mb-1">Gatilhos Identificados:</p>
-          <div class="flex flex-wrap gap-1">
+        <div class="bg-red-100 bg-opacity-60 rounded-lg p-3">
+          <p class="text-xs font-medium text-red-700 mb-2">Gatilhos Identificados:</p>
+          <div class="flex flex-wrap gap-2">
             ${emergencialData.commonTriggers.slice(0, 3).map((trigger: string) => 
-              `<span class="bg-red-200 text-red-800 text-xs px-2 py-1 rounded">${trigger}</span>`
+              `<span class="bg-red-200 text-red-800 text-xs px-3 py-1.5 rounded-full">${trigger}</span>`
             ).join('')}
           </div>
         </div>
         ` : ''}
         
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between pt-1">
           <div class="text-xs ${urgencyColor} font-medium">
             ⚠️ Urgência média: ${urgencyLevel.toFixed(1)}/10
           </div>
@@ -2122,14 +2141,14 @@ function generateCrisisContextCard(emergencialData?: any): string {
 function generateGeneralInsightsCard(geralData?: any): string {
   if (!geralData || !geralData.summary) {
     return `
-      <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4">
-        <div class="flex items-center space-x-2 mb-3">
+      <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-5">
+        <div class="flex items-center space-x-3 mb-4">
           <span class="text-2xl">📝</span>
           <h3 class="text-lg font-semibold text-purple-800">Relatos Gerais</h3>
         </div>
-        <div class="text-gray-600 text-sm">
+        <div class="text-gray-600 text-sm space-y-2">
           <p>Nenhum relato geral ou contexto adicional encontrado.</p>
-          <p class="mt-1 text-xs">Esta seção aparecerá quando houver observações adicionais ou contextos de dor registrados.</p>
+          <p class="text-xs opacity-75">Esta seção aparecerá quando houver observações adicionais ou contextos de dor registrados.</p>
         </div>
       </div>
     `;
@@ -2142,23 +2161,23 @@ function generateGeneralInsightsCard(geralData?: any): string {
                        sentiment === 'negative' ? '😔' : '😐';
 
   return `
-    <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4">
-      <div class="flex items-center space-x-2 mb-3">
+    <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-5">
+      <div class="flex items-center space-x-3 mb-4">
         <span class="text-2xl">📝</span>
         <h3 class="text-lg font-semibold text-purple-800">Relatos Gerais</h3>
       </div>
       
-      <div class="space-y-3">
-        <div class="bg-white bg-opacity-50 rounded-lg p-3">
+      <div class="space-y-4">
+        <div class="bg-white bg-opacity-60 rounded-lg p-4">
           <p class="text-sm text-gray-700 leading-relaxed">${geralData.summary}</p>
         </div>
         
         ${geralData.contentTypes && geralData.contentTypes.length > 0 ? `
-        <div class="bg-purple-100 bg-opacity-50 rounded-lg p-2">
-          <p class="text-xs font-medium text-purple-700 mb-1">📋 Fontes de dados:</p>
-          <div class="flex flex-wrap gap-1">
+        <div class="bg-purple-100 bg-opacity-60 rounded-lg p-3">
+          <p class="text-xs font-medium text-purple-700 mb-2">📋 Fontes de dados:</p>
+          <div class="flex flex-wrap gap-2">
             ${geralData.contentTypes.map((type: string) => 
-              `<span class="bg-purple-200 text-purple-800 text-xs px-2 py-1 rounded">${type}</span>`
+              `<span class="bg-purple-200 text-purple-800 text-xs px-3 py-1.5 rounded-full">${type}</span>`
             ).join('')}
           </div>
         </div>
@@ -2192,14 +2211,14 @@ function generateGeneralInsightsCard(geralData?: any): string {
 function generateLongitudinalInsightsCard(combinedData?: any): string {
   if (!combinedData || !combinedData.summary) {
     return `
-      <div class="bg-gradient-to-br from-green-50 to-teal-50 border border-green-200 rounded-lg p-4">
-        <div class="flex items-center space-x-2 mb-3">
+      <div class="bg-gradient-to-br from-green-50 to-teal-50 border border-green-200 rounded-xl p-5">
+        <div class="flex items-center space-x-3 mb-4">
           <span class="text-2xl">🧠</span>
           <h3 class="text-lg font-semibold text-green-800">Insights Longitudinais</h3>
         </div>
-        <div class="text-gray-600 text-sm">
+        <div class="text-gray-600 text-sm space-y-2">
           <p>Dados insuficientes para análise longitudinal.</p>
-          <p class="mt-1 text-xs">Continue registrando seus questionários para ver tendências ao longo do tempo.</p>
+          <p class="text-xs opacity-75">Continue registrando seus questionários para ver tendências ao longo do tempo.</p>
         </div>
       </div>
     `;
