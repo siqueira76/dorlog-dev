@@ -665,17 +665,159 @@ export class NLPAnalysisService {
   }
 
   /**
-   * Retorna status detalhado dos modelos
+   * Retorna status detalhado dos modelos com informações de CDN
    */
-  getModelStatus(): { sentiment: boolean; summary: boolean; classification: boolean; fallbackMode: boolean } {
+  getModelStatus(): { 
+    sentiment: boolean; 
+    summary: boolean; 
+    classification: boolean; 
+    fallbackMode: boolean;
+    currentCDN: string;
+    environment: string;
+    cdnHealth: { name: string; working: boolean }[];
+  } {
+    const { isGitHubPages, isReplit, isLocal } = this.environmentInfo;
+    const environment = isGitHubPages ? 'GitHub Pages' : isReplit ? 'Replit' : isLocal ? 'Local' : 'Outro';
+    
     return {
       sentiment: !!this.sentimentPipeline,
       summary: !!this.summaryPipeline,
       classification: !!this.classificationPipeline,
-      fallbackMode: !this.initialized
+      fallbackMode: !this.initialized,
+      currentCDN: CDN_CONFIGS[this.currentCDNIndex]?.name || 'N/A',
+      environment,
+      cdnHealth: this.getCDNHealthStatus()
+    };
+  }
+  
+  /**
+   * Verifica saúde dos CDNs disponíveis
+   */
+  private getCDNHealthStatus(): { name: string; working: boolean }[] {
+    // Esta seria uma verificação mais complexa em produção
+    return CDN_CONFIGS.map(cdn => ({
+      name: cdn.name,
+      working: true // Por enquanto, assume que todos estão funcionais
+    }));
+  }
+  
+  /**
+   * Diagnóstico completo do sistema NLP
+   */
+  async getDiagnosticInfo(): Promise<{
+    status: string;
+    models: { sentiment: boolean; summary: boolean; classification: boolean };
+    cdn: { current: string; available: string[]; priority: number };
+    environment: { type: string; hostname: string };
+    performance: { initTime: number | null; lastError: string | null };
+    recommendations: string[];
+  }> {
+    const modelStatus = this.getModelStatus();
+    const recommendations: string[] = [];
+    
+    // Gerar recomendações baseadas no status
+    if (modelStatus.fallbackMode) {
+      recommendations.push('Modelos IA indisponíveis - usando análise baseada em regras');
+    }
+    
+    if (!modelStatus.sentiment && !modelStatus.summary && !modelStatus.classification) {
+      recommendations.push('Verificar conectividade de rede');
+      recommendations.push('Tentar recarregar a página');
+    }
+    
+    if (modelStatus.environment === 'Replit' && modelStatus.currentCDN === 'huggingface') {
+      recommendations.push('Considerar usar jsDelivr CDN para melhor performance');
+    }
+    
+    return {
+      status: this.isReady() ? 'Pronto' : this.isLoading ? 'Carregando' : 'Fallback',
+      models: {
+        sentiment: modelStatus.sentiment,
+        summary: modelStatus.summary,
+        classification: modelStatus.classification
+      },
+      cdn: {
+        current: modelStatus.currentCDN,
+        available: CDN_CONFIGS.map(c => c.name),
+        priority: this.currentCDNIndex
+      },
+      environment: {
+        type: modelStatus.environment,
+        hostname: typeof window !== 'undefined' ? window.location.hostname : 'N/A'
+      },
+      performance: {
+        initTime: null, // Pode ser implementado com timestamp
+        lastError: null // Pode armazenar último erro
+      },
+      recommendations
     };
   }
 
+  /**
+   * Força reinicialização com CDN específico
+   */
+  async reinitializeWithCDN(cdnName: string): Promise<boolean> {
+    const cdnIndex = CDN_CONFIGS.findIndex(cdn => cdn.name === cdnName);
+    if (cdnIndex === -1) {
+      console.error(`❌ CDN '${cdnName}' não encontrado`);
+      return false;
+    }
+    
+    console.log(`🔄 Reinicializando com CDN: ${cdnName}`);
+    
+    // Limpar modelos atuais
+    this.dispose();
+    
+    // Definir novo CDN como preferência
+    this.currentCDNIndex = cdnIndex;
+    
+    // Reconfigurar CDN
+    this.configureCDNForEnvironment();
+    
+    // Tentar reinicializar
+    try {
+      await this.initialize();
+      return this.isReady();
+    } catch (error) {
+      console.error(`❌ Falha ao reinicializar com ${cdnName}:`, error);
+      return false;
+    }
+  }
+  
+  /**
+   * Testa conectividade com todos os CDNs
+   */
+  async testCDNConnectivity(): Promise<{ name: string; available: boolean; responseTime: number }[]> {
+    const results = [];
+    
+    for (const cdn of CDN_CONFIGS) {
+      const startTime = Date.now();
+      try {
+        // Teste simples de conectividade
+        const testUrl = `${cdn.baseUrl.replace('/models/', '')}/models.json`;
+        const response = await fetch(testUrl, { 
+          method: 'HEAD', 
+          timeout: 5000 
+        } as any);
+        
+        results.push({
+          name: cdn.name,
+          available: response.ok,
+          responseTime: Date.now() - startTime
+        });
+      } catch (error) {
+        results.push({
+          name: cdn.name,
+          available: false,
+          responseTime: Date.now() - startTime
+        });
+      }
+    }
+    
+    console.log('📋 Teste de conectividade CDN:', results);
+    return results;
+  }
+  
   /**
    * Libera recursos dos modelos (para economia de memória)
    */
@@ -684,6 +826,7 @@ export class NLPAnalysisService {
     this.summaryPipeline = null;
     this.classificationPipeline = null;
     this.initialized = false;
+    this.isLoading = false;
     console.log('🗑️ Modelos NLP liberados da memória');
   }
 }
