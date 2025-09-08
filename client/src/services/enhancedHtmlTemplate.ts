@@ -3891,61 +3891,6 @@ function generateMorningNightCard(quizAnalysis: any, reportData?: any): string {
         <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
           └ Baseado nos relatos noturnos dos últimos ${totalDays} dias
         </div>
-        
-        <!-- Análise Inteligente dos Pontos de Dor -->
-        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.6rem; background: #f8fafc; padding: 0.5rem; border-radius: 6px; border-left: 3px solid #6366f1;">
-          <div><strong>🧠 Análise Inteligente:</strong></div>
-          ${(() => {
-            const totalReports = painPoints.reduce((sum: number, p: any) => sum + p.occurrences, 0);
-            const mostFrequent = painPoints[0];
-            const frequencyPercentage = Math.round((mostFrequent.occurrences / totalReports) * 100);
-            
-            // Análise de distribuição
-            let analysisText = '';
-            if (painPoints.length === 1) {
-              analysisText = `Dor concentrada em uma região: ${mostFrequent.local} representa 100% dos relatos`;
-            } else if (frequencyPercentage >= 60) {
-              analysisText = `Dor predominantemente em ${mostFrequent.local} (${frequencyPercentage}% dos relatos)`;
-            } else if (painPoints.length >= 3) {
-              analysisText = `Dor distribuída entre ${painPoints.length} regiões diferentes - padrão de dor generalizada`;
-            } else {
-              analysisText = `Dor alternada entre ${painPoints.length} regiões principais`;
-            }
-            
-            return `<div>• ${analysisText}</div>`;
-          })()}
-          <div>• Total de relatos: ${(() => {
-            const totalReports = painPoints.reduce((sum: number, p: any) => sum + p.occurrences, 0);
-            return totalReports;
-          })()} registros de dor</div>
-          ${painPoints.length > 1 ? `<div>• Padrão: ${(() => {
-            const totalReports = painPoints.reduce((sum: number, p: any) => sum + p.occurrences, 0);
-            const top2Reports = painPoints.slice(0, 2).reduce((sum: number, p: any) => sum + p.occurrences, 0);
-            const top2Percentage = Math.round((top2Reports / totalReports) * 100);
-            
-            if (top2Percentage >= 80) {
-              return 'Dor focada em 2 regiões principais';
-            } else if (painPoints.length >= 4) {
-              return 'Dor amplamente distribuída (múltiplas regiões)';
-            } else {
-              return 'Dor moderadamente distribuída';
-            }
-          })()}</div>` : ''}
-        </div>
-        
-        <!-- Todos os Pontos Reportados -->
-        ${painPoints.length > 3 ? `
-        <div style="font-size: 0.75rem; color: #475569; margin-top: 0.5rem; background: #e2e8f0; padding: 0.4rem; border-radius: 4px;">
-          <div><strong>📋 Todos os Locais Reportados:</strong></div>
-          <div style="margin-top: 0.3rem; line-height: 1.4;">
-            ${painPoints.map((point: any, index: number) => {
-              const totalReports = painPoints.reduce((sum: number, p: any) => sum + p.occurrences, 0);
-              const percentage = Math.round((point.occurrences / totalReports) * 100);
-              return `${index + 1}. ${getPainLocationEmoji(point.local)} ${point.local}: ${point.occurrences}x (${percentage}%)`;
-            }).join('<br>')}
-          </div>
-        </div>
-        ` : ''}
         ` : `
         <div class="quiz-metric-main" style="color: #64748b; font-style: italic;">
           Dados insuficientes para análise
@@ -4113,40 +4058,6 @@ function generateMorningNightCard(quizAnalysis: any, reportData?: any): string {
           `;
         })()}
       </div>
-      
-      <div class="quiz-insight">
-        💡 Insight: ${painPoints && painPoints.length > 0 ? 
-          (() => {
-            const totalReports = painPoints.reduce((sum: number, p: any) => sum + p.occurrences, 0);
-            const mostFrequent = painPoints[0];
-            const dayFrequency = Math.round((mostFrequent.occurrences / totalDays) * 100);
-            
-            // Análise clínica inteligente
-            if (painPoints.length === 1 && dayFrequency >= 70) {
-              return `Dor persistente e localizada em ${mostFrequent.local.toLowerCase()} (${dayFrequency}% dos dias) - considere avaliação especializada`;
-            } else if (painPoints.length >= 4) {
-              const diversity = painPoints.length;
-              return `Padrão de dor generalizada (${diversity} regiões afetadas) - típico de condições como fibromialgia`;
-            } else if (painPoints.length === 2) {
-              const secondMost = painPoints[1];
-              const combined = Math.round(((mostFrequent.occurrences + secondMost.occurrences) / totalReports) * 100);
-              return `Dor predominante entre ${mostFrequent.local.toLowerCase()} e ${secondMost.local.toLowerCase()} (${combined}% dos relatos)`;
-            } else if (dayFrequency >= 50) {
-              return `${mostFrequent.local} é a região mais problemática (${dayFrequency}% dos dias) - foco terapêutico recomendado`;
-            } else {
-              return `Padrão de dor variável entre ${painPoints.length} região${painPoints.length > 1 ? 'ões' : ''} - monitoramento de gatilhos recomendado`;
-            }
-          })() :
-          evacuation.intervalAnalysis ? 
-            evacuation.intervalAnalysis.longestInterval <= 2 ? 'Excelente regularidade intestinal está contribuindo para seu bem-estar geral' :
-            evacuation.intervalAnalysis.longestInterval <= 4 ? 'Padrão intestinal levemente irregular - considere aumentar hidratação e fibras' :
-            evacuation.intervalAnalysis.longestInterval <= 7 ? 'Constipação moderada detectada - pode estar impactando seu conforto' :
-            'Constipação severa identificada - recomenda-se acompanhamento médico' :
-            evacuation.frequency > 0 ? 
-              evacuation.dailyPattern ? 'Regularidade intestinal excelente está contribuindo para seu bem-estar' :
-              evacuation.maxDaysWithoutEvacuation > 3 ? 'Considere melhorar a regularidade intestinal para reduzir desconforto' :
-              'Padrão intestinal dentro da normalidade' :
-              'Continue registrando dados para análise precisa'}
       </div>
     </div>
   `;
@@ -4272,10 +4183,6 @@ function generateCrisisEpisodesCard(quizAnalysis: any, reportData?: any): string
       </div>
 
       ${reportData ? generateMedicationsSubsection(reportData) : ''}
-      
-      <div class="quiz-insight">
-        💡 Insight: ${generateRealInsight(crisis)}
-      </div>
     </div>
   `;
 }
