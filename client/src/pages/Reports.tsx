@@ -9,19 +9,185 @@ import { useLocation } from 'wouter';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { insightGenerationService } from '@/services/insightGenerationService';
+import { nlpService } from '@/services/nlpAnalysisService';
 import { PainMoodMetricsCards } from '@/components/enhanced/EnhancedChartComponents';
+
+// Importar função de mapeamento semântico do sistema existente
+const getQuestionSemanticType = (questionId: string, quizType: string, answer: any): string => {
+  console.log(`🔭 DEBUG: Analisando Q${questionId} (${quizType}): ${JSON.stringify(answer)} [${typeof answer}]`);
+  
+  // Análise por tipo de resposta e contexto
+  if (typeof answer === 'number' && answer >= 0 && answer <= 10) {
+    // P2 emergencial é medicamento, não EVA
+    if (quizType === 'emergencial' && questionId === '2') {
+      return 'unknown';
+    }
+    
+    // Fadiga como slider numérico (P3 noturno)
+    if (questionId === '3' && quizType === 'noturno') {
+      return 'fatigue_level';
+    }
+    
+    return 'eva_scale'; // Escala de dor EVA
+  }
+  
+  if (Array.isArray(answer)) {
+    // Estados emocionais
+    const emotions = ['Ansioso', 'Triste', 'Irritado', 'Calmo', 'Feliz', 'Depressivo'];
+    const hasEmotions = answer.some(item => 
+      emotions.some(emotion => item.includes(emotion))
+    );
+    
+    if (hasEmotions) {
+      return 'emotional_state';
+    }
+    
+    return 'multiple_choice';
+  }
+  
+  if (typeof answer === 'string' && answer.trim().length > 0) {
+    const lowerAnswer = answer.toLowerCase();
+    
+    // Detecção de estado emocional
+    const emotionalWords = ['humor', 'sentimento', 'ansioso', 'triste', 'feliz', 'irritado', 'calmo', 'depressivo', 'bem', 'mal'];
+    if (emotionalWords.some(word => lowerAnswer.includes(word))) {
+      return 'emotional_state';
+    }
+    
+    // Detecção de qualidade do sono
+    if (lowerAnswer.includes('sono') || lowerAnswer.includes('dormi') || lowerAnswer.includes('insônia') ||
+        lowerAnswer.includes('cansado') || lowerAnswer.includes('exausto')) {
+      return 'sleep_quality';
+    }
+    
+    return 'free_text';
+  }
+  
+  return 'unknown';
+};
+
+// Função para processar quizzes diários com suporte NLP
+const processDailyQuizzesWithNLP = async (quizzes: any[], dayKey: string) => {
+  console.log(`🧠 Processando ${quizzes.length} quiz(es) para ${dayKey} com análise semântica + NLP`);
+  
+  let painLevel: number | null = null;
+  let moodData: any = null;
+  const textResponses: string[] = [];
+  
+  // Processar cada quiz usando mapeamento semântico
+  for (const quiz of quizzes) {
+    if (quiz.respostas && typeof quiz.respostas === 'object') {
+      for (const [questionId, answer] of Object.entries(quiz.respostas)) {
+        const semanticType = getQuestionSemanticType(questionId, quiz.tipo, answer);
+        
+        console.log(`🔭 Semântica: Q${questionId} (${quiz.tipo}) -> ${semanticType}: ${JSON.stringify(answer)}`);
+        
+        switch (semanticType) {
+          case 'eva_scale':
+            if (typeof answer === 'number') {
+              painLevel = Math.max(painLevel || 0, answer); // Usar a maior dor do dia
+              console.log(`🎯 Dor EVA detectada: ${answer}/10 (${quiz.tipo})`);
+            }
+            break;
+            
+          case 'emotional_state':
+            if (Array.isArray(answer)) {
+              // Array de estados emocionais
+              moodData = {
+                mood: answer[0], // Primeiro estado detectado
+                source: 'semantic',
+                confidence: 0.8
+              };
+              console.log(`😊 Estado emocional detectado: ${answer.join(', ')}`);
+            } else if (typeof answer === 'string') {
+              moodData = {
+                mood: answer,
+                source: 'semantic', 
+                confidence: 0.8
+              };
+              console.log(`😊 Estado emocional detectado: ${answer}`);
+            }
+            break;
+            
+          case 'free_text':
+          case 'sleep_quality':
+            if (typeof answer === 'string' && answer.trim().length > 5) {
+              textResponses.push(answer);
+              console.log(`📝 Texto para análise NLP: "${answer.substring(0, 50)}..."`);
+            }
+            break;
+        }
+      }
+    }
+  }
+  
+  // Se não encontrou humor estruturado, tentar análise NLP de textos livres
+  if (!moodData && textResponses.length > 0) {
+    console.log(`🧠 Analisando ${textResponses.length} texto(s) com NLP para extrair humor...`);
+    
+    try {
+      // Analisar todos os textos e consolidar resultados
+      const nlpResults = await Promise.all(
+        textResponses.slice(0, 3).map(text => 
+          nlpService.analyzeText(text).catch(() => null)
+        )
+      );
+      
+      const validResults = nlpResults.filter(r => r !== null);
+      
+      if (validResults.length > 0) {
+        // Consolidar sentimento predominante
+        const avgSentimentScore = validResults.reduce((sum, r) => sum + r.sentiment.score, 0) / validResults.length;
+        const predominantSentiment = validResults[0].sentiment.label;
+        
+        // Mapear sentimento para humor
+        let moodFromNLP = 'Neutro';
+        if (predominantSentiment === 'POSITIVE') {
+          moodFromNLP = avgSentimentScore > 0.7 ? 'Feliz' : 'Calmo';
+        } else if (predominantSentiment === 'NEGATIVE') {
+          moodFromNLP = avgSentimentScore > 0.7 ? 'Triste' : 'Ansioso';
+        }
+        
+        moodData = {
+          mood: moodFromNLP,
+          source: 'nlp',
+          sentiment: predominantSentiment,
+          sentimentScore: avgSentimentScore,
+          urgencyLevel: Math.max(...validResults.map(r => r.urgencyLevel)),
+          confidence: avgSentimentScore
+        };
+        
+        console.log(`🧠 Humor extraído via NLP: ${moodFromNLP} (${predominantSentiment}, score: ${avgSentimentScore.toFixed(2)})`);
+      }
+    } catch (error) {
+      console.warn('⚠️ Erro na análise NLP, usando fallback:', error);
+    }
+  }
+  
+  return {
+    painLevel,
+    moodData,
+    processedQuizzes: quizzes.length
+  };
+};
 
 export default function Reports() {
   const { currentUser } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Interface para dados de correlação dor-humor
+  // Interface para dados de correlação dor-humor com suporte NLP
   interface PainMoodCorrelation {
     painLevel: number;
     mood: string;
     moodValue: number; // Valor numérico para o humor
     date: string;
     count: number; // Número de ocorrências deste par
+    // Dados enriquecidos com NLP
+    sentiment?: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
+    sentimentScore?: number;
+    urgencyLevel?: number;
+    confidence?: number;
+    source: 'semantic' | 'nlp' | 'legacy';
   }
 
   // Função para buscar episódios de crise
@@ -157,38 +323,39 @@ export default function Reports() {
                 console.log(`⚠️ Quizzes em formato antigo ignorados em ${docId}`);
               }
               
-              normalizedQuizzes.forEach((quiz: any) => {
-                // Capturar nível de dor baseado no tipo de quiz
+              // Processar todos os quizzes usando sistema semântico (sem await por enquanto)
+              const dailyData = { painLevel: null, moodData: null };
+              
+              // Processar cada quiz usando mapeamento semântico
+              for (const quiz of normalizedQuizzes) {
                 if (quiz.respostas && typeof quiz.respostas === 'object') {
-                  // Para quiz noturno e matinal: dor está na pergunta 2
-                  // Para quiz emergencial: dor está na pergunta 1
-                  let painQuestionId = '2';
-                  if (quiz.tipo === 'emergencial') {
-                    painQuestionId = '1';
-                  }
-                  
-                  if (quiz.respostas[painQuestionId] !== undefined) {
-                    const painResponse = quiz.respostas[painQuestionId];
-                    if (typeof painResponse === 'number') {
-                      dayPainLevel = painResponse;
-                    } else if (typeof painResponse === 'string') {
-                      const painValue = parseInt(painResponse, 10);
-                      if (!isNaN(painValue)) {
-                        dayPainLevel = painValue;
+                  for (const [questionId, answer] of Object.entries(quiz.respostas)) {
+                    const semanticType = getQuestionSemanticType(questionId, quiz.tipo, answer);
+                    
+                    if (semanticType === 'eva_scale' && typeof answer === 'number') {
+                      dailyData.painLevel = Math.max(dailyData.painLevel || 0, answer);
+                      console.log(`🎯 Dor EVA detectada: ${answer}/10 (${quiz.tipo})`);
+                    }
+                    
+                    if (semanticType === 'emotional_state') {
+                      if (Array.isArray(answer)) {
+                        dailyData.moodData = { mood: answer[0], source: 'semantic', confidence: 0.8 };
+                      } else if (typeof answer === 'string') {
+                        dailyData.moodData = { mood: answer, source: 'semantic', confidence: 0.8 };
                       }
+                      console.log(`😊 Estado emocional detectado: ${JSON.stringify(answer)}`);
                     }
                   }
-                  
-                  // Capturar humor baseado no tipo de quiz
-                  if (quiz.tipo === 'noturno' && quiz.respostas['9'] !== undefined) {
-                    // Quiz noturno: humor na pergunta 9
-                    dayMood = quiz.respostas['9'];
-                  } else if (quiz.tipo === 'matinal' && quiz.respostas['1'] !== undefined) {
-                    // Quiz matinal: humor na pergunta 1
-                    dayMood = quiz.respostas['1'];
-                  }
                 }
-              });
+              }
+              
+              if (dailyData.painLevel !== null) {
+                dayPainLevel = dailyData.painLevel;
+              }
+              
+              if (dailyData.moodData) {
+                dayMood = dailyData.moodData.mood;
+              }
             }
             
             // Se temos ambos os dados, criar ponto de correlação
@@ -204,7 +371,8 @@ export default function Reports() {
                   mood: dayMood,
                   moodValue: moodToValue[dayMood],
                   date: dayKey,
-                  count: 1
+                  count: 1,
+                  source: 'legacy' as const
                 });
               }
             }
@@ -929,12 +1097,11 @@ export default function Reports() {
                 {/* Componente de métricas aprimorado */}
                 <PainMoodMetricsCards data={painMoodCorrelation.map(item => ({
                   painLevel: item.painLevel,
-                  mood: item.mood,
-                  moodValue: item.moodValue,
-                  date: item.date,
-                  count: item.count,
+                  moodScore: item.moodValue,
                   sentiment: item.moodValue <= 2 ? 'NEGATIVE' : 
-                           item.moodValue <= 4 ? 'NEUTRAL' : 'POSITIVE'
+                           item.moodValue <= 4 ? 'NEUTRAL' : 'POSITIVE',
+                  date: item.date,
+                  context: `${item.mood} (relatado ${item.count}x)`
                 }))} />
                 
                 {/* Insights automáticos movidos para fora do gráfico */}
