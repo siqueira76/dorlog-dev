@@ -27,11 +27,11 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
         
         {/* Logo e Nome do App - FibroDiário */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-white/90 backdrop-blur-sm">
+          <div className="flex items-center justify-center">
             <img 
               src={fibroLogo} 
               alt="FibroDiário" 
-              className="w-8 h-8 object-contain"
+              className="w-12 h-12 object-contain drop-shadow-md hover:scale-105 transition-transform duration-200"
             />
           </div>
           <div className="flex flex-col space-y-0.5">

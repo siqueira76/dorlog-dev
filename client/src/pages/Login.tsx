@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import fibroLogo from '@assets/logo-removebg-preview_1757388974002.png';
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -83,7 +84,14 @@ export default function Login() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="flex flex-col items-center gap-4">
+          <img 
+            src={fibroLogo} 
+            alt="FibroDiário" 
+            className="w-16 h-16 object-contain animate-pulse"
+          />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
       </div>
     );
   }
@@ -94,10 +102,14 @@ export default function Login() {
         
         {/* Logo and Welcome */}
         <div className="text-center mb-8">
-          <div className="bg-primary w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Heart className="h-8 w-8 text-primary-foreground" />
+          <div className="flex items-center justify-center mb-6">
+            <img 
+              src={fibroLogo} 
+              alt="FibroDiário" 
+              className="w-20 h-20 object-contain drop-shadow-lg hover:scale-105 transition-transform duration-300"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Bem-vindo ao DorLog</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Bem-vindo ao FibroDiário</h1>
           <p className="text-muted-foreground">Gerencie sua saúde de forma inteligente</p>
         </div>
 
