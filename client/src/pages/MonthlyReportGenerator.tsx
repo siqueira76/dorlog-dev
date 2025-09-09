@@ -403,49 +403,70 @@ Este relatório foi gerado automaticamente pelo aplicativo DorLog.`;
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Configurações */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Seleção de Período
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Mode Selection */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Modo de Seleção</Label>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={selectionMode === 'single' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectionMode('single')}
-                      className="flex-1"
-                    >
-                      Mês Único
-                    </Button>
-                    <Button
-                      variant={selectionMode === 'range' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectionMode('range')}
-                      className="flex-1"
-                    >
-                      Intervalo
-                    </Button>
-                  </div>
+        {/* Card Único Centralizado */}
+        <div className="max-w-2xl mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Gerador de Relatório Mensal
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Mode Selection */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Modo de Seleção</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={selectionMode === 'single' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectionMode('single')}
+                    className="flex-1"
+                  >
+                    Mês Único
+                  </Button>
+                  <Button
+                    variant={selectionMode === 'range' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectionMode('range')}
+                    className="flex-1"
+                  >
+                    Intervalo
+                  </Button>
                 </div>
+              </div>
 
-                {/* Single Period Selection */}
-                {selectionMode === 'single' && (
+              {/* Single Period Selection */}
+              {selectionMode === 'single' && (
+                <div className="space-y-3">
+                  <Label htmlFor="period" className="text-sm font-medium">
+                    Selecionar Mês
+                  </Label>
+                  <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Escolha um mês" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {periodOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Range Selection */}
+              {selectionMode === 'range' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
-                    <Label htmlFor="period" className="text-sm font-medium">
-                      Selecionar Mês
+                    <Label htmlFor="from-period" className="text-sm font-medium">
+                      De
                     </Label>
-                    <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                    <Select value={fromPeriod} onValueChange={setFromPeriod}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Escolha um mês" />
+                        <SelectValue placeholder="Mês inicial" />
                       </SelectTrigger>
                       <SelectContent>
                         {periodOptions.map((option) => (
@@ -456,74 +477,47 @@ Este relatório foi gerado automaticamente pelo aplicativo DorLog.`;
                       </SelectContent>
                     </Select>
                   </div>
-                )}
-
-                {/* Range Selection */}
-                {selectionMode === 'range' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <Label htmlFor="from-period" className="text-sm font-medium">
-                        De
-                      </Label>
-                      <Select value={fromPeriod} onValueChange={setFromPeriod}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Mês inicial" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {periodOptions.map((option) => (
+                  
+                  <div className="space-y-3">
+                    <Label htmlFor="to-period" className="text-sm font-medium">
+                      Até
+                    </Label>
+                    <Select 
+                      value={toPeriod} 
+                      onValueChange={setToPeriod}
+                      disabled={!fromPeriod}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Mês final" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {periodOptions
+                          .filter(option => {
+                            if (!fromPeriod) return false;
+                            const fromOption = periodOptions.find(opt => opt.value === fromPeriod);
+                            return fromOption ? option.date >= fromOption.date : false;
+                          })
+                          .map((option) => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
                             </SelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <Label htmlFor="to-period" className="text-sm font-medium">
-                        Até
-                      </Label>
-                      <Select 
-                        value={toPeriod} 
-                        onValueChange={setToPeriod}
-                        disabled={!fromPeriod}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Mês final" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {periodOptions
-                            .filter(option => {
-                              if (!fromPeriod) return false;
-                              const fromOption = periodOptions.find(opt => opt.value === fromPeriod);
-                              return fromOption ? option.date >= fromOption.date : false;
-                            })
-                            .map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                </div>
+              )}
 
-          {/* Preview e Ações */}
-          <div className="space-y-6">
-            {/* Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Preview
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <Separator />
+
+              {/* Preview Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">Preview do Relatório</Label>
+                </div>
+                
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                   <div>
                     <Label className="text-xs text-muted-foreground">Período Selecionado</Label>
                     <p className="text-sm font-medium">
@@ -552,18 +546,17 @@ Este relatório foi gerado automaticamente pelo aplicativo DorLog.`;
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Share2 className="h-5 w-5" />
-                  Compartilhar
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+              <Separator />
+
+              {/* Action Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Share2 className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">Compartilhar Relatório</Label>
+                </div>
+
                 <Button
                   onClick={handleShareWhatsApp}
                   disabled={!hasValidSelection() || isGenerating}
@@ -588,9 +581,9 @@ Este relatório foi gerado automaticamente pelo aplicativo DorLog.`;
                     Selecione um período para habilitar o compartilhamento
                   </p>
                 )}
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
