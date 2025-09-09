@@ -1,3 +1,6 @@
+/* FibroDiário - Fonte Sans-Serif moderna para o nome comercial */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -47,26 +50,35 @@
 }
 
 :root {
+  /* FibroDiário - Paleta de cores da fibromialgia */
   --background: hsl(210, 20%, 98%);
   --foreground: hsl(222.2, 84%, 4.9%);
-  --muted: hsl(210, 40%, 96%);
-  --muted-foreground: hsl(215.4, 16.3%, 46.9%);
+  --muted: hsl(270, 50%, 96%);
+  --muted-foreground: hsl(270, 16.3%, 46.9%);
   --popover: hsl(0, 0%, 100%);
   --popover-foreground: hsl(222.2, 84%, 4.9%);
   --card: hsl(0, 0%, 100%);
   --card-foreground: hsl(222.2, 84%, 4.9%);
-  --border: hsl(214.3, 31.8%, 91.4%);
-  --input: hsl(214.3, 31.8%, 91.4%);
-  --primary: hsl(207, 90%, 54%);
+  --border: hsl(270, 31.8%, 91.4%);
+  --input: hsl(270, 31.8%, 91.4%);
+  --primary: hsl(280, 71%, 42%); /* Roxo fibromialgia #9C27B0 */
   --primary-foreground: hsl(210, 40%, 98%);
-  --secondary: hsl(152, 76%, 36%);
+  --secondary: hsl(100, 43%, 70%); /* Verde fibromialgia #66BB6A */
   --secondary-foreground: hsl(210, 40%, 98%);
-  --accent: hsl(210, 40%, 96%);
+  --accent: hsl(48, 95%, 58%); /* Amarelo fibromialgia #FBC02D */
   --accent-foreground: hsl(222.2, 84%, 4.9%);
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(210, 40%, 98%);
-  --ring: hsl(207, 90%, 54%);
+  --ring: hsl(280, 71%, 42%);
   --radius: 0.75rem;
+  
+  /* Cores específicas da fibromialgia */
+  --fibro-purple: #9C27B0;
+  --fibro-yellow: #FBC02D;
+  --fibro-green: #66BB6A;
+  --fibro-purple-light: #E1BEE7;
+  --fibro-yellow-light: #FFF9C4;
+  --fibro-green-light: #C8E6C9;
 }
 
 @layer base {
@@ -79,6 +91,26 @@
     font-family: 'Inter', system-ui, sans-serif;
   }
 }
+
+.fibro-brand-font {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Utilitários para cores da fibromialgia */
+.text-fibro-purple { color: var(--fibro-purple); }
+.text-fibro-yellow { color: var(--fibro-yellow); }
+.text-fibro-green { color: var(--fibro-green); }
+.bg-fibro-purple { background-color: var(--fibro-purple); }
+.bg-fibro-yellow { background-color: var(--fibro-yellow); }
+.bg-fibro-green { background-color: var(--fibro-green); }
+.bg-fibro-purple-light { background-color: var(--fibro-purple-light); }
+.bg-fibro-yellow-light { background-color: var(--fibro-yellow-light); }
+.bg-fibro-green-light { background-color: var(--fibro-green-light); }
+.border-fibro-purple { border-color: var(--fibro-purple); }
+.border-fibro-yellow { border-color: var(--fibro-yellow); }
+.border-fibro-green { border-color: var(--fibro-green); }
 
 @layer utilities {
   .drawer-overlay {
