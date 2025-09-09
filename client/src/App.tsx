@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import PremiumProtectedRoute from '@/components/PremiumProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
 
 // Simplified component for initial redirect - GitHub Pages compatible
@@ -157,9 +158,11 @@ function App() {
             
             <Route path="/reports/monthly">
               <ProtectedRoute>
-                <Layout>
-                  <MonthlyReportGenerator />
-                </Layout>
+                <PremiumProtectedRoute>
+                  <Layout>
+                    <MonthlyReportGenerator />
+                  </Layout>
+                </PremiumProtectedRoute>
               </ProtectedRoute>
             </Route>
             

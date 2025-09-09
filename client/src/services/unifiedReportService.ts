@@ -1,6 +1,9 @@
 import { fetchUserReportData, ReportData } from './firestoreDataService';
 import { generateEnhancedReportHTML, EnhancedReportTemplateData } from './enhancedHtmlTemplate';
 import { uploadReportToStorage, generateReportId, generatePasswordHash } from './firebaseStorageService';
+import { auth } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export interface UnifiedReportOptions {
   userId: string;
@@ -27,6 +30,39 @@ export interface UnifiedReportResult {
 export class UnifiedReportService {
   
   /**
+   * Check if user has active premium subscription
+   */
+  static async checkPremiumAccess(userId: string): Promise<boolean> {
+    try {
+      const subscriptionRef = doc(db, 'assinaturas', userId);
+      const subscriptionSnap = await getDoc(subscriptionRef);
+      
+      if (!subscriptionSnap.exists()) {
+        return false;
+      }
+
+      const subscriptionData = subscriptionSnap.data();
+      const subscriptionDate = subscriptionData.data;
+      const currentDate = new Date();
+
+      let subscriptionDateObj: Date;
+      
+      if (subscriptionDate && typeof subscriptionDate === 'object' && 'toDate' in subscriptionDate) {
+        subscriptionDateObj = (subscriptionDate as any).toDate();
+      } else if (subscriptionDate instanceof Date) {
+        subscriptionDateObj = subscriptionDate;
+      } else {
+        subscriptionDateObj = new Date(subscriptionDate as any);
+      }
+
+      return subscriptionDateObj < currentDate;
+    } catch (error) {
+      console.error('❌ Erro ao verificar acesso premium:', error);
+      return false;
+    }
+  }
+
+  /**
    * Generate report with real data and upload to Firebase Storage
    */
   static async generateReport(options: UnifiedReportOptions): Promise<UnifiedReportResult> {
@@ -35,11 +71,24 @@ export class UnifiedReportService {
     console.log(`📅 Períodos: ${options.periodsText} (${options.periods.length} período(s))`);
     
     try {
-      // 1. Generate unique report ID
+      // 1. Validate premium access
+      console.log(`🔐 Verificando acesso premium para ${options.userId}...`);
+      const hasPremiumAccess = await this.checkPremiumAccess(options.userId);
+      
+      if (!hasPremiumAccess) {
+        console.log(`❌ Acesso negado: usuário ${options.userId} não possui assinatura ativa`);
+        return {
+          success: false,
+          error: 'Acesso negado: funcionalidade exclusiva para usuários Premium'
+        };
+      }
+      
+      console.log(`✅ Acesso premium confirmado para ${options.userId}`);
+      // 2. Generate unique report ID
       const reportId = generateReportId(options.userId);
       console.log(`🆔 Report ID gerado: ${reportId}`);
       
-      // 2. Fetch real data from Firestore
+      // 3. Fetch real data from Firestore
       console.log(`🔍 Buscando dados reais do Firestore...`);
       const reportData = await fetchUserReportData(options.userId, options.periods);
       console.log(`✅ Dados coletados:`, {
@@ -49,7 +98,7 @@ export class UnifiedReportService {
         doctorsCount: reportData.doctors.length
       });
       
-      // 3. Prepare enhanced template data
+      // 4. Prepare enhanced template data
       const templateData: EnhancedReportTemplateData = {
         userEmail: options.userId,
         periodsText: options.periodsText,
@@ -59,12 +108,12 @@ export class UnifiedReportService {
         passwordHash: options.password ? generatePasswordHash(options.password) : undefined
       };
       
-      // 4. Generate enhanced HTML with all features
+      // 5. Generate enhanced HTML with all features
       console.log(`🧠 Processando análise NLP e gerando relatório enhanced...`);
       const htmlContent = generateEnhancedReportHTML(templateData);
       console.log(`✅ HTML Enhanced gerado: ${Math.round(htmlContent.length / 1024)}KB`);
       
-      // 5. Upload to Firebase Storage
+      // 6. Upload to Firebase Storage
       console.log(`☁️ Fazendo upload para Firebase Storage...`);
       const uploadResult = await uploadReportToStorage(htmlContent, reportId);
       
@@ -72,7 +121,7 @@ export class UnifiedReportService {
         throw new Error(uploadResult.error || 'Falha no upload');
       }
       
-      // 6. Calculate execution time
+      // 7. Calculate execution time
       const executionTime = `${((Date.now() - startTime) / 1000).toFixed(2)}s`;
       
       console.log(`🎉 Relatório gerado com sucesso!`);

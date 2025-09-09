@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle, MapPin, BookOpen, Brain } from 'lucide-react';
+import { BarChart3, TrendingUp, Calendar, Download, AlertTriangle, MapPin, BookOpen, Brain, Crown, Lock } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter, Cell } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { db } from '@/lib/firebase';
 import { insightGenerationService } from '@/services/insightGenerationService';
 import { nlpService } from '@/services/nlpAnalysisService';
 import { PainMoodMetricsCards } from '@/components/enhanced/EnhancedChartComponents';
+import PremiumProtectedRoute from '@/components/PremiumProtectedRoute';
 
 // Importar função de mapeamento semântico do sistema existente
 const getQuestionSemanticType = (questionId: string, quizType: string, answer: any): string => {
@@ -173,6 +174,7 @@ const processDailyQuizzesWithNLP = async (quizzes: any[], dayKey: string) => {
 
 export default function Reports() {
   const { currentUser } = useAuth();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [, setLocation] = useLocation();
 
   // Interface para dados de correlação dor-humor com suporte NLP
@@ -1145,14 +1147,41 @@ export default function Reports() {
             <p className="text-sm text-muted-foreground mb-4">
               Relatório completo das suas atividades de saúde
             </p>
-            <Button
-              variant="outline"
-              className="w-full rounded-xl"
-              data-testid="button-generate-monthly-report"
-              onClick={() => setLocation('/reports/monthly')}
+            {currentUser?.isSubscriptionActive ? (
+              <Button
+                variant="outline"
+                className="w-full rounded-xl"
+                data-testid="button-generate-monthly-report"
+                onClick={() => setLocation('/reports/monthly')}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Gerar Relatório Mensal
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full rounded-xl border-dashed border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-800 hover:text-amber-900"
+                data-testid="button-upgrade-for-reports"
+                onClick={() => setShowUpgradeModal(true)}
+              >
+                <Crown className="h-4 w-4 mr-2 text-amber-600" />
+                <div className="flex flex-col items-start">
+                  <span className="font-medium">Gerar Relatório Mensal</span>
+                  <span className="text-xs text-amber-600 flex items-center gap-1">
+                    <Lock className="h-3 w-3" />
+                    Funcionalidade Premium
+                  </span>
+                </div>
+              </Button>
+            )}
+            
+            <PremiumProtectedRoute 
+              fallbackMode="modal"
+              showUpgradeModal={showUpgradeModal}
+              onUpgradeModalClose={() => setShowUpgradeModal(false)}
             >
-              Gerar Relatório Mensal
-            </Button>
+              <div />
+            </PremiumProtectedRoute>
           </CardContent>
         </Card>
       </div>
