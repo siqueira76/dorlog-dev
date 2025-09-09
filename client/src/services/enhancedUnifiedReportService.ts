@@ -45,7 +45,25 @@ export class EnhancedUnifiedReportService {
     console.log(`🧠 Iniciando geração de relatório enhanced para ${options.userId}...`);
     
     try {
-      // 1. Validar se enhanced features estão habilitadas
+      // 1. Validate premium access
+      console.log(`🔐 Verificando acesso premium para ${options.userId}...`);
+      const hasPremiumAccess = await UnifiedReportService.checkPremiumAccess(options.userId);
+      
+      if (!hasPremiumAccess) {
+        console.log(`❌ Acesso negado: usuário ${options.userId} não possui assinatura ativa`);
+        return {
+          success: false,
+          error: 'Acesso negado: funcionalidade exclusiva para usuários Premium',
+          analysisType: 'access_denied',
+          nlpProcessed: false,
+          chartsGenerated: false,
+          alertsGenerated: 0
+        };
+      }
+      
+      console.log(`✅ Acesso premium confirmado para ${options.userId}`);
+      
+      // 2. Validar se enhanced features estão habilitadas
       const useEnhanced = options.useEnhancedAnalysis !== false; // Default true
       
       if (!useEnhanced) {

@@ -1,9 +1,8 @@
 import { fetchUserReportData, ReportData } from './firestoreDataService';
 import { generateEnhancedReportHTML, EnhancedReportTemplateData } from './enhancedHtmlTemplate';
 import { uploadReportToStorage, generateReportId, generatePasswordHash } from './firebaseStorageService';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 export interface UnifiedReportOptions {
   userId: string;
