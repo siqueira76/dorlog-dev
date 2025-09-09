@@ -1,6 +1,14 @@
 # Overview
 
-DorLog is a Progressive Web App (PWA) designed for comprehensive health management. It enables users to track pain, manage medications, and coordinate with healthcare providers. Key features include detailed tracking of pain and crisis episodes, full CRUD operations for medication and doctor management, dynamic daily health quizzes, and automated generation of professional HTML reports for easy sharing with medical professionals. The primary goal is to empower users in managing their health data and enhance communication with their healthcare teams.
+FibroDiário is a Progressive Web App (PWA) specifically designed for patients with fibromialgia. It enables users to track pain, manage symptoms, medications, and coordinate with healthcare providers. Key features include detailed tracking of pain and crisis episodes, full CRUD operations for medication and doctor management, dynamic daily health quizzes, and automated generation of professional HTML reports for easy sharing with medical professionals. The primary goal is to empower fibromialgia patients in managing their health data and enhance communication with their healthcare teams.
+
+## Visual Identity
+- **Logo**: Butterfly with sun symbol representing transformation and hope for chronic pain patients
+- **Color Palette**: 
+  - Primary Purple: #9C27B0 (fibromialgia awareness color)
+  - Accent Yellow: #FBC02D (hope and energy)
+  - Success Green: #66BB6A (healing and progress)
+- **Typography**: Inter font family for modern, accessible design
 
 # User Preferences
 
