@@ -1,5 +1,5 @@
 /**
- * Template HTML Enhanced para relatórios DorLog com NLP + Visualizações
+ * Template HTML Enhanced para relatórios FibroDiário com NLP + Visualizações
  * 
  * Gera relatórios standalone com análises inteligentes, gráficos avançados
  * e insights preditivos. Compatível com todos os ambientes.
@@ -27,7 +27,7 @@ export function generateEnhancedReportHTML(data: EnhancedReportTemplateData): st
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧠 DorLog Enhanced - Relatório Inteligente - ${periodsText}</title>
+    <title>🦋 FibroDiário Enhanced - Relatório Inteligente - ${periodsText}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
@@ -923,7 +923,7 @@ function generateEnhancedHeader(userEmail: string, periodsText: string, reportDa
     <div class="enhanced-header">
         <div class="logo-enhanced">
             <span class="brain-icon">🧠</span>
-            <span>DorLog Enhanced</span>
+            <span>FibroDiário Enhanced</span>
         </div>
         <p class="subtitle-enhanced">Relatório Inteligente com Análise NLP Avançada</p>
         
@@ -2580,7 +2580,7 @@ function generateEnhancedFooter(reportId: string, reportData: EnhancedReportData
     <div class="enhanced-footer">
         <div class="footer-logo">
             <span>🧠</span>
-            <span>DorLog Enhanced</span>
+            <span>FibroDiário Enhanced</span>
         </div>
         
         <div class="footer-features">
