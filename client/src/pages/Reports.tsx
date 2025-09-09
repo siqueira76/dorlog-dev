@@ -11,7 +11,6 @@ import { db } from '@/lib/firebase';
 import { insightGenerationService } from '@/services/insightGenerationService';
 import { nlpService } from '@/services/nlpAnalysisService';
 import { PainMoodMetricsCards } from '@/components/enhanced/EnhancedChartComponents';
-import PremiumProtectedRoute from '@/components/PremiumProtectedRoute';
 
 // Importar função de mapeamento semântico do sistema existente
 const getQuestionSemanticType = (questionId: string, quizType: string, answer: any): string => {
@@ -174,7 +173,10 @@ const processDailyQuizzesWithNLP = async (quizzes: any[], dayKey: string) => {
 
 export default function Reports() {
   const { currentUser } = useAuth();
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  const handleUpgradeRedirect = () => {
+    window.open(import.meta.env.VITE_STRIPE_CHECKOUT_URL || 'https://checkout.stripe.com/pay/cs_test_premium_dorlog', '_blank');
+  };
   const [, setLocation] = useLocation();
 
   // Interface para dados de correlação dor-humor com suporte NLP
@@ -1162,7 +1164,7 @@ export default function Reports() {
                 variant="outline"
                 className="w-full rounded-xl border-dashed border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-800 hover:text-amber-900"
                 data-testid="button-upgrade-for-reports"
-                onClick={() => setShowUpgradeModal(true)}
+                onClick={handleUpgradeRedirect}
               >
                 <Crown className="h-4 w-4 mr-2 text-amber-600" />
                 <div className="flex flex-col items-start">
@@ -1174,14 +1176,6 @@ export default function Reports() {
                 </div>
               </Button>
             )}
-            
-            <PremiumProtectedRoute 
-              fallbackMode="modal"
-              showUpgradeModal={showUpgradeModal}
-              onUpgradeModalClose={() => setShowUpgradeModal(false)}
-            >
-              <div />
-            </PremiumProtectedRoute>
           </CardContent>
         </Card>
       </div>
