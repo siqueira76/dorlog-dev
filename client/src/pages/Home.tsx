@@ -188,7 +188,7 @@ export default function Home() {
         <h2 className="text-xl font-semibold mb-2" data-testid="text-welcome">
           Olá, {currentUser?.name || 'Usuário'}!
         </h2>
-        <p className="text-primary-foreground/80">Como está se sentindo hoje?</p>
+        <p className="text-primary-foreground/80">📊 Registre seu dia a dia para gerar relatórios profissionais e compartilhar insights valiosos com seu médico</p>
       </div>
 
       {/* Quick Actions */}

@@ -739,15 +739,27 @@ export default function Reports() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-2xl font-bold text-foreground">Relatórios</h1>
-          <Button
-            onClick={() => setLocation('/reports/monthly')}
-            className="bg-blue-600 hover:bg-blue-700 text-white h-10 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
-            data-testid="button-generate-pdf-report"
-          >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Gerar Relatorio Mensal</span>
-            <span className="sm:hidden">PDF</span>
-          </Button>
+          {currentUser?.isSubscriptionActive ? (
+            <Button
+              onClick={() => setLocation('/reports/monthly')}
+              className="bg-blue-600 hover:bg-blue-700 text-white h-10 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+              data-testid="button-generate-pdf-report"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Gerar Relatorio Mensal</span>
+              <span className="sm:hidden">PDF</span>
+            </Button>
+          ) : (
+            <Button
+              onClick={handleUpgradeRedirect}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white h-10 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+              data-testid="button-upgrade-pdf-report"
+            >
+              <Crown className="h-4 w-4" />
+              <span className="hidden sm:inline">Upgrade Premium</span>
+              <span className="sm:hidden">Pro</span>
+            </Button>
+          )}
         </div>
         <p className="text-muted-foreground">
           Acompanhe sua evolução e padrões de saúde
