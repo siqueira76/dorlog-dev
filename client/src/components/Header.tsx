@@ -1,4 +1,5 @@
-import { Menu, Activity, Crown, ExternalLink } from 'lucide-react';
+import { Menu, Crown, ExternalLink } from 'lucide-react';
+import fibroLogo from '@assets/logo-removebg-preview_1757388974002.png';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -24,13 +25,17 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
           <Menu className="h-5 w-5" />
         </Button>
         
-        {/* Logo e Nome do App - Legibilidade otimizada */}
+        {/* Logo e Nome do App - FibroDiário */}
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-primary via-primary to-primary/90 w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg">
-            <Activity className="h-5 w-5 text-primary-foreground" />
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg bg-white/90 backdrop-blur-sm">
+            <img 
+              src={fibroLogo} 
+              alt="FibroDiário" 
+              className="w-8 h-8 object-contain"
+            />
           </div>
           <div className="flex flex-col space-y-0.5">
-            <span className="text-base font-bold text-primary leading-none tracking-tight">DorLog</span>
+            <span className="fibro-brand-font text-base text-fibro-purple leading-none tracking-tight">FibroDiário</span>
             <span className="text-xs text-muted-foreground/80 font-medium leading-none">{title}</span>
           </div>
         </div>
