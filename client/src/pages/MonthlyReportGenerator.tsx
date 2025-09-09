@@ -27,7 +27,7 @@ export default function MonthlyReportGenerator(): JSX.Element {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
 
-  // Gerar opções de períodos (últimos 12 meses + próximos 3 meses)
+  // Gerar opções de períodos (últimos 12 meses + mês atual)
   const generatePeriodOptions = () => {
     const options = [];
     const currentDate = new Date();
@@ -35,22 +35,6 @@ export default function MonthlyReportGenerator(): JSX.Element {
     // Últimos 12 meses (incluindo o atual)
     for (let i = 12; i >= 0; i--) {
       const date = subMonths(currentDate, i);
-      const startDate = startOfMonth(date);
-      const endDate = endOfMonth(date);
-      
-      const value = `${format(startDate, 'yyyy-MM-dd')}_${format(endDate, 'yyyy-MM-dd')}`;
-      const label = format(date, 'MMMM yyyy', { locale: ptBR });
-      
-      options.push({
-        value,
-        label: label.charAt(0).toUpperCase() + label.slice(1),
-        date: date
-      });
-    }
-    
-    // Próximos 3 meses
-    for (let i = 1; i <= 3; i++) {
-      const date = addMonths(currentDate, i);
       const startDate = startOfMonth(date);
       const endDate = endOfMonth(date);
       
@@ -507,46 +491,6 @@ Este relatório foi gerado automaticamente pelo aplicativo DorLog.`;
                   </div>
                 </div>
               )}
-
-              <Separator />
-
-              {/* Preview Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  <Label className="text-sm font-medium">Preview do Relatório</Label>
-                </div>
-                
-                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Período Selecionado</Label>
-                    <p className="text-sm font-medium">
-                      {hasValidSelection() 
-                        ? getSelectedPeriodsText()
-                        : 'Nenhum período selecionado'
-                      }
-                    </p>
-                  </div>
-                  
-                  {hasValidSelection() && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Total de Meses</Label>
-                      <p className="text-sm font-medium">
-                        {getSelectedPeriods().length} mês{getSelectedPeriods().length !== 1 ? 'es' : ''}
-                      </p>
-                    </div>
-                  )}
-
-                  {hasValidSelection() && (
-                    <div className="pt-2">
-                      <Badge variant="secondary" className="text-xs">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Pronto para gerar
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-              </div>
 
               <Separator />
 
