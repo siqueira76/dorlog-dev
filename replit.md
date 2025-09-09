@@ -26,7 +26,7 @@ An Express.js server in TypeScript manages the backend. It uses Drizzle ORM with
 PostgreSQL stores primary application data. Firestore is used for user profiles, authentication, and specific collections including `usuarios`, `assinaturas` (subscriptions), `quizzes`, `medicos`, `medicamentos`, and `report_diario`. Firebase Authentication manages user logins (email/password, Google OAuth).
 
 ### Sistema de Quizzes e Mapeamento de Dados
-O DorLog implementa um sistema flexível de questionários diários com mapeamento semântico automático das respostas. A estrutura completa está documentada em `QUIZ_DATA_STRUCTURE.md`, incluindo:
+O FibroDiário implementa um sistema flexível de questionários diários com mapeamento semântico automático das respostas. A estrutura completa está documentada em `QUIZ_DATA_STRUCTURE.md`, incluindo:
 
 - **Três tipos de quiz**: Matinal, Noturno e Emergencial com perguntas específicas
 - **Mapeamento semântico automático**: Sistema que classifica respostas em tipos como `eva_scale`, `pain_locations`, `symptoms`, `emotional_state`, `rescue_medication`, etc.
@@ -38,7 +38,7 @@ O DorLog implementa um sistema flexível de questionários diários com mapeamen
 A unified client-side system generates professional HTML reports from Firestore data, uploading them to Firebase Storage for permanent public URLs. This system integrates a template engine for comprehensive medical reports, optimized for performance and cross-platform compatibility. Report sharing is handled via a hybrid multi-platform WhatsApp strategy, using Web Share API on mobile, clipboard integration for desktop, and a fallback URI scheme.
 
 ## Sistema Isolado de Análise NLP para Insights de Saúde
-**Arquitetura Independente**: Sistema autônomo de processamento de linguagem natural totalmente integrado ao DorLog para análise avançada de textos livres dos usuários, operando de forma isolada e segura.
+**Arquitetura Independente**: Sistema autônomo de processamento de linguagem natural totalmente integrado ao FibroDiário para análise avançada de textos livres dos usuários, operando de forma isolada e segura.
 
 ### Modelos de IA Locais (Privacy-First)
 - **Engine**: `@xenova/transformers` - Execução de modelos Transformer diretamente no navegador
