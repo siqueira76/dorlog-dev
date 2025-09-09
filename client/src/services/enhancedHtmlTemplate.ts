@@ -67,14 +67,14 @@ ${getEnhancedReportJavaScript(withPassword, passwordHash, reportId)}
 function getEnhancedReportCSS(): string {
   return `
         :root {
-            /* Enhanced Color Palette */
-            --primary: #1a1a1a;
-            --accent: #6366f1;
-            --secondary: #8b5cf6;
-            --success: #10b981;
-            --warning: #f59e0b;
+            /* FibroDiário - Paleta de cores da fibromialgia */
+            --primary: #9C27B0;
+            --accent: #FBC02D;
+            --secondary: #66BB6A;
+            --success: #66BB6A;
+            --warning: #FBC02D;
             --danger: #ef4444;
-            --info: #06b6d4;
+            --info: #9C27B0;
             
             /* NLP Colors */
             --sentiment-positive: #10b981;
@@ -922,7 +922,7 @@ function generateEnhancedHeader(userEmail: string, periodsText: string, reportDa
   return `
     <div class="enhanced-header">
         <div class="logo-enhanced">
-            <span class="brain-icon">🧠</span>
+            <span class="brain-icon">🦋</span>
             <span>FibroDiário Enhanced</span>
         </div>
         <p class="subtitle-enhanced">Relatório Inteligente com Análise NLP Avançada</p>
